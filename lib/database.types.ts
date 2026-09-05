@@ -191,6 +191,56 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["program_exercises"]["Insert"]>;
         Relationships: [];
       };
+      workout_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          day_id: string | null;
+          title: string | null;
+          started_at: string;
+          ended_at: string | null;
+          bodyweight_kg: number | null;
+          notes: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day_id?: string | null;
+          title?: string | null;
+          started_at?: string;
+          ended_at?: string | null;
+          bodyweight_kg?: number | null;
+          notes?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["workout_sessions"]["Insert"]>;
+        Relationships: [];
+      };
+      set_logs: {
+        Row: {
+          id: string;
+          session_id: string;
+          exercise_id: string;
+          set_index: number;
+          weight_kg: number | null;
+          reps: number | null;
+          rpe: number | null;
+          is_complete: boolean;
+          logged_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          exercise_id: string;
+          set_index: number;
+          weight_kg?: number | null;
+          reps?: number | null;
+          rpe?: number | null;
+          is_complete?: boolean;
+          logged_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["set_logs"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
@@ -206,3 +256,5 @@ export type Exercise = Tables<"exercises">;
 export type ProgramWeek = Tables<"program_weeks">;
 export type ProgramDay = Tables<"program_days">;
 export type ProgramExercise = Tables<"program_exercises">;
+export type WorkoutSession = Tables<"workout_sessions">;
+export type SetLog = Tables<"set_logs">;

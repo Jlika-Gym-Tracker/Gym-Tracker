@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { currentWeekStart, DAY_NAMES } from "@/lib/dates";
+import { currentWeekStart } from "@/lib/dates";
 import { findPreviousWeek, getWeek } from "@/lib/program/queries";
 
 export type ActionState = { error?: string; notice?: string };
@@ -496,5 +496,3 @@ export async function applyPastedWeek(
     return fail(error);
   }
 }
-
-export const DAY_LABELS = DAY_NAMES;

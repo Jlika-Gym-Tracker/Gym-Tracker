@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { AlertTriangle, Check, X } from "lucide-react";
 import { applyPastedWeek } from "@/app/actions/program";
-import { parseProgramText, type ParsedDay } from "@/lib/program/parse";
+import { parseProgramText } from "@/lib/program/parse";
 import {
   findCandidates,
   matchExercises,
@@ -270,5 +270,3 @@ export function PastePanel({
     </div>
   );
 }
-
-export type { ParsedDay };
