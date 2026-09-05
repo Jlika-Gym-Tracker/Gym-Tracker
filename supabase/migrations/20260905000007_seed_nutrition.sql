@@ -1,0 +1,142 @@
+-- JLIKA Gym — Phase 5 seed: ingredients and recipes.
+--
+-- Per-100g values are from public nutrition tables (USDA / CIQUAL), rounded.
+-- owner_id stays null so every account can read them but nobody can edit them.
+-- Re-runnable: conflicts on slug refresh the row.
+
+insert into public.ingredients
+  (slug, name, category, kcal_per_100g, protein_g, carb_g, fat_g, allergens, unit_hint)
+values
+  ('chicken-breast', 'Chicken breast', 'protein', 165, 31, 0, 3.6, '{}'::text[], 'g'),
+  ('salmon-fillet', 'Salmon fillet', 'protein', 208, 20, 0, 13, array['Fish']::text[], 'g'),
+  ('lean-beef-mince', 'Lean beef mince 5%', 'protein', 137, 21, 0, 5, '{}'::text[], 'g'),
+  ('turkey-mince', 'Turkey mince', 'protein', 148, 21, 0, 7, '{}'::text[], 'g'),
+  ('eggs', 'Eggs', 'protein', 143, 13, 1.1, 9.5, array['Eggs']::text[], 'unit'),
+  ('egg-whites', 'Egg whites', 'protein', 52, 11, 0.7, 0.2, array['Eggs']::text[], 'g'),
+  ('greek-yogurt', 'Greek yogurt 0%', 'dairy', 59, 10, 3.6, 0.4, array['Dairy']::text[], 'g'),
+  ('cottage-cheese', 'Cottage cheese', 'dairy', 98, 11, 3.4, 4.3, array['Dairy']::text[], 'g'),
+  ('whey-protein', 'Whey protein', 'protein', 380, 80, 8, 4, array['Dairy']::text[], 'g'),
+  ('tofu-firm', 'Firm tofu', 'protein', 144, 17, 3, 9, array['Soy']::text[], 'g'),
+  ('prawns', 'Prawns', 'protein', 99, 24, 0.2, 0.3, array['Shellfish']::text[], 'g'),
+  ('tuna-tinned', 'Tinned tuna in water', 'protein', 116, 26, 0, 1, array['Fish']::text[], 'g'),
+  ('basmati-rice', 'Basmati rice (dry)', 'carbs', 349, 8, 78, 0.9, '{}'::text[], 'g'),
+  ('rolled-oats', 'Rolled oats', 'carbs', 379, 13, 68, 7, array['Gluten']::text[], 'g'),
+  ('sweet-potato', 'Sweet potato', 'carbs', 86, 1.6, 20, 0.1, '{}'::text[], 'g'),
+  ('potato', 'Potato', 'carbs', 77, 2, 17, 0.1, '{}'::text[], 'g'),
+  ('wholemeal-bread', 'Wholemeal bread', 'carbs', 247, 13, 41, 3.4, array['Gluten']::text[], 'g'),
+  ('wholewheat-pasta', 'Wholewheat pasta (dry)', 'carbs', 348, 14, 67, 2.5, array['Gluten']::text[], 'g'),
+  ('couscous', 'Couscous (dry)', 'carbs', 376, 13, 77, 0.6, array['Gluten']::text[], 'g'),
+  ('chickpeas', 'Chickpeas (cooked)', 'carbs', 164, 9, 27, 2.6, '{}'::text[], 'g'),
+  ('black-beans', 'Black beans (cooked)', 'carbs', 132, 9, 24, 0.5, '{}'::text[], 'g'),
+  ('broccoli', 'Broccoli', 'produce', 34, 2.8, 7, 0.4, '{}'::text[], 'g'),
+  ('spinach', 'Spinach', 'produce', 23, 2.9, 3.6, 0.4, '{}'::text[], 'g'),
+  ('tomatoes', 'Tomatoes', 'produce', 18, 0.9, 3.9, 0.2, '{}'::text[], 'unit'),
+  ('mixed-peppers', 'Mixed peppers', 'produce', 31, 1, 6, 0.3, '{}'::text[], 'g'),
+  ('courgette', 'Courgette', 'produce', 17, 1.2, 3.1, 0.3, '{}'::text[], 'g'),
+  ('onion', 'Onion', 'produce', 40, 1.1, 9.3, 0.1, '{}'::text[], 'unit'),
+  ('garlic', 'Garlic', 'produce', 149, 6.4, 33, 0.5, '{}'::text[], 'g'),
+  ('banana', 'Bananas', 'produce', 89, 1.1, 23, 0.3, '{}'::text[], 'unit'),
+  ('berries-frozen', 'Frozen berries', 'produce', 50, 1, 11, 0.3, '{}'::text[], 'g'),
+  ('apple', 'Apples', 'produce', 52, 0.3, 14, 0.2, '{}'::text[], 'unit'),
+  ('avocado', 'Avocado', 'fats', 160, 2, 9, 15, '{}'::text[], 'unit'),
+  ('olive-oil', 'Olive oil', 'fats', 884, 0, 0, 100, '{}'::text[], 'ml'),
+  ('almonds', 'Almonds', 'fats', 579, 21, 22, 50, array['Tree nuts']::text[], 'g'),
+  ('peanut-butter', 'Peanut butter', 'fats', 588, 25, 20, 50, array['Peanuts']::text[], 'g'),
+  ('soy-sauce', 'Soy sauce', 'pantry', 53, 8, 5, 0.1, array['Soy','Gluten']::text[], 'ml'),
+  ('honey', 'Honey', 'pantry', 304, 0.3, 82, 0, '{}'::text[], 'g'),
+  ('mixed-spices', 'Mixed spices', 'pantry', 250, 10, 45, 8, '{}'::text[], 'g')
+on conflict (slug) do update set
+  name = excluded.name, category = excluded.category,
+  kcal_per_100g = excluded.kcal_per_100g, protein_g = excluded.protein_g,
+  carb_g = excluded.carb_g, fat_g = excluded.fat_g,
+  allergens = excluded.allergens, unit_hint = excluded.unit_hint;
+
+insert into public.recipes (slug, name, slot_hint, prep_minutes, steps)
+values
+  ('protein-oats', 'Protein oats with berries', 'breakfast', 8, array['Simmer the oats in water until thick.','Stir the protein through off the heat.','Top with berries and peanut butter.']::text[]),
+  ('yogurt-bowl', 'Greek yogurt, berries and almonds', 'breakfast', 3, array['Spoon the yogurt into a bowl.','Top with berries, almonds and honey.']::text[]),
+  ('spinach-omelette', 'Three-egg omelette with spinach', 'breakfast', 10, array['Wilt the spinach in the oil.','Pour in the beaten eggs and whites.','Fold once the base is set.']::text[]),
+  ('chicken-rice-broccoli', 'Chicken, rice and broccoli', 'lunch', 25, array['Cook the rice.','Season and pan-fry the chicken.','Steam the broccoli and plate together.']::text[]),
+  ('tuna-chickpea-salad', 'Tuna and chickpea salad', 'lunch', 8, array['Drain the tuna and chickpeas.','Toss everything with the oil and season.']::text[]),
+  ('turkey-sweet-potato', 'Turkey and sweet potato bowl', 'lunch', 30, array['Roast the sweet potato.','Brown the turkey with the peppers.','Combine and season.']::text[]),
+  ('beef-black-bean', 'Beef and black bean bowl', 'dinner', 25, array['Brown the mince.','Add beans, peppers and spices.','Serve over rice.']::text[]),
+  ('salmon-potato', 'Salmon, potatoes and greens', 'dinner', 30, array['Roast the potatoes.','Bake the salmon for 14 minutes.','Steam the greens.']::text[]),
+  ('chicken-pasta', 'Chicken pasta with tomatoes', 'dinner', 22, array['Boil the pasta.','Cook the chicken with garlic and tomatoes.','Toss together.']::text[]),
+  ('tofu-stirfry', 'Tofu and vegetable stir fry', 'dinner', 20, array['Press and cube the tofu.','Stir fry hot and fast with the vegetables.','Finish with soy sauce over rice.']::text[]),
+  ('prawn-pasta', 'Prawn and courgette pasta', 'dinner', 18, array['Boil the pasta.','Sauté the prawns with garlic and courgette.','Combine.']::text[]),
+  ('pb-toast', 'Banana and peanut butter toast', 'pre_workout', 5, array['Toast the bread.','Spread and top with sliced banana.']::text[]),
+  ('pre-workout-shake', 'Rice cakes and whey', 'pre_workout', 2, array['Blend the whey with water.','Eat the banana alongside.']::text[]),
+  ('cottage-apple', 'Cottage cheese and apple', 'snack', 3, array['Spoon out the cottage cheese.','Slice the apple and add the almonds.']::text[]),
+  ('protein-shake', 'Protein shake', 'snack', 2, array['Blend with water and ice.']::text[])
+on conflict (slug) do update set
+  name = excluded.name, slot_hint = excluded.slot_hint,
+  prep_minutes = excluded.prep_minutes, steps = excluded.steps;
+
+-- Rebuild the links so a changed recipe does not keep stale ingredients.
+delete from public.recipe_ingredients
+where recipe_id in (select id from public.recipes where owner_id is null);
+
+insert into public.recipe_ingredients (recipe_id, ingredient_id, grams)
+values
+  ((select id from public.recipes where slug = 'protein-oats'), (select id from public.ingredients where slug = 'rolled-oats'), 80),
+  ((select id from public.recipes where slug = 'protein-oats'), (select id from public.ingredients where slug = 'whey-protein'), 30),
+  ((select id from public.recipes where slug = 'protein-oats'), (select id from public.ingredients where slug = 'berries-frozen'), 100),
+  ((select id from public.recipes where slug = 'protein-oats'), (select id from public.ingredients where slug = 'peanut-butter'), 15),
+  ((select id from public.recipes where slug = 'yogurt-bowl'), (select id from public.ingredients where slug = 'greek-yogurt'), 250),
+  ((select id from public.recipes where slug = 'yogurt-bowl'), (select id from public.ingredients where slug = 'berries-frozen'), 100),
+  ((select id from public.recipes where slug = 'yogurt-bowl'), (select id from public.ingredients where slug = 'almonds'), 20),
+  ((select id from public.recipes where slug = 'yogurt-bowl'), (select id from public.ingredients where slug = 'honey'), 10),
+  ((select id from public.recipes where slug = 'spinach-omelette'), (select id from public.ingredients where slug = 'eggs'), 150),
+  ((select id from public.recipes where slug = 'spinach-omelette'), (select id from public.ingredients where slug = 'egg-whites'), 100),
+  ((select id from public.recipes where slug = 'spinach-omelette'), (select id from public.ingredients where slug = 'spinach'), 80),
+  ((select id from public.recipes where slug = 'spinach-omelette'), (select id from public.ingredients where slug = 'olive-oil'), 5),
+  ((select id from public.recipes where slug = 'chicken-rice-broccoli'), (select id from public.ingredients where slug = 'chicken-breast'), 200),
+  ((select id from public.recipes where slug = 'chicken-rice-broccoli'), (select id from public.ingredients where slug = 'basmati-rice'), 80),
+  ((select id from public.recipes where slug = 'chicken-rice-broccoli'), (select id from public.ingredients where slug = 'broccoli'), 200),
+  ((select id from public.recipes where slug = 'chicken-rice-broccoli'), (select id from public.ingredients where slug = 'olive-oil'), 8),
+  ((select id from public.recipes where slug = 'chicken-rice-broccoli'), (select id from public.ingredients where slug = 'mixed-spices'), 5),
+  ((select id from public.recipes where slug = 'tuna-chickpea-salad'), (select id from public.ingredients where slug = 'tuna-tinned'), 160),
+  ((select id from public.recipes where slug = 'tuna-chickpea-salad'), (select id from public.ingredients where slug = 'chickpeas'), 150),
+  ((select id from public.recipes where slug = 'tuna-chickpea-salad'), (select id from public.ingredients where slug = 'tomatoes'), 120),
+  ((select id from public.recipes where slug = 'tuna-chickpea-salad'), (select id from public.ingredients where slug = 'olive-oil'), 10),
+  ((select id from public.recipes where slug = 'tuna-chickpea-salad'), (select id from public.ingredients where slug = 'spinach'), 60),
+  ((select id from public.recipes where slug = 'turkey-sweet-potato'), (select id from public.ingredients where slug = 'turkey-mince'), 180),
+  ((select id from public.recipes where slug = 'turkey-sweet-potato'), (select id from public.ingredients where slug = 'sweet-potato'), 250),
+  ((select id from public.recipes where slug = 'turkey-sweet-potato'), (select id from public.ingredients where slug = 'mixed-peppers'), 120),
+  ((select id from public.recipes where slug = 'turkey-sweet-potato'), (select id from public.ingredients where slug = 'olive-oil'), 8),
+  ((select id from public.recipes where slug = 'beef-black-bean'), (select id from public.ingredients where slug = 'lean-beef-mince'), 180),
+  ((select id from public.recipes where slug = 'beef-black-bean'), (select id from public.ingredients where slug = 'black-beans'), 150),
+  ((select id from public.recipes where slug = 'beef-black-bean'), (select id from public.ingredients where slug = 'mixed-peppers'), 120),
+  ((select id from public.recipes where slug = 'beef-black-bean'), (select id from public.ingredients where slug = 'basmati-rice'), 70),
+  ((select id from public.recipes where slug = 'beef-black-bean'), (select id from public.ingredients where slug = 'mixed-spices'), 5),
+  ((select id from public.recipes where slug = 'salmon-potato'), (select id from public.ingredients where slug = 'salmon-fillet'), 180),
+  ((select id from public.recipes where slug = 'salmon-potato'), (select id from public.ingredients where slug = 'potato'), 300),
+  ((select id from public.recipes where slug = 'salmon-potato'), (select id from public.ingredients where slug = 'broccoli'), 150),
+  ((select id from public.recipes where slug = 'salmon-potato'), (select id from public.ingredients where slug = 'olive-oil'), 8),
+  ((select id from public.recipes where slug = 'chicken-pasta'), (select id from public.ingredients where slug = 'chicken-breast'), 180),
+  ((select id from public.recipes where slug = 'chicken-pasta'), (select id from public.ingredients where slug = 'wholewheat-pasta'), 90),
+  ((select id from public.recipes where slug = 'chicken-pasta'), (select id from public.ingredients where slug = 'tomatoes'), 200),
+  ((select id from public.recipes where slug = 'chicken-pasta'), (select id from public.ingredients where slug = 'olive-oil'), 10),
+  ((select id from public.recipes where slug = 'chicken-pasta'), (select id from public.ingredients where slug = 'garlic'), 8),
+  ((select id from public.recipes where slug = 'tofu-stirfry'), (select id from public.ingredients where slug = 'tofu-firm'), 200),
+  ((select id from public.recipes where slug = 'tofu-stirfry'), (select id from public.ingredients where slug = 'mixed-peppers'), 150),
+  ((select id from public.recipes where slug = 'tofu-stirfry'), (select id from public.ingredients where slug = 'courgette'), 150),
+  ((select id from public.recipes where slug = 'tofu-stirfry'), (select id from public.ingredients where slug = 'soy-sauce'), 20),
+  ((select id from public.recipes where slug = 'tofu-stirfry'), (select id from public.ingredients where slug = 'basmati-rice'), 70),
+  ((select id from public.recipes where slug = 'prawn-pasta'), (select id from public.ingredients where slug = 'prawns'), 180),
+  ((select id from public.recipes where slug = 'prawn-pasta'), (select id from public.ingredients where slug = 'wholewheat-pasta'), 90),
+  ((select id from public.recipes where slug = 'prawn-pasta'), (select id from public.ingredients where slug = 'courgette'), 150),
+  ((select id from public.recipes where slug = 'prawn-pasta'), (select id from public.ingredients where slug = 'garlic'), 8),
+  ((select id from public.recipes where slug = 'prawn-pasta'), (select id from public.ingredients where slug = 'olive-oil'), 10),
+  ((select id from public.recipes where slug = 'pb-toast'), (select id from public.ingredients where slug = 'wholemeal-bread'), 80),
+  ((select id from public.recipes where slug = 'pb-toast'), (select id from public.ingredients where slug = 'peanut-butter'), 20),
+  ((select id from public.recipes where slug = 'pb-toast'), (select id from public.ingredients where slug = 'banana'), 120),
+  ((select id from public.recipes where slug = 'pre-workout-shake'), (select id from public.ingredients where slug = 'whey-protein'), 30),
+  ((select id from public.recipes where slug = 'pre-workout-shake'), (select id from public.ingredients where slug = 'banana'), 120),
+  ((select id from public.recipes where slug = 'pre-workout-shake'), (select id from public.ingredients where slug = 'honey'), 10),
+  ((select id from public.recipes where slug = 'cottage-apple'), (select id from public.ingredients where slug = 'cottage-cheese'), 200),
+  ((select id from public.recipes where slug = 'cottage-apple'), (select id from public.ingredients where slug = 'apple'), 150),
+  ((select id from public.recipes where slug = 'cottage-apple'), (select id from public.ingredients where slug = 'almonds'), 15),
+  ((select id from public.recipes where slug = 'protein-shake'), (select id from public.ingredients where slug = 'whey-protein'), 30),
+  ((select id from public.recipes where slug = 'protein-shake'), (select id from public.ingredients where slug = 'greek-yogurt'), 150)
+on conflict (recipe_id, ingredient_id) do update set grams = excluded.grams;

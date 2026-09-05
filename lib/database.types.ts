@@ -295,6 +295,96 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["progress_photos"]["Insert"]>;
         Relationships: [];
       };
+      ingredients: {
+        Row: {
+          id: string; owner_id: string | null; slug: string; name: string;
+          category: string; kcal_per_100g: number; protein_g: number;
+          carb_g: number; fat_g: number; allergens: string[]; unit_hint: string;
+        };
+        Insert: {
+          id?: string; owner_id?: string | null; slug: string; name: string;
+          category: string; kcal_per_100g: number; protein_g?: number;
+          carb_g?: number; fat_g?: number; allergens?: string[]; unit_hint?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ingredients"]["Insert"]>;
+        Relationships: [];
+      };
+      recipes: {
+        Row: {
+          id: string; owner_id: string | null; slug: string; name: string;
+          slot_hint: string | null; prep_minutes: number | null;
+          image_url: string | null; steps: string[];
+        };
+        Insert: {
+          id?: string; owner_id?: string | null; slug: string; name: string;
+          slot_hint?: string | null; prep_minutes?: number | null;
+          image_url?: string | null; steps?: string[];
+        };
+        Update: Partial<Database["public"]["Tables"]["recipes"]["Insert"]>;
+        Relationships: [];
+      };
+      recipe_ingredients: {
+        Row: { recipe_id: string; ingredient_id: string; grams: number };
+        Insert: { recipe_id: string; ingredient_id: string; grams: number };
+        Update: Partial<Database["public"]["Tables"]["recipe_ingredients"]["Insert"]>;
+        Relationships: [];
+      };
+      meal_plans: {
+        Row: { id: string; user_id: string; week_start: string; created_at: string };
+        Insert: { id?: string; user_id: string; week_start: string; created_at?: string };
+        Update: Partial<Database["public"]["Tables"]["meal_plans"]["Insert"]>;
+        Relationships: [];
+      };
+      meal_plan_entries: {
+        Row: {
+          id: string; plan_id: string; planned_on: string; slot: string;
+          recipe_id: string | null; servings: number; eaten: boolean;
+        };
+        Insert: {
+          id?: string; plan_id: string; planned_on: string; slot: string;
+          recipe_id?: string | null; servings?: number; eaten?: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["meal_plan_entries"]["Insert"]>;
+        Relationships: [];
+      };
+      grocery_items: {
+        Row: {
+          id: string; plan_id: string; ingredient_id: string;
+          total_grams: number; checked: boolean;
+        };
+        Insert: {
+          id?: string; plan_id: string; ingredient_id: string;
+          total_grams: number; checked?: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["grocery_items"]["Insert"]>;
+        Relationships: [];
+      };
+      user_excludes: {
+        Row: { user_id: string; kind: string; value: string };
+        Insert: { user_id: string; kind: string; value: string };
+        Update: Partial<Database["public"]["Tables"]["user_excludes"]["Insert"]>;
+        Relationships: [];
+      };
+      user_settings: {
+        Row: {
+          user_id: string; training_days: number[]; default_rest_seconds: number;
+          auto_rest: boolean; keyboard_shortcuts: boolean; show_e1rm: boolean;
+          deficit_kcal: number; protein_g_per_kg: number; fat_pct: number;
+          refeed_day: number | null; auto_adjust: boolean; ask_before_adjust: boolean;
+          blur_thumbnails: boolean; strip_exif: boolean; notify_weighin: boolean;
+          notify_unpublished_week: boolean; meals_per_day: number;
+        };
+        Insert: {
+          user_id: string; training_days?: number[]; default_rest_seconds?: number;
+          auto_rest?: boolean; keyboard_shortcuts?: boolean; show_e1rm?: boolean;
+          deficit_kcal?: number; protein_g_per_kg?: number; fat_pct?: number;
+          refeed_day?: number | null; auto_adjust?: boolean; ask_before_adjust?: boolean;
+          blur_thumbnails?: boolean; strip_exif?: boolean; notify_weighin?: boolean;
+          notify_unpublished_week?: boolean; meals_per_day?: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_settings"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
@@ -315,3 +405,10 @@ export type SetLog = Tables<"set_logs">;
 export type BodyMetric = Tables<"body_metrics">;
 export type ProgressPhoto = Tables<"progress_photos">;
 export type Pose = "front" | "side" | "back";
+export type Ingredient = Tables<"ingredients">;
+export type Recipe = Tables<"recipes">;
+export type MealPlan = Tables<"meal_plans">;
+export type MealPlanEntry = Tables<"meal_plan_entries">;
+export type GroceryItem = Tables<"grocery_items">;
+export type UserSettings = Tables<"user_settings">;
+export type UserExclude = Tables<"user_excludes">;

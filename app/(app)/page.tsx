@@ -2,7 +2,11 @@ import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayOverview } from "@/lib/dashboard/queries";
+import { toDateString } from "@/lib/dates";
 import { getMetrics, getPhotos } from "@/lib/body/queries";
+import { getTargets, getWeekPlan } from "@/lib/nutrition/queries";
+import { recipeMacros } from "@/lib/nutrition/plan";
+import { CalorieRing } from "@/components/nutrition/calorie-ring";
 import { delta, latest, type Metric } from "@/lib/body/stats";
 import { formatVolume, kgToDisplay, trimNumber, weightUnit } from "@/lib/units";
 import type { PhotoWithUrl } from "@/lib/body/queries";
@@ -15,12 +19,21 @@ import { TrendChart } from "@/components/charts/line-chart";
 
 export default async function TodayPage() {
   const supabase = await createClient();
-  const [{ data: profile }, overview, metrics, photos] = await Promise.all([
+  const [{ data: profile }, overview, metrics, photos, targets, plan] = await Promise.all([
     supabase.from("profiles").select("unit_system").maybeSingle(),
     getTodayOverview(),
     getMetrics(120),
     getPhotos(undefined, 12),
+    getTargets(),
+    getWeekPlan(),
   ]);
+
+  const today = toDateString(new Date());
+  const todayIsTraining = targets?.trainingDays.includes(overview.todayIndex) ?? false;
+  const dayTarget = todayIsTraining ? targets?.targets.trainingDay : targets?.targets;
+  const eatenKcal = (plan?.entries ?? [])
+    .filter((e) => e.planned_on === today && e.eaten && e.recipe)
+    .reduce((sum, e) => sum + recipeMacros(e.recipe!, Number(e.servings)).kcal, 0);
 
   const system = (profile?.unit_system ?? "metric") as UnitSystem;
   const unit = weightUnit(system);
@@ -40,7 +53,7 @@ export default async function TodayPage() {
             watermark="WEEK 1"
           />
         </div>
-        <SidePanels photos={photos} />
+        <SidePanels photos={photos} fuel={null} />
       </div>
     );
   }
@@ -131,7 +144,10 @@ export default async function TodayPage() {
         <WeightTrendCard metrics={metrics} system={system} />
       </div>
 
-      <SidePanels photos={photos} />
+      <SidePanels
+        photos={photos}
+        fuel={dayTarget ? { consumed: eatenKcal, target: dayTarget.calories, proteinG: dayTarget.proteinG } : null}
+      />
     </div>
   );
 }
@@ -171,7 +187,13 @@ function WeightTrendCard({ metrics, system }: { metrics: Metric[]; system: UnitS
   );
 }
 
-function SidePanels({ photos }: { photos: PhotoWithUrl[] }) {
+function SidePanels({
+  photos,
+  fuel,
+}: {
+  photos: PhotoWithUrl[];
+  fuel: { consumed: number; target: number; proteinG: number } | null;
+}) {
   const sorted = [...photos].sort((a, b) => a.taken_on.localeCompare(b.taken_on));
   const pair = [sorted[0], sorted[sorted.length - 1]].filter(Boolean) as PhotoWithUrl[];
   const hasPair = pair.length === 2 && pair[0]!.id !== pair[1]!.id;
@@ -179,12 +201,29 @@ function SidePanels({ photos }: { photos: PhotoWithUrl[] }) {
   return (
     <div className="flex flex-col gap-[18px]">
       <Card className="flex min-h-[200px] flex-col">
-        <Eyebrow>Fuel today</Eyebrow>
-        <div className="flex flex-1 items-center justify-center">
-          <p className="max-w-[240px] text-center text-[13px] leading-[1.55] text-fg-dim">
-            Calorie and macro targets appear once your body details are in.
-          </p>
+        <div className="flex items-center">
+          <Eyebrow>Fuel today</Eyebrow>
+          <Link
+            href="/nutrition"
+            className="ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
+          >
+            Nutrition →
+          </Link>
         </div>
+        {fuel ? (
+          <div className="mt-3 flex flex-col items-center gap-3">
+            <CalorieRing consumed={fuel.consumed} target={fuel.target} size={132} />
+            <p className="text-center text-[12.5px] text-fg-soft">
+              {fuel.proteinG} g protein target
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center">
+            <p className="max-w-[240px] text-center text-[13px] leading-[1.55] text-fg-dim">
+              Calorie and macro targets appear once your body details are in.
+            </p>
+          </div>
+        )}
       </Card>
       <Card className="flex min-h-[200px] flex-col">
         <div className="flex items-center">
