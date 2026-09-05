@@ -27,8 +27,14 @@ npm run dev
 
 1. Create a project at [supabase.com](https://supabase.com), then copy the
    Project URL and publishable key from **Project Settings → API** into `.env.local`.
-2. Apply the migrations in `supabase/migrations/` — either paste them into the
-   SQL editor in order, or with the CLI:
+2. Apply the schema. Easiest is one paste: run `supabase/apply-all.sql` in the
+   SQL editor. It concatenates every migration in order and is idempotent, so
+   running it twice is harmless. Regenerate it after adding a migration:
+   ```bash
+   node scripts/bundle-migrations.mjs
+   ```
+   Or apply `supabase/migrations/*.sql` individually in numeric order, or with
+   the CLI:
    ```bash
    supabase link --project-ref <ref>
    supabase db push
