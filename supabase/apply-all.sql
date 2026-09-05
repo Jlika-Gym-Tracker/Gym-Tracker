@@ -1056,6 +1056,12 @@ grant execute on function public.crew_overview() to authenticated;
 -- Only percentages and points ever cross between members. Standings come from
 -- league_scores, which a nightly job computes from each member's own rows;
 -- league_standings() is SECURITY DEFINER and returns aggregates only.
+--
+-- Every table is created first, then every policy. Several policies reference
+-- league_members, so defining them inline would fail on the tables declared
+-- before it.
+
+-- ------------------------------------------------------------------ tables
 
 create table if not exists public.league_seasons (
   id uuid primary key default gen_random_uuid(),
@@ -1066,26 +1072,6 @@ create table if not exists public.league_seasons (
   created_at timestamptz not null default now(),
   constraint league_seasons_dates check (ends_on > starts_on)
 );
-
-alter table public.league_seasons enable row level security;
-
--- Readable by anyone in the season; writable only by the person who made it.
-drop policy if exists "league_seasons: members read" on public.league_seasons;
-create policy "league_seasons: members read"
-  on public.league_seasons for select
-  using (
-    crew_owner_id = (select auth.uid())
-    or exists (
-      select 1 from public.league_members m
-      where m.season_id = id and m.user_id = (select auth.uid())
-    )
-  );
-
-drop policy if exists "league_seasons: owner writes" on public.league_seasons;
-create policy "league_seasons: owner writes"
-  on public.league_seasons for all
-  using (crew_owner_id = (select auth.uid()))
-  with check (crew_owner_id = (select auth.uid()));
 
 create table if not exists public.league_members (
   season_id uuid not null references public.league_seasons on delete cascade,
@@ -1098,24 +1084,6 @@ create table if not exists public.league_members (
   primary key (season_id, user_id)
 );
 
-alter table public.league_members enable row level security;
-
--- A member can see who else is in their season, but the baselines are only
--- ever read by the scoring job, never surfaced to another member.
-drop policy if exists "league_members: co-members read" on public.league_members;
-create policy "league_members: co-members read"
-  on public.league_members for select
-  using (exists (
-    select 1 from public.league_members mine
-    where mine.season_id = season_id and mine.user_id = (select auth.uid())
-  ));
-
-drop policy if exists "league_members: manage own" on public.league_members;
-create policy "league_members: manage own"
-  on public.league_members for all
-  using (user_id = (select auth.uid()))
-  with check (user_id = (select auth.uid()));
-
 create table if not exists public.league_scores (
   season_id uuid not null references public.league_seasons on delete cascade,
   user_id uuid not null references auth.users on delete cascade,
@@ -1127,16 +1095,6 @@ create table if not exists public.league_scores (
   computed_at timestamptz not null default now(),
   primary key (season_id, user_id, week_index)
 );
-
-alter table public.league_scores enable row level security;
-
-drop policy if exists "league_scores: co-members read" on public.league_scores;
-create policy "league_scores: co-members read"
-  on public.league_scores for select
-  using (exists (
-    select 1 from public.league_members mine
-    where mine.season_id = season_id and mine.user_id = (select auth.uid())
-  ));
 
 create table if not exists public.challenges (
   id uuid primary key default gen_random_uuid(),
@@ -1156,7 +1114,74 @@ create table if not exists public.challenges (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.challenge_participants (
+  challenge_id uuid not null references public.challenges on delete cascade,
+  user_id uuid not null references auth.users on delete cascade,
+  accepted boolean not null default false,
+  progress numeric not null default 0,
+  primary key (challenge_id, user_id)
+);
+
+create table if not exists public.badges (
+  user_id uuid not null references auth.users on delete cascade,
+  season_id uuid references public.league_seasons on delete cascade,
+  slug text not null,
+  earned_at timestamptz not null default now(),
+  primary key (user_id, season_id, slug)
+);
+
+-- ----------------------------------------------------------------- policies
+
+alter table public.league_seasons enable row level security;
+alter table public.league_members enable row level security;
+alter table public.league_scores enable row level security;
 alter table public.challenges enable row level security;
+alter table public.challenge_participants enable row level security;
+alter table public.badges enable row level security;
+
+-- Readable by anyone in the season; writable only by the person who made it.
+drop policy if exists "league_seasons: members read" on public.league_seasons;
+create policy "league_seasons: members read"
+  on public.league_seasons for select
+  using (
+    crew_owner_id = (select auth.uid())
+    or exists (
+      select 1 from public.league_members m
+      where m.season_id = id and m.user_id = (select auth.uid())
+    )
+  );
+
+drop policy if exists "league_seasons: owner writes" on public.league_seasons;
+create policy "league_seasons: owner writes"
+  on public.league_seasons for all
+  using (crew_owner_id = (select auth.uid()))
+  with check (crew_owner_id = (select auth.uid()));
+
+-- A member can see who else is in their season, but the baselines are only
+-- ever read by the scoring job, never surfaced to another member.
+drop policy if exists "league_members: co-members read" on public.league_members;
+create policy "league_members: co-members read"
+  on public.league_members for select
+  using (exists (
+    select 1 from public.league_members mine
+    where mine.season_id = league_members.season_id
+      and mine.user_id = (select auth.uid())
+  ));
+
+drop policy if exists "league_members: manage own" on public.league_members;
+create policy "league_members: manage own"
+  on public.league_members for all
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+drop policy if exists "league_scores: co-members read" on public.league_scores;
+create policy "league_scores: co-members read"
+  on public.league_scores for select
+  using (exists (
+    select 1 from public.league_members mine
+    where mine.season_id = league_scores.season_id
+      and mine.user_id = (select auth.uid())
+  ));
 
 -- A personal challenge is visible only to its creator, whatever the season.
 drop policy if exists "challenges: participants read" on public.challenges;
@@ -1168,7 +1193,7 @@ create policy "challenges: participants read"
       kind <> 'personal'
       and exists (
         select 1 from public.challenge_participants cp
-        where cp.challenge_id = id and cp.user_id = (select auth.uid())
+        where cp.challenge_id = challenges.id and cp.user_id = (select auth.uid())
       )
     )
   );
@@ -1179,16 +1204,6 @@ create policy "challenges: creator writes"
   using (creator_id = (select auth.uid()))
   with check (creator_id = (select auth.uid()));
 
-create table if not exists public.challenge_participants (
-  challenge_id uuid not null references public.challenges on delete cascade,
-  user_id uuid not null references auth.users on delete cascade,
-  accepted boolean not null default false,
-  progress numeric not null default 0,
-  primary key (challenge_id, user_id)
-);
-
-alter table public.challenge_participants enable row level security;
-
 drop policy if exists "challenge_participants: read own challenges" on public.challenge_participants;
 create policy "challenge_participants: read own challenges"
   on public.challenge_participants for select
@@ -1196,7 +1211,8 @@ create policy "challenge_participants: read own challenges"
     user_id = (select auth.uid())
     or exists (
       select 1 from public.challenges c
-      where c.id = challenge_id and c.creator_id = (select auth.uid())
+      where c.id = challenge_participants.challenge_id
+        and c.creator_id = (select auth.uid())
     )
   );
 
@@ -1207,26 +1223,18 @@ create policy "challenge_participants: manage own"
     user_id = (select auth.uid())
     or exists (
       select 1 from public.challenges c
-      where c.id = challenge_id and c.creator_id = (select auth.uid())
+      where c.id = challenge_participants.challenge_id
+        and c.creator_id = (select auth.uid())
     )
   )
   with check (
     user_id = (select auth.uid())
     or exists (
       select 1 from public.challenges c
-      where c.id = challenge_id and c.creator_id = (select auth.uid())
+      where c.id = challenge_participants.challenge_id
+        and c.creator_id = (select auth.uid())
     )
   );
-
-create table if not exists public.badges (
-  user_id uuid not null references auth.users on delete cascade,
-  season_id uuid references public.league_seasons on delete cascade,
-  slug text not null,
-  earned_at timestamptz not null default now(),
-  primary key (user_id, season_id, slug)
-);
-
-alter table public.badges enable row level security;
 
 drop policy if exists "badges: co-members read" on public.badges;
 create policy "badges: co-members read"
@@ -1235,7 +1243,8 @@ create policy "badges: co-members read"
     user_id = (select auth.uid())
     or exists (
       select 1 from public.league_members mine
-      where mine.season_id = season_id and mine.user_id = (select auth.uid())
+      where mine.season_id = badges.season_id
+        and mine.user_id = (select auth.uid())
     )
   );
 

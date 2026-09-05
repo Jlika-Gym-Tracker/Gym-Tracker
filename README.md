@@ -27,14 +27,16 @@ npm run dev
 
 1. Create a project at [supabase.com](https://supabase.com), then copy the
    Project URL and publishable key from **Project Settings → API** into `.env.local`.
-2. Apply the schema. Easiest is one paste: run `supabase/apply-all.sql` in the
-   SQL editor. It concatenates every migration in order and is idempotent, so
-   running it twice is harmless. Regenerate it after adding a migration:
+2. Apply the schema. With a Management API token (`sbp_…`, from
+   [Account → Access Tokens](https://supabase.com/dashboard/account/tokens)) in
+   `.env.local` as `SUPABASE_ACCESS_TOKEN`:
    ```bash
-   node scripts/bundle-migrations.mjs
+   npm run db:apply            # every migration, in order
+   npm run db:apply -- league  # or just the ones matching a name
    ```
-   Or apply `supabase/migrations/*.sql` individually in numeric order, or with
-   the CLI:
+   Every migration is idempotent, so re-running is safe. Without a token, paste
+   `supabase/apply-all.sql` into the SQL editor instead (`npm run db:bundle`
+   regenerates it), or use the Supabase CLI:
    ```bash
    supabase link --project-ref <ref>
    supabase db push
