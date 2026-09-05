@@ -26,7 +26,7 @@ npm run dev
 ### Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com), then copy the
-   Project URL and anon key from **Project Settings → API** into `.env.local`.
+   Project URL and publishable key from **Project Settings → API** into `.env.local`.
 2. Apply the migrations in `supabase/migrations/` — either paste them into the
    SQL editor in order, or with the CLI:
    ```bash

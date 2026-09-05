@@ -70,3 +70,18 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Backfill anyone who signed up before this migration ran, so the trigger not
+-- having existed yet can never leave an account without a profile.
+insert into public.profiles (id, display_name, avatar_url)
+select
+  u.id,
+  coalesce(
+    nullif(trim(u.raw_user_meta_data ->> 'display_name'), ''),
+    nullif(trim(u.raw_user_meta_data ->> 'full_name'), ''),
+    nullif(trim(u.raw_user_meta_data ->> 'name'), ''),
+    split_part(u.email, '@', 1)
+  ),
+  nullif(trim(u.raw_user_meta_data ->> 'avatar_url'), '')
+from auth.users u
+on conflict (id) do nothing;
