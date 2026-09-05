@@ -415,6 +415,70 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["crew_links"]["Insert"]>;
         Relationships: [];
       };
+      league_seasons: {
+        Row: {
+          id: string; crew_owner_id: string; name: string;
+          starts_on: string; ends_on: string; created_at: string;
+        };
+        Insert: {
+          id?: string; crew_owner_id: string; name: string;
+          starts_on: string; ends_on: string; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["league_seasons"]["Insert"]>;
+        Relationships: [];
+      };
+      league_members: {
+        Row: {
+          season_id: string; user_id: string; start_weight_kg: number | null;
+          start_waist_cm: number | null; start_e1rm: number | null; joined_at: string;
+        };
+        Insert: {
+          season_id: string; user_id: string; start_weight_kg?: number | null;
+          start_waist_cm?: number | null; start_e1rm?: number | null; joined_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["league_members"]["Insert"]>;
+        Relationships: [];
+      };
+      league_scores: {
+        Row: {
+          season_id: string; user_id: string; week_index: number;
+          consistency_pts: number; transformation_pts: number; sessions: number;
+          goal_progress_pct: number | null; computed_at: string;
+        };
+        Insert: {
+          season_id: string; user_id: string; week_index: number;
+          consistency_pts?: number; transformation_pts?: number; sessions?: number;
+          goal_progress_pct?: number | null; computed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["league_scores"]["Insert"]>;
+        Relationships: [];
+      };
+      challenges: {
+        Row: {
+          id: string; season_id: string | null; creator_id: string; kind: string;
+          metric: string; title: string; target: number | null; stakes: string | null;
+          starts_on: string; ends_on: string; status: string; created_at: string;
+        };
+        Insert: {
+          id?: string; season_id?: string | null; creator_id: string; kind: string;
+          metric: string; title: string; target?: number | null; stakes?: string | null;
+          starts_on: string; ends_on: string; status?: string; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["challenges"]["Insert"]>;
+        Relationships: [];
+      };
+      challenge_participants: {
+        Row: { challenge_id: string; user_id: string; accepted: boolean; progress: number };
+        Insert: { challenge_id: string; user_id: string; accepted?: boolean; progress?: number };
+        Update: Partial<Database["public"]["Tables"]["challenge_participants"]["Insert"]>;
+        Relationships: [];
+      };
+      badges: {
+        Row: { user_id: string; season_id: string | null; slug: string; earned_at: string };
+        Insert: { user_id: string; season_id?: string | null; slug: string; earned_at?: string };
+        Update: Partial<Database["public"]["Tables"]["badges"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -432,6 +496,19 @@ export type Database = {
       redeem_crew_invite: {
         Args: { invite_code: string };
         Returns: { friend_id: string; friend_name: string }[];
+      };
+      league_standings: {
+        Args: { target_season: string };
+        Returns: {
+          user_id: string;
+          display_name: string;
+          avatar_url: string | null;
+          consistency_pts: number;
+          transformation_pts: number;
+          sessions: number;
+          goal_progress_pct: number | null;
+          week_dots: number[];
+        }[];
       };
     };
     Enums: Record<never, never>;
@@ -461,3 +538,10 @@ export type UserExclude = Tables<"user_excludes">;
 export type SharingPrefs = Tables<"sharing_prefs">;
 export type CrewInvite = Tables<"crew_invites">;
 export type CrewMember = Database["public"]["Functions"]["crew_overview"]["Returns"][number];
+export type LeagueSeason = Tables<"league_seasons">;
+export type LeagueMember = Tables<"league_members">;
+export type LeagueScore = Tables<"league_scores">;
+export type Challenge = Tables<"challenges">;
+export type Badge = Tables<"badges">;
+export type LeagueStandingRow =
+  Database["public"]["Functions"]["league_standings"]["Returns"][number];
