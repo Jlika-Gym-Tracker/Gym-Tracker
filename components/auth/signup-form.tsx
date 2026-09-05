@@ -55,6 +55,12 @@ export function SignupForm() {
             minLength={8}
           />
         </div>
+        <Field
+          label="Invite code"
+          name="inviteCode"
+          placeholder="CREW-7K2P (optional)"
+          autoComplete="off"
+        />
         <FormMessage error={state?.error} notice={state?.notice} />
         <SubmitButton pendingLabel="Creating account…" className="mt-1">
           Create account

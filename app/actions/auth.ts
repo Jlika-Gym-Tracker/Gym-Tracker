@@ -29,6 +29,9 @@ const signUpSchema = z
       .min(8, "Use at least 8 characters.")
       .max(72, "Passwords are capped at 72 characters."),
     confirm: z.string(),
+    inviteCode: z
+      .union([z.literal(""), z.string().trim().min(4).max(20)])
+      .transform((v) => (v ? v.toUpperCase() : null)),
   })
   .refine((v) => v.password === v.confirm, {
     path: ["confirm"],
@@ -95,6 +98,7 @@ export async function signUp(
     email: formData.get("email"),
     password: formData.get("password"),
     confirm: formData.get("confirm"),
+    inviteCode: (formData.get("inviteCode") as string)?.trim() ?? "",
   });
   if (!parsed.success) return { error: firstError(parsed.error) };
 
@@ -103,8 +107,14 @@ export async function signUp(
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      // Read by the handle_new_user trigger to seed profiles.display_name.
-      data: { display_name: parsed.data.displayName },
+      // display_name is read by the handle_new_user trigger. The invite code
+      // rides along and is redeemed by the auth route handlers once there is a
+      // session — it cannot be redeemed here, because email confirmation means
+      // signUp often returns no session at all.
+      data: {
+        display_name: parsed.data.displayName,
+        ...(parsed.data.inviteCode ? { invite_code: parsed.data.inviteCode } : {}),
+      },
       emailRedirectTo: `${await siteUrl()}/auth/confirm`,
     },
   });

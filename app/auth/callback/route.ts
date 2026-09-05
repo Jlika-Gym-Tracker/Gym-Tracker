@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { redeemPendingInvite } from "@/lib/crew/redeem-pending";
 
 /** OAuth (Google) PKCE landing point. */
 export async function GET(request: NextRequest) {
@@ -20,6 +21,8 @@ export async function GET(request: NextRequest) {
       `${origin}/auth/auth-error?reason=${encodeURIComponent(error.message)}`,
     );
   }
+
+  await redeemPendingInvite(supabase);
 
   // Behind a proxy the load balancer sets x-forwarded-host; trust it in prod only.
   const forwardedHost = request.headers.get("x-forwarded-host");

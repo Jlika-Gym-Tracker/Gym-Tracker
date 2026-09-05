@@ -385,9 +385,55 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["user_settings"]["Insert"]>;
         Relationships: [];
       };
+      sharing_prefs: {
+        Row: {
+          user_id: string; share_sessions: boolean; share_streak: boolean;
+          share_program_name: boolean;
+        };
+        Insert: {
+          user_id: string; share_sessions?: boolean; share_streak?: boolean;
+          share_program_name?: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["sharing_prefs"]["Insert"]>;
+        Relationships: [];
+      };
+      crew_invites: {
+        Row: {
+          code: string; inviter_id: string; uses_left: number;
+          expires_at: string; created_at: string;
+        };
+        Insert: {
+          code: string; inviter_id: string; uses_left?: number;
+          expires_at: string; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["crew_invites"]["Insert"]>;
+        Relationships: [];
+      };
+      crew_links: {
+        Row: { user_id: string; friend_id: string; created_at: string };
+        Insert: { user_id: string; friend_id: string; created_at?: string };
+        Update: Partial<Database["public"]["Tables"]["crew_links"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
-    Functions: Record<never, never>;
+    Functions: {
+      crew_overview: {
+        Args: Record<string, never>;
+        Returns: {
+          friend_id: string;
+          display_name: string;
+          avatar_url: string | null;
+          program_name: string | null;
+          sessions_this_week: number[];
+          streak: number;
+        }[];
+      };
+      redeem_crew_invite: {
+        Args: { invite_code: string };
+        Returns: { friend_id: string; friend_name: string }[];
+      };
+    };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
   };
@@ -412,3 +458,6 @@ export type MealPlanEntry = Tables<"meal_plan_entries">;
 export type GroceryItem = Tables<"grocery_items">;
 export type UserSettings = Tables<"user_settings">;
 export type UserExclude = Tables<"user_excludes">;
+export type SharingPrefs = Tables<"sharing_prefs">;
+export type CrewInvite = Tables<"crew_invites">;
+export type CrewMember = Database["public"]["Functions"]["crew_overview"]["Returns"][number];

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { redeemPendingInvite } from "@/lib/crew/redeem-pending";
 
 /** Magic links and email confirmations land here with a token hash. */
 export async function GET(request: NextRequest) {
@@ -22,6 +23,8 @@ export async function GET(request: NextRequest) {
       `${origin}/auth/auth-error?reason=${encodeURIComponent(error.message)}`,
     );
   }
+
+  await redeemPendingInvite(supabase);
 
   return NextResponse.redirect(`${origin}${target}`);
 }
