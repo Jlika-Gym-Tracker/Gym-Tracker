@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useMemo, useState, useTransition } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import {
   addSet,
@@ -27,12 +27,14 @@ export function SessionScreen({
   system,
   restSeconds,
   panels,
+  shortcutsEnabled = true,
 }: {
   session: SessionDetail;
   system: UnitSystem;
   restSeconds: number;
   /** Per-exercise history and progression hint, computed on the server. */
   panels: Record<string, SidePanelData>;
+  shortcutsEnabled?: boolean;
 }) {
   const unit = weightUnit(system);
   const [pending, startTransition] = useTransition();
@@ -107,6 +109,51 @@ export function SessionScreen({
     };
   }, [session.exercises, draftFor, system]);
 
+  // Keyboard shortcuts. Held in a ref so the listener does not need rebinding
+  // every keystroke, and ignored while a field has focus — space belongs to the
+  // input you are typing in.
+  const shortcutState = useRef({ toggle, rest, exercises: session.exercises, drafts });
+  shortcutState.current = { toggle, rest, exercises: session.exercises, drafts };
+
+  useEffect(() => {
+    if (!shortcutsEnabled) return;
+
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable;
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      const current = shortcutState.current;
+
+      if (event.key === " ") {
+        // Tick off the first set that is not done yet.
+        for (const ex of current.exercises) {
+          for (const set of ex.sets) {
+            const draft = current.drafts[set.id] ?? toDraft(set, system);
+            if (!draft.isComplete) {
+              event.preventDefault();
+              current.toggle(set.id, draft);
+              return;
+            }
+          }
+        }
+        return;
+      }
+
+      if (event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        current.rest.start();
+      }
+    }
+
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [shortcutsEnabled, system]);
+
   const message = error ?? finishState.error ?? discardState.error;
   const focus = session.exercises.find((e) => e.exercise.id === focusId) ?? session.exercises[0];
 
@@ -165,6 +212,12 @@ export function SessionScreen({
             {message ? (
               <p className="w-full rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-xs text-danger">
                 {message}
+              </p>
+            ) : null}
+
+            {shortcutsEnabled ? (
+              <p className="w-full font-mono text-[10px] text-fg-dim uppercase">
+                Space completes the next set · R restarts rest
               </p>
             ) : null}
           </div>

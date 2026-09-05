@@ -1,0 +1,130 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { displayToCm, displayToKg } from "@/lib/units";
+import { toDateString } from "@/lib/dates";
+
+export type ActionState = { error?: string; notice?: string };
+
+async function requireUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
+  return { supabase, user };
+}
+
+function fail(error: unknown): ActionState {
+  return { error: error instanceof Error ? error.message : "Something went wrong." };
+}
+
+const schema = z.object({
+  displayName: z.string().trim().min(2).max(60),
+  sex: z.enum(["male", "female", "other"]),
+  birthYear: z.coerce.number().int().min(1920).max(new Date().getFullYear() - 12),
+  unitSystem: z.enum(["metric", "imperial"]),
+  height: z.coerce.number().min(80).max(300),
+  weight: z.coerce.number().min(30).max(500),
+  goal: z.enum(["cut", "bulk", "recomp", "strength", "health"]),
+  activityFactor: z.coerce.number().min(1.2).max(2),
+  allergens: z.array(z.string().trim().max(60)),
+  preferences: z.array(z.string().trim().max(60)),
+  mealsPerDay: z.coerce.number().int().min(3).max(5),
+  trainingDays: z.array(z.coerce.number().int().min(0).max(6)).min(1),
+});
+
+/**
+ * Writes everything the five onboarding steps collected, in one go.
+ *
+ * Onboarding is resumable because each step lives in the client until the end —
+ * a half-finished profile would leave the nutrition screen computing targets
+ * from partial data.
+ */
+export async function completeOnboarding(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const input = schema.parse({
+      displayName: formData.get("displayName"),
+      sex: formData.get("sex"),
+      birthYear: formData.get("birthYear"),
+      unitSystem: formData.get("unitSystem"),
+      height: formData.get("height"),
+      weight: formData.get("weight"),
+      goal: formData.get("goal"),
+      activityFactor: formData.get("activityFactor"),
+      allergens: formData.getAll("allergens").map(String),
+      preferences: formData.getAll("preferences").map(String),
+      mealsPerDay: formData.get("mealsPerDay"),
+      trainingDays: formData.getAll("trainingDays"),
+    });
+
+    const heightCm = displayToCm(input.height, input.unitSystem);
+    const weightKg = displayToKg(input.weight, input.unitSystem);
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        display_name: input.displayName,
+        sex: input.sex,
+        // Only a birth year is asked for; the formula needs nothing finer.
+        birth_date: `${input.birthYear}-07-01`,
+        height_cm: Math.round(heightCm * 10) / 10,
+        unit_system: input.unitSystem,
+        goal: input.goal,
+        activity_factor: input.activityFactor,
+        onboarded_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    if (profileError) throw profileError;
+
+    // The starting weigh-in doubles as the first point on the trend.
+    const { error: metricError } = await supabase.from("body_metrics").upsert(
+      {
+        user_id: user.id,
+        measured_on: toDateString(new Date()),
+        weight_kg: Math.round(weightKg * 100) / 100,
+      },
+      { onConflict: "user_id,measured_on" },
+    );
+    if (metricError) throw metricError;
+
+    await supabase.from("user_settings").upsert(
+      {
+        user_id: user.id,
+        meals_per_day: input.mealsPerDay,
+        training_days: [...new Set(input.trainingDays)].sort(),
+      },
+      { onConflict: "user_id" },
+    );
+
+    // Replace excludes wholesale — onboarding is the full picture, not a diff.
+    await supabase.from("user_excludes").delete().eq("user_id", user.id);
+    const excludes = [
+      ...input.allergens.map((value) => ({ user_id: user.id, kind: "allergen", value })),
+      ...input.preferences.map((value) => ({ user_id: user.id, kind: "preference", value })),
+    ];
+    if (excludes.length) await supabase.from("user_excludes").insert(excludes);
+
+    revalidatePath("/", "layout");
+  } catch (error) {
+    return fail(error);
+  }
+  redirect("/program?from=onboarding");
+}
+
+export async function skipOnboarding(): Promise<void> {
+  const { supabase, user } = await requireUser();
+  await supabase
+    .from("profiles")
+    .update({ onboarded_at: new Date().toISOString() })
+    .eq("id", user.id);
+  revalidatePath("/", "layout");
+  redirect("/");
+}

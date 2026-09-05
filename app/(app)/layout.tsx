@@ -18,9 +18,13 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, avatar_url, goal, unit_system")
+    .select("display_name, avatar_url, goal, unit_system, onboarded_at")
     .eq("id", user.id)
     .maybeSingle();
+
+  // First run: collect the body details the calorie maths needs before showing
+  // screens that would otherwise sit empty.
+  if (profile && !profile.onboarded_at) redirect("/onboarding");
 
   const displayName =
     profile?.display_name ?? user.email?.split("@")[0] ?? "Athlete";

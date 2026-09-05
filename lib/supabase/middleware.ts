@@ -2,8 +2,25 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/database.types";
 
-/** Routes reachable without a session. Everything else redirects to /login. */
-const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/forgot-password"];
+/**
+ * Routes reachable without a session. Everything else redirects to /login.
+ *
+ * /api/cron is here because the scheduler authenticates with a shared secret
+ * rather than a cookie; the handler itself refuses to run without it.
+ */
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/auth",
+  "/forgot-password",
+  "/api/cron",
+  // The PWA manifest and its icons are fetched by the browser before there is
+  // any session, and by installers that never have one.
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/icon-192.png",
+  "/icon-512.png",
+];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some(

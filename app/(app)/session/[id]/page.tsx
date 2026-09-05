@@ -15,8 +15,12 @@ export default async function SessionPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: profile }, session] = await Promise.all([
+  const [{ data: profile }, { data: settings }, session] = await Promise.all([
     supabase.from("profiles").select("unit_system").maybeSingle(),
+    supabase
+      .from("user_settings")
+      .select("default_rest_seconds, keyboard_shortcuts")
+      .maybeSingle(),
     getSession(id),
   ]);
 
@@ -56,8 +60,9 @@ export default async function SessionPage({
     <SessionScreen
       session={session}
       system={system}
-      restSeconds={90}
+      restSeconds={settings?.default_rest_seconds ?? 90}
       panels={panels}
+      shortcutsEnabled={settings?.keyboard_shortcuts ?? true}
     />
   );
 }

@@ -56,6 +56,7 @@ npm run dev
 | `npm test` | Vitest unit tests |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
+| `npm run test:e2e` | Playwright smoke tests (builds into `.next-e2e`) |
 
 Regenerate the exercise seed (and its test fixture) from free-exercise-db:
 
@@ -94,10 +95,23 @@ supabase/migrations/
 ## Build phases
 
 1. **Foundation** — scaffold, tokens, app shell, Supabase clients, auth, `profiles` + RLS ✅
-2. **Program** — weeks/days/exercises schema, 71-movement seeded library, drag-reorder builder, paste parser with a review step, publish, copy last week ✅
-3. Session logging
-4. Body progress
-5. Nutrition
-6. Profile, crew & settings
-7. Crew league
-8. Polish
+2. **Program** — weeks/days/exercises, 71-movement seeded library, drag-reorder builder, paste parser with a review step, publish, copy last week ✅
+3. **Session logging** — live set rows, rest and elapsed timers, running volume, exercise drawer, progression hints ✅
+4. **Body progress** — private photos, comparison slider, measurements, weight and strength trends ✅
+5. **Nutrition** — TDEE targets, meal plan, swaps, grocery list, hard allergy filters ✅
+6. **Profile, crew & settings** — five tabs, invite codes, sharing controls, export, account deletion ✅
+7. **Crew league** — seasons, scoring, standings, challenges, badges, nightly job ✅
+8. **Polish** — onboarding, skeletons, keyboard shortcuts, PWA, weekly email, smoke tests ✅
+
+## Scheduled jobs
+
+Both are optional and degrade to a notice if the extensions are unavailable.
+
+- **Nightly league scoring** (`recompute_league_scores`, 03:15 UTC) needs `pg_cron`.
+- **Sunday weekly review** (18:00 UTC) needs `pg_cron` and `pg_net`, plus:
+  ```sql
+  alter database postgres set app.weekly_review_url = 'https://your-app/api/cron/weekly-review';
+  alter database postgres set app.cron_secret = '<same value as CRON_SECRET>';
+  ```
+  and `CRON_SECRET`, `RESEND_API_KEY`, `SUPABASE_SECRET_KEY` in the app's env.
+  Without `CRON_SECRET` the endpoint refuses to run at all.
