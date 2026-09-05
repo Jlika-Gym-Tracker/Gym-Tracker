@@ -241,6 +241,60 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["set_logs"]["Insert"]>;
         Relationships: [];
       };
+      body_metrics: {
+        Row: {
+          id: string;
+          user_id: string;
+          measured_on: string;
+          weight_kg: number | null;
+          waist_cm: number | null;
+          chest_cm: number | null;
+          arm_cm: number | null;
+          thigh_cm: number | null;
+          hip_cm: number | null;
+          bodyfat_pct: number | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          measured_on: string;
+          weight_kg?: number | null;
+          waist_cm?: number | null;
+          chest_cm?: number | null;
+          arm_cm?: number | null;
+          thigh_cm?: number | null;
+          hip_cm?: number | null;
+          bodyfat_pct?: number | null;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["body_metrics"]["Insert"]>;
+        Relationships: [];
+      };
+      progress_photos: {
+        Row: {
+          id: string;
+          user_id: string;
+          taken_on: string;
+          pose: "front" | "side" | "back";
+          storage_path: string;
+          weight_kg: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          taken_on: string;
+          pose: "front" | "side" | "back";
+          storage_path: string;
+          weight_kg?: number | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["progress_photos"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
@@ -258,3 +312,6 @@ export type ProgramDay = Tables<"program_days">;
 export type ProgramExercise = Tables<"program_exercises">;
 export type WorkoutSession = Tables<"workout_sessions">;
 export type SetLog = Tables<"set_logs">;
+export type BodyMetric = Tables<"body_metrics">;
+export type ProgressPhoto = Tables<"progress_photos">;
+export type Pose = "front" | "side" | "back";
