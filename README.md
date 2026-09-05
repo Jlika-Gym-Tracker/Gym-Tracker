@@ -33,11 +33,15 @@ npm run dev
    supabase link --project-ref <ref>
    supabase db push
    ```
-3. **Auth → URL Configuration**: set the Site URL to `http://localhost:3000`
-   and add `http://localhost:3000/auth/callback` plus
-   `http://localhost:3000/auth/confirm` as redirect URLs.
-4. **Auth → Providers**: enable Google if you want the Google button to work.
-   Email/password and magic links are on by default.
+3. **Auth → URL Configuration**: set the Site URL to `http://localhost:3003`
+   and add `http://localhost:3003/auth/callback` plus
+   `http://localhost:3003/auth/confirm` as redirect URLs. The dev server is
+   pinned to port 3003 (`next dev -p 3003`) precisely because this allow-list
+   is exact-match — a drifting port silently breaks magic links.
+4. **Auth → Providers**: enable Google if you want the Google button to work —
+   it is off by default and the button errors until you turn it on.
+   Email/password and magic links are on by default. Email confirmation is on
+   by default too, so signup asks you to click a link before you get a session.
 5. Regenerate types after any schema change:
    ```bash
    supabase gen types typescript --linked > lib/database.types.ts
