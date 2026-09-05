@@ -57,6 +57,13 @@ npm run dev
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 
+Regenerate the exercise seed (and its test fixture) from free-exercise-db:
+
+```bash
+curl -sL https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json -o /tmp/fedb.json
+node scripts/generate-exercise-seed.mjs
+```
+
 ## Layout
 
 ```
@@ -87,7 +94,7 @@ supabase/migrations/
 ## Build phases
 
 1. **Foundation** — scaffold, tokens, app shell, Supabase clients, auth, `profiles` + RLS ✅
-2. Program builder, exercise library, paste parser
+2. **Program** — weeks/days/exercises schema, 71-movement seeded library, drag-reorder builder, paste parser with a review step, publish, copy last week ✅
 3. Session logging
 4. Body progress
 5. Nutrition

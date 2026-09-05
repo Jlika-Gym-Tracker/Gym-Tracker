@@ -1,0 +1,180 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import { ClipboardPaste, Copy, Upload } from "lucide-react";
+import {
+  copyLastWeek,
+  publishWeek,
+  unpublishWeek,
+  type ActionState,
+} from "@/app/actions/program";
+import type { WeekDetail } from "@/lib/program/queries";
+import type { LibraryExercise } from "@/lib/program/match";
+import type { MuscleLoad } from "@/lib/program/volume";
+import { weekRangeLabel } from "@/lib/dates";
+import { cn } from "@/lib/utils";
+import { DayCard } from "./day-card";
+import { LibraryPanel } from "./library-panel";
+import { LoadCheck } from "./load-check";
+import { PastePanel } from "./paste-panel";
+
+export function ProgramBuilder({
+  week,
+  library,
+  load,
+  hasEarlierWeek,
+}: {
+  week: WeekDetail;
+  library: LibraryExercise[];
+  load: MuscleLoad[];
+  hasEarlierWeek: boolean;
+}) {
+  const [showPaste, setShowPaste] = useState(false);
+  const firstTrainingDay = week.days.find((d) => !d.is_rest) ?? week.days[0];
+  const [activeDayId, setActiveDayId] = useState<string | null>(
+    firstTrainingDay?.id ?? null,
+  );
+
+  const [publishState, publish] = useActionState(publishWeek, {} as ActionState);
+  const [unpublishState, unpublish] = useActionState(unpublishWeek, {} as ActionState);
+  const [copyState, copy] = useActionState(copyLastWeek, {} as ActionState);
+
+  const activeDay = week.days.find((d) => d.id === activeDayId) ?? null;
+  const message =
+    publishState.error ?? copyState.error ?? unpublishState.error ??
+    publishState.notice ?? copyState.notice ?? unpublishState.notice;
+  const isError = Boolean(publishState.error ?? copyState.error ?? unpublishState.error);
+  const published = week.status === "published";
+
+  return (
+    <div className="grid items-start gap-[18px] xl:grid-cols-[1fr_320px]">
+      <div className="flex min-w-0 flex-col gap-4">
+        <header className="flex flex-wrap items-center gap-3.5 rounded-[18px] border border-line bg-surface p-5">
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-bold tracking-[-0.01em]">
+              {week.label}
+            </h1>
+            <p className="mt-1 font-mono text-[11px] text-fg-dim uppercase">
+              {weekRangeLabel(week.week_start)} · {week.status}
+            </p>
+          </div>
+
+          <div className="ml-auto flex flex-wrap gap-2.5">
+            <button
+              type="button"
+              onClick={() => setShowPaste((v) => !v)}
+              className={cn(
+                "flex items-center gap-2 rounded-[10px] border px-4 py-[11px] text-[13px] font-semibold transition-colors",
+                showPaste
+                  ? "border-line-sel bg-accent-soft text-accent"
+                  : "border-stroke bg-ghost text-fg-2 hover:bg-hover",
+              )}
+            >
+              <ClipboardPaste className="size-3.5" strokeWidth={2} />
+              Paste program
+            </button>
+
+            <form action={copy}>
+              <input type="hidden" name="weekStart" value={week.week_start} />
+              <button
+                type="submit"
+                disabled={!hasEarlierWeek}
+                title={hasEarlierWeek ? undefined : "No earlier week to copy yet"}
+                className="flex items-center gap-2 rounded-[10px] border border-stroke bg-ghost px-4 py-[11px] text-[13px] font-semibold text-fg-2 transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Copy className="size-3.5" strokeWidth={2} />
+                Copy last week
+              </button>
+            </form>
+
+            <form action={published ? unpublish : publish}>
+              <input type="hidden" name="weekId" value={week.id} />
+              <button
+                type="submit"
+                className={cn(
+                  "flex items-center gap-2 rounded-[10px] px-[18px] py-[11px] text-[13px] font-bold transition-colors",
+                  published
+                    ? "border border-line-sel bg-accent-soft text-accent hover:bg-hover"
+                    : "bg-accent text-[#0a0c0d] hover:bg-accent-hi",
+                )}
+              >
+                <Upload className="size-3.5" strokeWidth={2.5} />
+                {published ? "Published — revert to draft" : "Publish week"}
+              </button>
+            </form>
+          </div>
+
+          {message ? (
+            <p
+              className={cn(
+                "w-full rounded-[10px] border px-3 py-2 text-xs",
+                isError
+                  ? "border-danger-border bg-danger-soft text-danger"
+                  : "border-line-hi bg-accent-soft text-accent",
+              )}
+            >
+              {message}
+            </p>
+          ) : null}
+        </header>
+
+        {showPaste ? (
+          <PastePanel
+            weekStart={week.week_start}
+            weekLabel={week.label}
+            library={library}
+            onClose={() => setShowPaste(false)}
+          />
+        ) : null}
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          {week.days
+            .filter((d) => !d.is_rest || d.exercises.length > 0)
+            .map((day) => (
+              <DayCard
+                key={day.id}
+                day={day}
+                active={day.id === activeDayId}
+                onActivate={() => setActiveDayId(day.id)}
+              />
+            ))}
+        </div>
+
+        {week.days.some((d) => d.is_rest && d.exercises.length === 0) ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-4 py-3">
+            <span className="eyebrow">Rest days</span>
+            {week.days
+              .filter((d) => d.is_rest && d.exercises.length === 0)
+              .map((day) => (
+                <button
+                  key={day.id}
+                  type="button"
+                  onClick={() => setActiveDayId(day.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 font-mono text-[10.5px] font-semibold transition-colors",
+                    day.id === activeDayId
+                      ? "border-line-sel bg-accent-soft text-accent"
+                      : "border-line text-fg-dim hover:border-stroke",
+                  )}
+                >
+                  {day.name.toUpperCase()}
+                </button>
+              ))}
+            <span className="text-xs text-fg-dim">
+              Pick one, then add an exercise from the library to turn it into a training day.
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <LibraryPanel
+          library={library}
+          activeDayId={activeDayId}
+          activeDayName={activeDay?.name ?? null}
+        />
+        <LoadCheck load={load} />
+      </div>
+    </div>
+  );
+}

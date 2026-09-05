@@ -13,6 +13,17 @@ export type Json =
 export type Goal = "cut" | "bulk" | "recomp" | "strength" | "health";
 export type Sex = "male" | "female" | "other";
 export type UnitSystem = "metric" | "imperial";
+export type WeekStatus = "draft" | "published" | "archived";
+
+export type Muscle =
+  | "chest" | "lats" | "middle_back" | "lower_back" | "traps" | "shoulders"
+  | "biceps" | "triceps" | "forearms" | "quadriceps" | "hamstrings" | "glutes"
+  | "calves" | "abdominals" | "abductors" | "adductors" | "neck";
+
+export type Equipment =
+  | "barbell" | "dumbbell" | "machine" | "cable" | "body_only" | "bands"
+  | "kettlebells" | "ez_curl_bar" | "exercise_ball" | "medicine_ball"
+  | "foam_roll" | "other";
 
 export type Database = {
   public: {
@@ -74,6 +85,112 @@ export type Database = {
         };
         Relationships: [];
       };
+      exercises: {
+        Row: {
+          id: string;
+          owner_id: string | null;
+          slug: string;
+          name: string;
+          primary_muscle: Muscle;
+          secondary_muscles: string[];
+          equipment: Equipment;
+          aliases: string[];
+          video_url: string | null;
+          image_start_url: string | null;
+          image_end_url: string | null;
+          cues: string[];
+          how_to: string[];
+          common_mistake: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id?: string | null;
+          slug: string;
+          name: string;
+          primary_muscle: Muscle;
+          secondary_muscles?: string[];
+          equipment: Equipment;
+          aliases?: string[];
+          video_url?: string | null;
+          image_start_url?: string | null;
+          image_end_url?: string | null;
+          cues?: string[];
+          how_to?: string[];
+          common_mistake?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["exercises"]["Insert"]>;
+        Relationships: [];
+      };
+      program_weeks: {
+        Row: {
+          id: string;
+          user_id: string;
+          label: string;
+          week_start: string;
+          status: WeekStatus;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          label: string;
+          week_start: string;
+          status?: WeekStatus;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["program_weeks"]["Insert"]>;
+        Relationships: [];
+      };
+      program_days: {
+        Row: {
+          id: string;
+          week_id: string;
+          day_index: number;
+          name: string;
+          focus_note: string | null;
+          is_rest: boolean;
+        };
+        Insert: {
+          id?: string;
+          week_id: string;
+          day_index: number;
+          name: string;
+          focus_note?: string | null;
+          is_rest?: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["program_days"]["Insert"]>;
+        Relationships: [];
+      };
+      program_exercises: {
+        Row: {
+          id: string;
+          day_id: string;
+          exercise_id: string;
+          position: number;
+          target_sets: number;
+          rep_min: number | null;
+          rep_max: number | null;
+          per_side: boolean;
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          day_id: string;
+          exercise_id: string;
+          position: number;
+          target_sets: number;
+          rep_min?: number | null;
+          rep_max?: number | null;
+          per_side?: boolean;
+          note?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["program_exercises"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
@@ -85,3 +202,7 @@ export type Database = {
 export type Tables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Row"];
 export type Profile = Tables<"profiles">;
+export type Exercise = Tables<"exercises">;
+export type ProgramWeek = Tables<"program_weeks">;
+export type ProgramDay = Tables<"program_days">;
+export type ProgramExercise = Tables<"program_exercises">;

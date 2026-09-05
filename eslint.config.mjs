@@ -18,6 +18,10 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // Vendored design handoff — a reference artefact, not source we maintain.
+      "design/**",
+      // Generated from the seed migration; regenerate rather than hand-fix.
+      "lib/program/__fixtures__/**",
     ],
   },
 ];
