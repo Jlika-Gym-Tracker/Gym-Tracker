@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box}
+body{margin:0;background:#08090a;font-family:Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#c9f24d;text-decoration:none}a:hover{color:#dcff77}
+input,button,textarea{font-family:inherit}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#22282a;border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes riseIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="display:flex;min-height:1024px;width:1440px;background:#08090a;color:#f2f4f2">
+
+<div style="width:216px;flex:none;background:#0b0d0e;border-right:1px solid #191d1f;padding:22px 16px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;height:1024px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 6px">
+<div style="width:28px;height:28px;border-radius:9px;background:#c9f24d;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;background:#08090a;transform:rotate(45deg)"></div></div>
+<div style="font-size:16px;font-weight:800;letter-spacing:-.02em">JLIKA GYM</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:3px">
+<div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:#5d6763;padding:0 8px 8px">TRAIN</div>
+<sc-for list="{{ navTrain }}" as="item" hint-placeholder-count="4">
+<div onClick="{{ item.go }}" style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;cursor:pointer;background:{{ item.bg }}" style-hover="background:#14181a">
+<div style="width:7px;height:7px;border-radius:2px;background:{{ item.dot }}"></div>
+<div style="font-size:13.5px;font-weight:{{ item.fw }};color:{{ item.fg }}">{{ item.label }}</div>
+<div style="margin-left:auto;font:500 10px 'JetBrains Mono',monospace;color:#5d6763">{{ item.meta }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:3px">
+<div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:#5d6763;padding:0 8px 8px">BODY &amp; FUEL</div>
+<sc-for list="{{ navBody }}" as="item" hint-placeholder-count="3">
+<div onClick="{{ item.go }}" style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;cursor:pointer;background:{{ item.bg }}" style-hover="background:#14181a">
+<div style="width:7px;height:7px;border-radius:2px;background:{{ item.dot }}"></div>
+<div style="font-size:13.5px;font-weight:{{ item.fw }};color:{{ item.fg }}">{{ item.label }}</div>
+<div style="margin-left:auto;font:500 10px 'JetBrains Mono',monospace;color:#5d6763">{{ item.meta }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:3px">
+<div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:#5d6763;padding:0 8px 8px">ACCOUNT FLOWS</div>
+<sc-for list="{{ navFlows }}" as="item" hint-placeholder-count="2">
+<div onClick="{{ item.go }}" style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;cursor:pointer;background:{{ item.bg }}" style-hover="background:#14181a">
+<div style="width:7px;height:7px;border-radius:2px;background:{{ item.dot }}"></div>
+<div style="font-size:13.5px;font-weight:{{ item.fw }};color:{{ item.fg }}">{{ item.label }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:14px;padding:14px">
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">WEEK 12 · CUT</div>
+<div style="display:flex;align-items:baseline;gap:5px"><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">-4.8</div><div style="font-size:12px;color:#7f8a84">{{ unitLabel }} since Jun</div></div>
+<div style="height:5px;border-radius:3px;background:#1d2124;margin-top:10px;overflow:hidden"><div style="width:64%;height:100%;background:#c9f24d"></div></div>
+</div>
+<div onClick="{{ goProfile }}" style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:10px;cursor:pointer" style-hover="background:#14181a">
+<div style="width:32px;height:32px;border-radius:50%;background:url(https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1400&q=80) center/cover;flex:none"></div>
+<div><div style="font-size:13px;font-weight:600">{{ userName }}</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">FAT LOSS · 4 D/WK</div></div>
+</div>
+</div>
+</div>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+<div style="height:70px;flex:none;border-bottom:1px solid #191d1f;display:flex;align-items:center;gap:18px;padding:0 30px;background:#0a0c0d">
+<div style="min-width:0">
+<div style="font-size:17px;font-weight:700;letter-spacing:-.02em">{{ pageTitle }}</div>
+<div style="font:400 11px 'JetBrains Mono',monospace;color:#5d6763;margin-top:3px">{{ pageSub }}</div>
+</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+<div style="display:flex;align-items:center;gap:9px;background:#101214;border:1px solid #1d2124;border-radius:10px;padding:9px 13px;width:260px">
+<div style="width:11px;height:11px;border-radius:50%;border:1.5px solid #5d6763"></div>
+<div style="font-size:13px;color:#5d6763">Search exercises, meals…</div>
+</div>
+<div style="display:flex;align-items:center;gap:7px;background:#151b0c;border:1px solid #2c3a14;color:#c9f24d;border-radius:10px;padding:9px 13px;font:700 12px 'JetBrains Mono',monospace"><div style="width:6px;height:6px;border-radius:50%;background:#c9f24d;animation:pulseDot 2s infinite"></div>14 DAY STREAK</div>
+<div style="width:36px;height:36px;border-radius:50%;background:url(https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1400&q=80) center/cover"></div>
+</div>
+</div>
+
+<div style="flex:1;padding:26px 30px 40px;animation:riseIn .3s ease both">
+
+<sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:1fr 336px;gap:18px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+
+<div style="position:relative;border-radius:20px;overflow:hidden;border:1px solid #1d2124;height:268px;background:#101214">
+<div style="position:absolute;inset:0;background:url(https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=1400&q=80) center/cover"></div>
+<div style="position:absolute;inset:0;background:linear-gradient(90deg,#08090af5 0%,#08090acc 50%,#08090a55 100%)"></div>
+<div style="position:absolute;right:-6px;bottom:-22px;font-size:150px;font-weight:800;letter-spacing:-.06em;line-height:1;color:#c9f24d;opacity:.07;pointer-events:none;user-select:none">UPPER A</div>
+<div style="position:relative;padding:26px 28px;height:100%;display:flex;flex-direction:column">
+<div style="display:flex;gap:8px;align-items:center">
+<div style="font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d;background:#151b0c;border:1px solid #2c3a14;padding:5px 9px;border-radius:6px">DAY 1 · UPPER A</div>
+<div style="font:400 10.5px 'JetBrains Mono',monospace;color:#7f8a84">4-DAY UPPER / LOWER · WEEK 12</div>
+<div style="margin-left:auto;display:flex;gap:5px">
+<div style="font:600 10px 'JetBrains Mono',monospace;color:#c2ccc6;background:#0a0c0dbb;border:1px solid #2a3033;padding:4px 8px;border-radius:99px">CHEST</div>
+<div style="font:600 10px 'JetBrains Mono',monospace;color:#c2ccc6;background:#0a0c0dbb;border:1px solid #2a3033;padding:4px 8px;border-radius:99px">BACK</div>
+<div style="font:600 10px 'JetBrains Mono',monospace;color:#c2ccc6;background:#0a0c0dbb;border:1px solid #2a3033;padding:4px 8px;border-radius:99px">DELTS</div>
+<div style="font:600 10px 'JetBrains Mono',monospace;color:#c2ccc6;background:#0a0c0dbb;border:1px solid #2a3033;padding:4px 8px;border-radius:99px">ARMS</div>
+</div>
+</div>
+<div style="font-size:46px;font-weight:800;letter-spacing:-.04em;line-height:1.02;margin:16px 0 8px;max-width:460px;text-wrap:pretty">Push, pull, then get out.</div>
+<div style="font-size:13.5px;color:#98a29c;max-width:400px;line-height:1.5">Controlled reps, full range of motion, 1–2 reps left in reserve. 7 exercises · 21 sets · est. 62 min.</div>
+<div style="margin-top:auto;display:flex;align-items:center;gap:10px">
+<div onClick="{{ startSession }}" style="background:#c9f24d;color:#0a0c0d;font-size:14px;font-weight:700;padding:13px 22px;border-radius:11px;cursor:pointer;display:flex;align-items:center;gap:9px" style-hover="background:#dcff77"><div style="width:0;height:0;border-left:8px solid #0a0c0d;border-top:5px solid transparent;border-bottom:5px solid transparent"></div>Start session</div>
+<div onClick="{{ goProgram }}" style="border:1px solid #2a3033;color:#e7ebe8;font-size:14px;font-weight:600;padding:13px 20px;border-radius:11px;cursor:pointer;background:#0f1214" style-hover="background:#161a1c">View week</div>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:16px;padding:16px">
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763">{{ s.label }}</div>
+<div style="display:flex;align-items:baseline;gap:4px;margin:11px 0 3px"><div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{{ s.value }}</div><div style="font-size:12px;color:#7f8a84;font-weight:500">{{ s.unit }}</div></div>
+<div style="font-size:11.5px;color:{{ s.deltaColor }};font-weight:600">{{ s.delta }}</div>
+<div style="margin-top:12px">{{ s.spark }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+<div style="font-size:15px;font-weight:700;letter-spacing:-.01em">Weight trend</div>
+<div style="font:400 11px 'JetBrains Mono',monospace;color:#5d6763">12 WEEKS · 7-DAY AVERAGE</div>
+<div style="margin-left:auto;display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:9px;padding:3px">
+<div style="font:600 11px 'JetBrains Mono',monospace;color:#0a0c0d;background:#c9f24d;padding:5px 10px;border-radius:6px;cursor:pointer">12W</div>
+<div style="font:600 11px 'JetBrains Mono',monospace;color:#7f8a84;padding:5px 10px;border-radius:6px;cursor:pointer">6M</div>
+<div style="font:600 11px 'JetBrains Mono',monospace;color:#7f8a84;padding:5px 10px;border-radius:6px;cursor:pointer">ALL</div>
+</div>
+</div>
+<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><div style="font-size:30px;font-weight:800;letter-spacing:-.03em">{{ weightNow }}</div><div style="font-size:13px;color:#7f8a84">{{ unitLabel }}</div><div style="font-size:12px;font-weight:700;color:#c9f24d">-0.6 {{ unitLabel }} / wk</div></div>
+{{ weightChart }}
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:14px">
+<div style="font-size:15px;font-weight:700">This week</div>
+<div style="margin-left:auto;font:400 11px 'JetBrains Mono',monospace;color:#5d6763">3 OF 4 SESSIONS DONE</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px">
+<sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+<div style="background:{{ d.bg }};border:1px solid {{ d.bd }};border-radius:13px;padding:13px 12px;min-height:104px;display:flex;flex-direction:column;cursor:pointer" style-hover="border-color:#38431c">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:{{ d.dayFg }}">{{ d.day }}</div>
+<div style="font-size:13px;font-weight:700;margin-top:8px;color:{{ d.fg }};line-height:1.25">{{ d.title }}</div>
+<div style="margin-top:auto;font:500 10px 'JetBrains Mono',monospace;color:{{ d.metaFg }}">{{ d.meta }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Fuel today</div><div onClick="{{ goNutrition }}" style="margin-left:auto;font:600 11px 'JetBrains Mono',monospace;color:#c9f24d;cursor:pointer">OPEN →</div></div>
+<div style="display:flex;align-items:center;gap:18px">
+{{ calRing }}
+<div style="display:flex;flex-direction:column;gap:11px;flex:1">
+<sc-for list="{{ macros }}" as="m" hint-placeholder-count="3">
+<div>
+<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:5px"><div style="color:#98a29c;font-weight:600">{{ m.name }}</div><div style="font:500 11px 'JetBrains Mono',monospace;color:#f2f4f2">{{ m.val }}</div></div>
+<div style="height:5px;border-radius:3px;background:#1d2124;overflow:hidden"><div style="width:{{ m.pct }};height:100%;background:{{ m.color }}"></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="margin-top:16px;padding-top:14px;border-top:1px solid #1a1e20;display:flex;gap:11px;align-items:center">
+<div style="width:44px;height:44px;border-radius:11px;background:url(https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1400&q=80) center/cover;flex:none"></div>
+<div style="min-width:0"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">NEXT · 13:00 LUNCH</div><div style="font-size:13px;font-weight:600;margin-top:3px">Chicken, rice &amp; greens bowl</div></div>
+<div style="margin-left:auto;font:700 12px 'JetBrains Mono',monospace;color:#c9f24d">610</div>
+</div>
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:14px"><div style="font-size:15px;font-weight:700">Progress photos</div><div onClick="{{ goProgress }}" style="margin-left:auto;font:600 11px 'JetBrains Mono',monospace;color:#c9f24d;cursor:pointer">COMPARE →</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div style="border-radius:12px;overflow:hidden;border:1px solid #1d2124;aspect-ratio:3/4;background:url(https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=1400&q=80) center/cover;filter:grayscale(.4);position:relative;display:flex;align-items:flex-end;padding:10px"><div style="font:700 9.5px 'JetBrains Mono',monospace;color:#f2f4f2;background:#0a0c0dcc;padding:3px 6px;border-radius:4px">JUN 02 · 82.1</div></div>
+<div style="border-radius:12px;overflow:hidden;border:1px solid #2c3a14;aspect-ratio:3/4;background:url(https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=1400&q=80) center/cover;position:relative;display:flex;align-items:flex-end;padding:10px"><div style="font:700 9.5px 'JetBrains Mono',monospace;color:#c9f24d;background:#0a0c0dcc;padding:3px 6px;border-radius:4px">SEP 01 · 77.3</div></div>
+</div>
+<div style="margin-top:12px;border:1px dashed #2a3033;border-radius:12px;padding:12px;text-align:center;cursor:pointer;font-size:12.5px;font-weight:600;color:#98a29c" style-hover="border-color:#c9f24d;color:#c9f24d">+ Add this week's photo</div>
+<div style="margin-top:9px;font:400 10px 'JetBrains Mono',monospace;color:#48524e;text-align:center">PRIVATE · VISIBLE ONLY TO YOU</div>
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="font-size:15px;font-weight:700;margin-bottom:14px">Muscle volume · 7 d</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ volume }}" as="v" hint-placeholder-count="5">
+<div style="display:flex;align-items:center;gap:10px">
+<div style="width:66px;font-size:11.5px;color:#98a29c;font-weight:600">{{ v.name }}</div>
+<div style="flex:1;height:8px;border-radius:4px;background:#1d2124;overflow:hidden"><div style="width:{{ v.pct }};height:100%;background:{{ v.color }};border-radius:4px"></div></div>
+<div style="width:52px;text-align:right;font:500 10.5px 'JetBrains Mono',monospace;color:#7f8a84">{{ v.sets }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSession }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 372px;gap:18px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:18px 20px;display:flex;align-items:center;gap:16px">
+<div><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">ELAPSED</div><div style="font-size:24px;font-weight:800;letter-spacing:-.02em;font-family:'JetBrains Mono',monospace">32:15</div></div>
+<div style="width:1px;height:38px;background:#1d2124"></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">SETS DONE</div><div style="font-size:24px;font-weight:800;letter-spacing:-.02em;font-family:'JetBrains Mono',monospace">{{ setsDone }}<span style="color:#5d6763">/21</span></div></div>
+<div style="width:1px;height:38px;background:#1d2124"></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">VOLUME</div><div style="font-size:24px;font-weight:800;letter-spacing:-.02em;font-family:'JetBrains Mono',monospace">{{ sessionVolume }}</div></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+<div onClick="{{ toggleRest }}" style="background:{{ restBg }};border:1px solid {{ restBd }};color:{{ restFg }};padding:12px 18px;border-radius:11px;cursor:pointer;font:700 13px 'JetBrains Mono',monospace">{{ restLabel }}</div>
+<div style="border:1px solid #2a3033;color:#e7ebe8;font-size:13.5px;font-weight:600;padding:12px 18px;border-radius:11px;cursor:pointer;background:#0f1214" style-hover="background:#161a1c">Finish</div>
+</div>
+</div>
+
+<sc-for list="{{ sessionExercises }}" as="ex" hint-placeholder-count="3">
+<div style="background:#101214;border:1px solid {{ ex.bd }};border-radius:18px;overflow:hidden">
+<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;background:{{ ex.headBg }}">
+<div style="width:44px;height:44px;border-radius:11px;background:url({{ ex.img }}) center/cover;flex:none;position:relative;cursor:pointer" onClick="{{ ex.open }}"></div>
+<div style="min-width:0">
+<div style="display:flex;align-items:center;gap:8px"><div style="font-size:15px;font-weight:700;letter-spacing:-.01em">{{ ex.name }}</div><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">{{ ex.target }}</div></div>
+<div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Last time: {{ ex.last }}</div>
+</div>
+<div onClick="{{ ex.open }}" style="margin-left:auto;font:600 11px 'JetBrains Mono',monospace;color:#c9f24d;cursor:pointer">HOW TO →</div>
+</div>
+<div style="padding:6px 20px 16px">
+<div style="display:grid;grid-template-columns:36px 1fr 1fr 84px 40px;gap:10px;padding:10px 0;font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763"><div>SET</div><div>{{ weightHeader }}</div><div>REPS</div><div>RPE</div><div></div></div>
+<sc-for list="{{ ex.sets }}" as="st" hint-placeholder-count="3">
+<div style="display:grid;grid-template-columns:36px 1fr 1fr 84px 40px;gap:10px;align-items:center;padding:5px 0">
+<div style="display:flex;align-items:center;gap:5px"><div style="font:700 12px 'JetBrains Mono',monospace;color:#7f8a84">{{ st.i }}</div><sc-if value="{{ st.pr }}" hint-placeholder-val="{{ false }}"><div style="font:800 8.5px 'JetBrains Mono',monospace;color:#0a0c0d;background:#c9f24d;padding:2px 4px;border-radius:3px;letter-spacing:.05em">PR</div></sc-if></div>
+<div style="background:{{ st.fieldBg }};border:1px solid {{ st.fieldBd }};border-radius:9px;padding:10px 12px;font:600 13px 'JetBrains Mono',monospace;color:{{ st.fieldFg }}">{{ st.weight }}</div>
+<div style="background:{{ st.fieldBg }};border:1px solid {{ st.fieldBd }};border-radius:9px;padding:10px 12px;font:600 13px 'JetBrains Mono',monospace;color:{{ st.fieldFg }}">{{ st.reps }}</div>
+<div style="background:{{ st.fieldBg }};border:1px solid {{ st.fieldBd }};border-radius:9px;padding:10px 12px;font:600 13px 'JetBrains Mono',monospace;color:#7f8a84">{{ st.rpe }}</div>
+<div onClick="{{ st.toggle }}" style="width:34px;height:34px;border-radius:9px;border:1px solid {{ st.checkBd }};background:{{ st.checkBg }};cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:#c9f24d">
+<div style="width:9px;height:9px;border-radius:2px;background:{{ st.checkDot }}"></div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:20px">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;overflow:hidden">
+<div style="position:relative;aspect-ratio:16/10;background:url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1400&q=80) center/cover;display:flex;align-items:center;justify-content:center">
+<div style="width:54px;height:54px;border-radius:50%;background:#c9f24d;display:flex;align-items:center;justify-content:center;cursor:pointer"><div style="width:0;height:0;border-left:16px solid #0a0c0d;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px"></div></div>
+<div style="position:absolute;left:12px;top:12px;font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#f2f4f2;background:#0a0c0dcc;padding:4px 7px;border-radius:5px">FORM DEMO · 0:14</div>
+</div>
+<div style="padding:18px 20px">
+<div style="font-size:16px;font-weight:700;letter-spacing:-.01em">{{ focusName }}</div>
+<div style="font:500 10.5px 'JetBrains Mono',monospace;color:#5d6763;margin-top:4px">{{ focusMuscles }}</div>
+<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">
+<sc-for list="{{ cues }}" as="c" hint-placeholder-count="3">
+<div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:2px;background:#c9f24d;margin-top:6px;flex:none"></div><div style="font-size:12.5px;line-height:1.5;color:#98a29c">{{ c }}</div></div>
+</sc-for>
+</div>
+<div style="margin-top:16px;padding-top:14px;border-top:1px solid #1a1e20">
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:10px">YOUR HISTORY</div>
+<sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><div style="font:400 11px 'JetBrains Mono',monospace;color:#7f8a84;width:56px">{{ h.date }}</div><div style="flex:1;height:6px;background:#1d2124;border-radius:3px;overflow:hidden"><div style="width:{{ h.pct }};height:100%;background:#3f5320"></div></div><div style="font:600 11px 'JetBrains Mono',monospace;color:#e7ebe8">{{ h.load }}</div></div>
+</sc-for>
+</div>
+</div>
+</div>
+<div style="background:#151b0c;border:1px solid #2c3a14;border-radius:18px;padding:18px 20px">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">PROGRESSION HINT</div>
+<div style="font-size:13px;line-height:1.55;color:#dfe7d5;margin-top:8px">You hit 12 reps at 32 {{ unitLabel }} last week with 2 in reserve. Add 2 {{ unitLabel }} and aim for 8–10.</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isProgram }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+<div style="position:relative;overflow:hidden;background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px;display:flex;align-items:center;gap:14px">
+<div style="position:absolute;inset:0;url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1400&q=70) center/cover;opacity:.35"></div>
+<div style="position:absolute;inset:0;background:linear-gradient(90deg,#101214 30%,#10121499 100%)"></div>
+<div style="position:relative"><div style="font-size:16px;font-weight:700;letter-spacing:-.01em">The Efficient 4-Day Upper / Lower</div><div style="font:400 11px 'JetBrains Mono',monospace;color:#5d6763;margin-top:4px">WEEK 12 · SEP 01 – SEP 07 · DRAFT</div></div>
+<div style="position:relative;margin-left:auto;display:flex;gap:9px">
+<div onClick="{{ togglePaste }}" style="border:1px solid #2a3033;background:#0f1214;color:#e7ebe8;font-size:13px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer" style-hover="background:#161a1c">Paste program</div>
+<div style="border:1px solid #2a3033;background:#0f1214;color:#e7ebe8;font-size:13px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer" style-hover="background:#161a1c">Copy last week</div>
+<div style="background:#c9f24d;color:#0a0c0d;font-size:13px;font-weight:700;padding:11px 18px;border-radius:10px;cursor:pointer" style-hover="background:#dcff77">Publish week</div>
+</div>
+</div>
+
+<sc-if value="{{ showPaste }}" hint-placeholder-val="{{ false }}">
+<div style="background:#101214;border:1px solid #2c3a14;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:12px"><div style="font-size:14px;font-weight:700">Paste your week</div><div style="margin-left:auto;font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">PLAIN TEXT · PARSED INTO SETS &amp; REPS</div></div>
+<div style="background:#0a0c0d;border:1px solid #1d2124;border-radius:12px;padding:14px;font:400 12px/1.75 'JetBrains Mono',monospace;color:#98a29c;white-space:pre-wrap">DAY 1 — UPPER A
+1 Incline Dumbbell Press 3 x 8-12
+2 Wide Grip Lat Pulldown 3 x 8-12
+3 Machine Chest Press 3 x 10-12
+…</div>
+<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><div style="background:#c9f24d;color:#0a0c0d;font-size:13px;font-weight:700;padding:11px 18px;border-radius:10px;cursor:pointer">Parse 26 lines</div><div style="font-size:12px;color:#7f8a84">24 exercises matched to the library · 2 need review</div></div>
+</div>
+</sc-if>
+
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+<sc-for list="{{ programDays }}" as="d" hint-placeholder-count="4">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;overflow:hidden">
+<div style="padding:15px 18px;border-bottom:1px solid #1a1e20;display:flex;align-items:center;gap:10px;background:{{ d.headBg }}">
+<div style="font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:{{ d.tagFg }}">{{ d.tag }}</div>
+<div style="font-size:14.5px;font-weight:700;letter-spacing:-.01em">{{ d.name }}</div>
+<div style="margin-left:auto;font:500 10px 'JetBrains Mono',monospace;color:#5d6763">{{ d.meta }}</div>
+</div>
+<div style="padding:8px 10px 12px">
+<sc-for list="{{ d.items }}" as="it" hint-placeholder-count="6">
+<div style="display:flex;align-items:center;gap:11px;padding:9px 8px;border-radius:10px;cursor:grab" style-hover="background:#15191b">
+<div style="display:flex;flex-direction:column;gap:2px;flex:none"><div style="width:12px;height:1.5px;background:#2a3033"></div><div style="width:12px;height:1.5px;background:#2a3033"></div><div style="width:12px;height:1.5px;background:#2a3033"></div></div>
+<div style="width:30px;height:30px;border-radius:8px;background:url({{ it.img }}) center/cover;flex:none"></div>
+<div style="font-size:12.5px;font-weight:600;min-width:0;line-height:1.3">{{ it.n }}</div>
+<div style="margin-left:auto;font:600 11px 'JetBrains Mono',monospace;color:#7f8a84;flex:none">{{ it.s }}</div>
+</div>
+</sc-for>
+<div style="margin:6px 8px 0;border:1px dashed #2a3033;border-radius:10px;padding:9px;text-align:center;font-size:12px;font-weight:600;color:#5d6763;cursor:pointer" style-hover="border-color:#c9f24d;color:#c9f24d">+ Add exercise</div>
+</div>
+<div style="padding:12px 18px;border-top:1px solid #1a1e20;font-size:12px;color:#7f8a84;line-height:1.5">{{ d.focus }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="font-size:15px;font-weight:700;margin-bottom:4px">Exercise library</div>
+<div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">412 MOVEMENTS · PHOTOS + VIDEO</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin:14px 0">
+<sc-for list="{{ libFilters }}" as="f" hint-placeholder-count="5">
+<div style="font:600 11px 'JetBrains Mono',monospace;padding:7px 11px;border-radius:8px;background:{{ f.bg }};border:1px solid {{ f.bd }};color:{{ f.fg }};cursor:pointer">{{ f.name }}</div>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ libItems }}" as="l" hint-placeholder-count="5">
+<div onClick="{{ l.open }}" style="display:flex;align-items:center;gap:11px;padding:8px;border-radius:11px;cursor:pointer;border:1px solid #171b1d" style-hover="border-color:#2c3a14;background:#15191b">
+<div style="width:38px;height:38px;border-radius:9px;background:url({{ l.img }}) center/cover;flex:none"></div>
+<div style="min-width:0"><div style="font-size:12.5px;font-weight:600;line-height:1.3">{{ l.n }}</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#5d6763;margin-top:2px">{{ l.m }}</div></div>
+<div style="margin-left:auto;font-size:18px;color:#3a4247;font-weight:400">+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="font-size:15px;font-weight:700;margin-bottom:12px">Weekly load check</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ volume }}" as="v" hint-placeholder-count="5">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:60px;font-size:11.5px;color:#98a29c;font-weight:600">{{ v.name }}</div><div style="flex:1;height:8px;border-radius:4px;background:#1d2124;overflow:hidden"><div style="width:{{ v.pct }};height:100%;background:{{ v.color }};border-radius:4px"></div></div><div style="width:48px;text-align:right;font:500 10.5px 'JetBrains Mono',monospace;color:#7f8a84">{{ v.sets }}</div></div>
+</sc-for>
+</div>
+<div style="margin-top:14px;font-size:12px;color:#7f8a84;line-height:1.5">Shoulders sit at 6 sets — below the 10-set floor for this block. Consider adding a lateral raise to Lower B.</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isProgress }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="display:grid;grid-template-columns:1fr 348px;gap:18px;align-items:start">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+<div style="font-size:15px;font-weight:700">Photo comparison</div>
+<div style="font:400 11px 'JetBrains Mono',monospace;color:#5d6763">FRONT · 91 DAYS APART</div>
+<div style="margin-left:auto;display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:9px;padding:3px">
+<div style="font:600 11px 'JetBrains Mono',monospace;color:#0a0c0d;background:#c9f24d;padding:5px 10px;border-radius:6px;cursor:pointer">FRONT</div>
+<div style="font:600 11px 'JetBrains Mono',monospace;color:#7f8a84;padding:5px 10px;border-radius:6px;cursor:pointer">SIDE</div>
+<div style="font:600 11px 'JetBrains Mono',monospace;color:#7f8a84;padding:5px 10px;border-radius:6px;cursor:pointer">BACK</div>
+</div>
+</div>
+{{ compareView }}
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px">
+<div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:12px 14px"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">WEIGHT</div><div style="display:flex;align-items:baseline;gap:5px;margin-top:6px"><div style="font-size:20px;font-weight:800;letter-spacing:-.03em;color:#c9f24d">-4.8</div><div style="font-size:11px;color:#7f8a84">{{ unitLabel }}</div></div></div>
+<div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:12px 14px"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">WAIST</div><div style="display:flex;align-items:baseline;gap:5px;margin-top:6px"><div style="font-size:20px;font-weight:800;letter-spacing:-.03em;color:#c9f24d">-6.5</div><div style="font-size:11px;color:#7f8a84">cm</div></div></div>
+<div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:12px 14px"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">ARM</div><div style="display:flex;align-items:baseline;gap:5px;margin-top:6px"><div style="font-size:20px;font-weight:800;letter-spacing:-.03em;color:#c9f24d">+0.4</div><div style="font-size:11px;color:#7f8a84">cm</div></div></div>
+<div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:12px 14px"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">STRENGTH</div><div style="display:flex;align-items:baseline;gap:5px;margin-top:6px"><div style="font-size:20px;font-weight:800;letter-spacing:-.03em;color:#c9f24d">+6%</div><div style="font-size:11px;color:#7f8a84">est. 1RM</div></div></div>
+</div>
+<div style="margin-top:16px;font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:10px">TIMELINE</div>
+<div style="display:flex;gap:9px;overflow:hidden">
+<sc-for list="{{ photoTimeline }}" as="p" hint-placeholder-count="8">
+<div style="flex:1;min-width:0;cursor:pointer">
+<div style="aspect-ratio:3/4;border-radius:9px;border:1px solid {{ p.bd }};background:url({{ p.img }}) center/cover;filter:grayscale({{ p.gray }})"></div>
+<div style="font:400 9.5px 'JetBrains Mono',monospace;color:{{ p.fg }};margin-top:6px;text-align:center">{{ p.d }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="font-size:15px;font-weight:700;margin-bottom:14px">Measurements</div>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{ measures }}" as="m" hint-placeholder-count="6">
+<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #171b1d">
+<div style="font-size:13px;font-weight:600;color:#e7ebe8;flex:1">{{ m.name }}</div>
+<div style="font:600 13px 'JetBrains Mono',monospace">{{ m.now }}</div>
+<div style="font:600 11px 'JetBrains Mono',monospace;color:{{ m.color }};width:52px;text-align:right">{{ m.delta }}</div>
+</div>
+</sc-for>
+</div>
+<div style="margin-top:14px;border:1px dashed #2a3033;border-radius:11px;padding:11px;text-align:center;font-size:12.5px;font-weight:600;color:#98a29c;cursor:pointer" style-hover="border-color:#c9f24d;color:#c9f24d">+ Log measurements</div>
+</div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="font-size:15px;font-weight:700;margin-bottom:4px">Strength vs bodyweight</div>
+<div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763;margin-bottom:14px">KEEPING MUSCLE WHILE CUTTING</div>
+{{ strengthChart }}
+<div style="display:flex;gap:14px;margin-top:12px">
+<div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:3px;background:#c9f24d;border-radius:2px"></div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#7f8a84">EST. 1RM AVG</div></div>
+<div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:3px;background:#4a5560;border-radius:2px"></div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#7f8a84">BODYWEIGHT</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNutrition }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 336px;gap:18px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:22px;display:flex;align-items:center;gap:26px">
+{{ calRingBig }}
+<div style="flex:1">
+<div style="font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">TARGET · FAT LOSS, KEEP MUSCLE</div>
+<div style="font-size:24px;font-weight:800;letter-spacing:-.03em;margin:8px 0 4px">2,150 kcal · 185 g protein</div>
+<div style="font-size:12.5px;color:#7f8a84;line-height:1.5;max-width:420px">Roughly a 400 kcal deficit off your maintenance, protein at 2.4 g per {{ unitLabel }} of bodyweight to protect muscle on training days.</div>
+<div style="display:flex;gap:11px;margin-top:16px">
+<sc-for list="{{ macrosBig }}" as="m" hint-placeholder-count="3">
+<div style="flex:1;background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:13px">
+<div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">{{ m.name }}</div>
+<div style="font-size:17px;font-weight:800;margin:6px 0 7px;letter-spacing:-.02em">{{ m.val }}</div>
+<div style="height:4px;border-radius:2px;background:#1d2124;overflow:hidden"><div style="width:{{ m.pct }};height:100%;background:{{ m.color }}"></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Today's meals</div><div style="margin-left:auto;font:600 11px 'JetBrains Mono',monospace;color:#c9f24d;cursor:pointer">SWAP A MEAL →</div></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ meals }}" as="ml" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid {{ ml.bd }};border-radius:14px;background:{{ ml.bg }};cursor:pointer" style-hover="border-color:#2c3a14">
+<div style="width:56px;height:56px;border-radius:12px;background:url({{ ml.img }}) center/cover;flex:none"></div>
+<div style="min-width:0;flex:1">
+<div style="display:flex;align-items:center;gap:9px"><div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:{{ ml.slotFg }}">{{ ml.slot }}</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#5d6763">{{ ml.time }}</div></div>
+<div style="font-size:14px;font-weight:600;margin-top:5px">{{ ml.name }}</div>
+<div style="font-size:11.5px;color:#7f8a84;margin-top:4px">{{ ml.items }}</div>
+</div>
+<div style="text-align:right;flex:none">
+<div style="font:800 15px 'JetBrains Mono',monospace">{{ ml.kcal }}</div>
+<div style="font:400 10px 'JetBrains Mono',monospace;color:#5d6763;margin-top:3px">{{ ml.macros }}</div>
+</div>
+<div style="width:30px;height:30px;border-radius:9px;border:1px solid {{ ml.checkBd }};background:{{ ml.checkBg }};flex:none;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:8px;border-radius:2px;background:{{ ml.checkDot }}"></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:14px"><div style="font-size:15px;font-weight:700">Week plan</div><div style="margin-left:auto;font:400 11px 'JetBrains Mono',monospace;color:#5d6763">TRAINING DAYS GET +250 KCAL</div></div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:9px">
+<sc-for list="{{ mealWeek }}" as="w" hint-placeholder-count="7">
+<div style="background:{{ w.bg }};border:1px solid {{ w.bd }};border-radius:12px;padding:12px 10px;min-height:96px;display:flex;flex-direction:column;cursor:pointer" style-hover="border-color:#38431c">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:{{ w.dayFg }}">{{ w.day }}</div>
+<div style="font:800 15px 'JetBrains Mono',monospace;margin-top:8px;color:{{ w.fg }}">{{ w.kcal }}</div>
+<div style="font:400 10px 'JetBrains Mono',monospace;color:#5d6763;margin-top:2px">{{ w.p }}</div>
+<div style="margin-top:auto;font-size:10.5px;color:{{ w.metaFg }};font-weight:600">{{ w.tag }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:6px"><div style="font-size:15px;font-weight:700">Grocery list</div><div style="margin-left:auto;font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">SEP 01 – 07</div></div>
+<div style="font-size:12px;color:#7f8a84;margin-bottom:14px">Built from this week's 28 meals · 6 of 24 in your basket</div>
+<sc-for list="{{ grocery }}" as="g" hint-placeholder-count="4">
+<div style="margin-bottom:14px">
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">{{ g.cat }}</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<sc-for list="{{ g.items }}" as="gi" hint-placeholder-count="3">
+<div onClick="{{ gi.toggle }}" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;background:#0c0e0f;border:1px solid #171b1d;cursor:pointer" style-hover="border-color:#2c3a14">
+<div style="width:17px;height:17px;border-radius:5px;border:1px solid {{ gi.bd }};background:{{ gi.bg }};flex:none;display:flex;align-items:center;justify-content:center"><div style="width:7px;height:7px;border-radius:1px;background:{{ gi.dot }}"></div></div>
+<div style="font-size:12.5px;font-weight:500;color:{{ gi.fg }};text-decoration:{{ gi.td }}">{{ gi.n }}</div>
+<div style="margin-left:auto;font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">{{ gi.q }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+<div style="border:1px solid #2c3a14;background:#151b0c;color:#c9f24d;border-radius:11px;padding:11px;text-align:center;font:700 12px 'JetBrains Mono',monospace;cursor:pointer">EXPORT LIST</div>
+</div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="font-size:15px;font-weight:700;margin-bottom:12px">Allergies &amp; excludes</div>
+<div style="display:flex;flex-wrap:wrap;gap:7px">
+<sc-for list="{{ allergyTags }}" as="a" hint-placeholder-count="4">
+<div style="font:600 11px 'JetBrains Mono',monospace;padding:7px 11px;border-radius:8px;background:{{ a.bg }};border:1px solid {{ a.bd }};color:{{ a.fg }}">{{ a.n }}</div>
+</sc-for>
+</div>
+<div style="font-size:12px;color:#7f8a84;margin-top:12px;line-height:1.5">Recipes containing these never appear in your plan or grocery list.</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isOnboarding }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:18px;align-items:stretch;min-height:820px">
+<div style="flex:1;background:#101214;border:1px solid #1d2124;border-radius:20px;padding:34px 38px;display:flex;flex-direction:column">
+<div style="display:flex;gap:7px;margin-bottom:26px">
+<sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+<div style="flex:1"><div style="height:4px;border-radius:2px;background:{{ s.bg }}"></div><div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.08em;color:{{ s.fg }};margin-top:8px">{{ s.n }}</div></div>
+</sc-for>
+</div>
+<div style="font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">STEP {{ obStepNum }} OF 5</div>
+<sc-if value="{{ ob1 }}" hint-placeholder-val="{{ true }}">
+<div style="font-size:34px;font-weight:800;letter-spacing:-.035em;margin:12px 0 8px;line-height:1.1;max-width:520px;text-wrap:pretty">Create your account.</div>
+<div style="font-size:13.5px;color:#7f8a84;max-width:480px;line-height:1.55">One account per person. Invite friends later — each gets their own private space, nobody sees anyone else’s photos or numbers.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:26px 0 0;max-width:620px">
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">DISPLAY NAME</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#e7ebe8">Yassine</div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">EMAIL</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#e7ebe8">yassine@sportym.io</div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">PASSWORD</div><div style="background:#0c0e0f;border:1px solid #2c3a14;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#7f8a84">••••••••••••</div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">CONFIRM</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#7f8a84">••••••••••••</div></div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;margin:20px 0;max-width:620px"><div style="flex:1;height:1px;background:#1d2124"></div><div style="font:400 10px 'JetBrains Mono',monospace;color:#48524e">OR</div><div style="flex:1;height:1px;background:#1d2124"></div></div>
+<div style="display:flex;gap:10px;max-width:620px">
+<div style="flex:1;border:1px solid #2a3033;background:#0f1214;border-radius:11px;padding:13px;text-align:center;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#161a1c">Continue with Google</div>
+<div style="flex:1;border:1px solid #2a3033;background:#0f1214;border-radius:11px;padding:13px;text-align:center;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#161a1c">Email me a magic link</div>
+</div>
+<div style="display:flex;align-items:center;gap:9px;margin-top:22px;font-size:12px;color:#7f8a84"><div style="width:16px;height:16px;border-radius:5px;background:#c9f24d;flex:none"></div>I have an invite code · <span style="font:600 11px 'JetBrains Mono',monospace;color:#c9f24d">CREW-7K2P</span></div>
+</sc-if>
+
+<sc-if value="{{ ob2 }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:34px;font-weight:800;letter-spacing:-.035em;margin:12px 0 8px;line-height:1.1;max-width:520px;text-wrap:pretty">Tell us about your body.</div>
+<div style="font-size:13.5px;color:#7f8a84;max-width:480px;line-height:1.55">Used once to estimate your maintenance calories (Mifflin-St Jeor). Your weekly weigh-ins take over from there.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:26px 0 22px;max-width:620px">
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">SEX</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:9px;border-radius:8px">Male</div><div style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#7f8a84;padding:9px;border-radius:8px;cursor:pointer">Female</div></div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">BIRTH YEAR</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#e7ebe8">1996</div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">HEIGHT</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#e7ebe8">178 cm</div></div>
+</div>
+<div style="display:flex;gap:26px;align-items:flex-end;max-width:620px">
+<div>
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px;margin-bottom:10px">CURRENT WEIGHT</div>
+<div style="display:flex;align-items:baseline;gap:8px"><div style="font-size:56px;font-weight:800;letter-spacing:-.05em;line-height:1;font-family:'JetBrains Mono',monospace">{{ weightNow }}</div><div style="font-size:16px;color:#7f8a84;font-weight:600">{{ unitLabel }}</div></div>
+</div>
+<div style="flex:1">
+<div style="height:44px;position:relative;border-radius:10px;background:#0c0e0f;border:1px solid #1d2124;overflow:hidden;display:flex;align-items:flex-end;gap:4px;padding:0 10px 8px">
+<sc-for list="{{ ticks }}" as="t" hint-placeholder-count="24">
+<div style="flex:1;height:{{ t.h }};background:{{ t.c }};border-radius:1px"></div>
+</sc-for>
+</div>
+<div style="display:flex;justify-content:space-between;font:400 10px 'JetBrains Mono',monospace;color:#48524e;margin-top:7px"><div>65</div><div>77.3</div><div>95</div></div>
+</div>
+</div>
+<div style="margin-top:22px;max-width:620px">
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px;margin-bottom:10px">ACTIVITY OUTSIDE THE GYM</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<sc-for list="{{ activity }}" as="a" hint-placeholder-count="4">
+<div style="border:1px solid {{ a.bd }};background:{{ a.bg }};border-radius:12px;padding:12px 13px;cursor:pointer" style-hover="border-color:#38431c"><div style="font-size:13px;font-weight:700;color:{{ a.fg }}">{{ a.n }}</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#5d6763;margin-top:5px">{{ a.d }}</div></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ ob3 }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:34px;font-weight:800;letter-spacing:-.035em;margin:12px 0 8px;line-height:1.1;max-width:520px;text-wrap:pretty">What are you working toward?</div>
+<div style="font-size:13.5px;color:#7f8a84;max-width:480px;line-height:1.55">This sets your calorie target, protein floor and how we read your weekly weigh-ins. You can change it any time without losing history.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:24px 0 22px;max-width:620px">
+<sc-for list="{{ goals }}" as="g" hint-placeholder-count="4">
+<div onClick="{{ g.pick }}" style="border:1px solid {{ g.bd }};background:{{ g.bg }};border-radius:14px;padding:16px 18px;cursor:pointer" style-hover="border-color:#38431c">
+<div style="display:flex;align-items:center;gap:9px"><div style="width:16px;height:16px;border-radius:50%;border:1.5px solid {{ g.ringBd }};display:flex;align-items:center;justify-content:center"><div style="width:7px;height:7px;border-radius:50%;background:{{ g.ringDot }}"></div></div><div style="font-size:14px;font-weight:700;color:{{ g.fg }}">{{ g.n }}</div></div>
+<div style="font-size:12px;color:#7f8a84;margin-top:8px;line-height:1.45">{{ g.d }}</div>
+</div>
+</sc-for>
+</div>
+<div style="background:#151b0c;border:1px solid #2c3a14;border-radius:14px;padding:16px 18px;max-width:620px;display:flex;gap:22px;align-items:center">
+<div><div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">YOUR TARGETS</div><div style="font-size:12.5px;color:#dfe7d5;margin-top:6px;line-height:1.5">Maintenance ≈ 2,550 kcal. A 400 kcal deficit keeps you losing ~0.4–0.6 {{ unitLabel }} a week while protein protects muscle.</div></div>
+<div style="display:flex;gap:16px;flex:none">
+<div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">2,150</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">KCAL</div></div>
+<div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">185</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">G PROTEIN</div></div>
+<div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">4</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">DAYS / WK</div></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ ob4 }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:34px;font-weight:800;letter-spacing:-.035em;margin:12px 0 8px;line-height:1.1;max-width:520px;text-wrap:pretty">Anything you can’t or won’t eat?</div>
+<div style="font-size:13.5px;color:#7f8a84;max-width:480px;line-height:1.55">Hard filters. Recipes with these never show up in your plan, swaps or grocery list.</div>
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px;margin:26px 0 10px">ALLERGIES</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;max-width:620px">
+<sc-for list="{{ allergyPick }}" as="a" hint-placeholder-count="9">
+<div onClick="{{ a.toggle }}" style="font-size:13px;font-weight:600;padding:10px 15px;border-radius:99px;background:{{ a.bg }};border:1px solid {{ a.bd }};color:{{ a.fg }};cursor:pointer" style-hover="border-color:#38431c">{{ a.n }}</div>
+</sc-for>
+</div>
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px;margin:24px 0 10px">PREFERENCES</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;max-width:620px">
+<sc-for list="{{ prefPick }}" as="a" hint-placeholder-count="6">
+<div onClick="{{ a.toggle }}" style="font-size:13px;font-weight:600;padding:10px 15px;border-radius:99px;background:{{ a.bg }};border:1px solid {{ a.bd }};color:{{ a.fg }};cursor:pointer" style-hover="border-color:#38431c">{{ a.n }}</div>
+</sc-for>
+</div>
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px;margin:24px 0 10px">MEALS PER DAY</div>
+<div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px;width:300px">
+<div style="flex:1;text-align:center;font:600 13px 'JetBrains Mono',monospace;color:#7f8a84;padding:9px;border-radius:8px;cursor:pointer">3</div>
+<div style="flex:1;text-align:center;font:700 13px 'JetBrains Mono',monospace;color:#0a0c0d;background:#c9f24d;padding:9px;border-radius:8px">4</div>
+<div style="flex:1;text-align:center;font:600 13px 'JetBrains Mono',monospace;color:#7f8a84;padding:9px;border-radius:8px;cursor:pointer">5</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ ob5 }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:34px;font-weight:800;letter-spacing:-.035em;margin:12px 0 8px;line-height:1.1;max-width:520px;text-wrap:pretty">Set up your first week.</div>
+<div style="font-size:13.5px;color:#7f8a84;max-width:480px;line-height:1.55">You write the program — every week. Paste it as text, build it by hand, or start blank and fill it in at the gym.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin:24px 0 20px;max-width:620px">
+<sc-for list="{{ progStart }}" as="p" hint-placeholder-count="3">
+<div onClick="{{ p.pick }}" style="border:1px solid {{ p.bd }};background:{{ p.bg }};border-radius:14px;padding:16px;cursor:pointer;min-height:118px;display:flex;flex-direction:column" style-hover="border-color:#38431c">
+<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid {{ p.ringBd }};display:flex;align-items:center;justify-content:center"><div style="width:7px;height:7px;border-radius:50%;background:{{ p.ringDot }}"></div></div>
+<div style="font-size:14px;font-weight:700;margin-top:12px">{{ p.n }}</div>
+<div style="font-size:11.5px;color:#7f8a84;margin-top:5px;line-height:1.45">{{ p.d }}</div>
+</div>
+</sc-for>
+</div>
+<div style="max-width:620px;background:#0a0c0d;border:1px solid #2c3a14;border-radius:12px;padding:14px 16px;font:400 12px/1.75 'JetBrains Mono',monospace;color:#98a29c;white-space:pre-wrap">DAY 1 — UPPER A
+1 Incline Dumbbell Press 3 x 8-12
+2 Wide Grip Lat Pulldown 3 x 8-12
+3 Machine Chest Press 3 x 10-12
+DAY 2 — LOWER A
+1 Leg Press 3 x 8-12
+…<span style="color:#c9f24d">▍</span></div>
+<div style="display:flex;align-items:center;gap:14px;margin-top:12px;max-width:620px">
+<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#7d9440;font-weight:600"><div style="width:7px;height:7px;border-radius:2px;background:#c9f24d"></div>24 exercises matched</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c98d4d;font-weight:600"><div style="width:7px;height:7px;border-radius:2px;background:#c98d4d"></div>2 need review</div>
+<div style="margin-left:auto;font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">TRAINING DAYS · MON TUE THU FRI</div>
+</div>
+</sc-if>
+
+<div style="margin-top:auto;display:flex;align-items:center;gap:12px;padding-top:28px">
+<div onClick="{{ obBack }}" style="border:1px solid #2a3033;background:#0f1214;color:#98a29c;font-size:13.5px;font-weight:600;padding:13px 20px;border-radius:11px;cursor:pointer" style-hover="background:#161a1c">Back</div>
+<div onClick="{{ obNext }}" style="background:#c9f24d;color:#0a0c0d;font-size:14px;font-weight:700;padding:13px 26px;border-radius:11px;cursor:pointer" style-hover="background:#dcff77">{{ obNextLabel }}</div>
+<div style="font-size:12px;color:#5d6763">{{ obNextHint }}</div>
+</div>
+</div>
+<div style="width:392px;flex:none;border-radius:20px;border:1px solid #1d2124;overflow:hidden;position:relative;background:url(https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1400&q=80) center/cover">
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,#08090a10 30%,#08090af8 100%)"></div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:28px">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d;margin-bottom:10px">{{ obSideTag }}</div>
+<div style="font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1.2;text-wrap:pretty">{{ obSideTitle }}</div>
+<div style="font-size:12.5px;color:#98a29c;margin-top:10px;line-height:1.5">{{ obSideBody }}</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+
+
+<sc-if value="{{ isLeague }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="position:relative;overflow:hidden;border-radius:20px;border:1px solid #1d2124;background:#101214;height:300px">
+<div style="position:absolute;inset:0;background:url(https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=1600&q=70) center/cover"></div>
+<div style="position:absolute;inset:0;background:linear-gradient(90deg,#08090af5 0%,#08090acc 45%,#08090a44 100%)"></div>
+<div style="position:absolute;right:-8px;bottom:-26px;font-size:150px;font-weight:800;letter-spacing:-.06em;line-height:1;color:#c9f24d;opacity:.07;pointer-events:none">SEASON 1</div>
+<div style="position:relative;padding:26px 28px;height:100%;display:flex;flex-direction:column">
+<div style="display:flex;gap:8px;align-items:center">
+<div style="font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d;background:#151b0c;border:1px solid #2c3a14;padding:5px 9px;border-radius:6px">CREW LEAGUE · SEASON 1</div>
+<div style="font:400 10.5px 'JetBrains Mono',monospace;color:#7f8a84">SEP 01 – NOV 23 · 12 WEEKS · WEEK 1 OF 12</div>
+</div>
+<div style="font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1.05;margin:14px 0 8px;max-width:520px;text-wrap:pretty">You're 2nd. Sara trains on Sundays.</div>
+<div style="font-size:13.5px;color:#98a29c;max-width:460px;line-height:1.5">Points for showing up and for moving toward <em>your</em> goal — never for absolute weight. Everyone competes on % change, so a cut and a bulk sit on the same board.</div>
+<div style="margin-top:auto;display:flex;gap:26px">
+<div><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">YOUR POINTS</div><div style="font-size:24px;font-weight:800;letter-spacing:-.03em;color:#c9f24d">1,284</div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">GAP TO 1ST</div><div style="font-size:24px;font-weight:800;letter-spacing:-.03em">-96</div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">NEXT SESSION WORTH</div><div style="font-size:24px;font-weight:800;letter-spacing:-.03em">+120</div></div>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 372px;gap:18px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+<div style="font-size:15px;font-weight:700">Standings</div>
+<div style="margin-left:auto;display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:9px;padding:3px">
+<sc-for list="{{ lgTabs }}" as="t" hint-placeholder-count="3">
+<div onClick="{{ t.go }}" style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.04em;color:{{ t.fg }};background:{{ t.bg }};padding:6px 12px;border-radius:6px;cursor:pointer">{{ t.n }}</div>
+</sc-for>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:36px 1fr 150px 110px 90px;gap:12px;padding:0 10px 10px;font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763"><div>#</div><div>ATHLETE</div><div>THIS WEEK</div><div>{{ lgColLabel }}</div><div style="text-align:right">POINTS</div></div>
+<sc-for list="{{ standings }}" as="r" hint-placeholder-count="4">
+<div style="display:grid;grid-template-columns:36px 1fr 150px 110px 90px;gap:12px;align-items:center;padding:12px 10px;border-radius:12px;background:{{ r.bg }};border:1px solid {{ r.bd }};margin-bottom:6px">
+<div style="font:800 16px 'JetBrains Mono',monospace;color:{{ r.rankFg }}">{{ r.rank }}</div>
+<div style="display:flex;align-items:center;gap:12px;min-width:0">
+<div style="width:38px;height:38px;border-radius:50%;background:url({{ r.img }}) center/cover;flex:none;border:2px solid {{ r.ring }}"></div>
+<div style="min-width:0"><div style="font-size:14px;font-weight:700">{{ r.n }}</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#5d6763;margin-top:3px">{{ r.meta }}</div></div>
+</div>
+<div style="display:flex;gap:4px"><sc-for list="{{ r.week }}" as="w" hint-placeholder-count="7"><div style="width:16px;height:16px;border-radius:4px;background:{{ w }}"></div></sc-for></div>
+<div style="font:700 13px 'JetBrains Mono',monospace;color:{{ r.metricFg }}">{{ r.metric }}</div>
+<div style="text-align:right"><div style="font:800 16px 'JetBrains Mono',monospace">{{ r.pts }}</div><div style="font:500 10px 'JetBrains Mono',monospace;color:{{ r.deltaFg }};margin-top:2px">{{ r.delta }}</div></div>
+</div>
+</sc-for>
+<div style="margin-top:10px;font-size:11.5px;color:#5d6763;line-height:1.5">Consistency = 120 pts per completed session (max 5/wk) + 10 per set logged. Transformation = % bodyweight moved toward your goal × 200 + waist cm × 40 + est. 1RM held ≥ 100% (+150). Everyone shares only percentages.</div>
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:14px"><div style="font-size:15px;font-weight:700">Points this season</div><div style="margin-left:auto;font:400 11px 'JetBrains Mono',monospace;color:#5d6763">CUMULATIVE · 4 ATHLETES</div></div>
+{{ leagueChart }}
+<div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">
+<sc-for list="{{ lgLegend }}" as="l" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:3px;background:{{ l.c }};border-radius:2px"></div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#7f8a84">{{ l.n }}</div></div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:center;margin-bottom:14px"><div style="font-size:15px;font-weight:700">Challenges</div><div style="margin-left:auto;font:600 11px 'JetBrains Mono',monospace;color:#c9f24d;cursor:pointer">+ NEW</div></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ challenges }}" as="c" hint-placeholder-count="3">
+<div style="border:1px solid {{ c.bd }};background:{{ c.bg }};border-radius:14px;padding:14px">
+<div style="display:flex;align-items:center;gap:8px"><div style="font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.1em;color:{{ c.tagFg }};background:{{ c.tagBg }};padding:3px 7px;border-radius:5px">{{ c.tag }}</div><div style="margin-left:auto;font:400 10px 'JetBrains Mono',monospace;color:#5d6763">{{ c.left }}</div></div>
+<div style="font-size:14px;font-weight:700;margin-top:9px;line-height:1.3">{{ c.n }}</div>
+<div style="font-size:11.5px;color:#7f8a84;margin-top:4px">{{ c.d }}</div>
+<div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+<div style="display:flex"><sc-for list="{{ c.faces }}" as="f" hint-placeholder-count="3"><div style="width:22px;height:22px;border-radius:50%;background:url({{ f }}) center/cover;border:2px solid #101214;margin-left:-6px"></div></sc-for></div>
+<div style="flex:1;height:6px;border-radius:3px;background:#1d2124;overflow:hidden"><div style="width:{{ c.pct }};height:100%;background:{{ c.barC }}"></div></div>
+<div style="font:700 11px 'JetBrains Mono',monospace;color:{{ c.barC }}">{{ c.prog }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="background:#151b0c;border:1px solid #2c3a14;border-radius:18px;padding:18px 20px">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">CHALLENGE SARA</div>
+<div style="font-size:13px;line-height:1.55;color:#dfe7d5;margin-top:8px">She's 96 points ahead with one session more this week. A head-to-head: most sessions in the next 14 days, loser cooks.</div>
+<div style="display:flex;gap:8px;margin-top:14px">
+<div style="background:#c9f24d;color:#0a0c0d;font-size:12.5px;font-weight:700;padding:10px 14px;border-radius:9px;cursor:pointer">Send challenge</div>
+<div style="border:1px solid #2c3a14;color:#c9f24d;font-size:12.5px;font-weight:600;padding:10px 14px;border-radius:9px;cursor:pointer">Pick stakes</div>
+</div>
+</div>
+
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="font-size:15px;font-weight:700;margin-bottom:12px">Badges this season</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<sc-for list="{{ badges }}" as="b" hint-placeholder-count="6">
+<div style="border:1px solid {{ b.bd }};background:{{ b.bg }};border-radius:12px;padding:12px 10px;text-align:center">
+<div style="width:26px;height:26px;border-radius:8px;background:{{ b.ic }};margin:0 auto 8px;transform:rotate(45deg)"></div>
+<div style="font-size:11px;font-weight:700;color:{{ b.fg }};line-height:1.25">{{ b.n }}</div>
+<div style="font:400 9.5px 'JetBrains Mono',monospace;color:#5d6763;margin-top:4px">{{ b.d }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="position:relative;overflow:hidden;background:#101214;border:1px solid #1d2124;border-radius:20px;padding:24px 26px;display:flex;align-items:center;gap:20px">
+<div style="position:absolute;inset:0;background:url(https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1400&q=70) center/cover;opacity:.22"></div>
+<div style="position:absolute;inset:0;background:linear-gradient(90deg,#101214 40%,#10121488 100%)"></div>
+<div style="position:relative;width:76px;height:76px;border-radius:50%;background:url(https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=70) center/cover;border:3px solid #c9f24d;flex:none"></div>
+<div style="position:relative;min-width:0">
+<div style="display:flex;align-items:center;gap:10px"><div style="font-size:26px;font-weight:800;letter-spacing:-.03em">{{ userName }}</div><div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#c9f24d;background:#151b0c;border:1px solid #2c3a14;padding:4px 8px;border-radius:6px">FAT LOSS · KEEP MUSCLE</div></div>
+<div style="font:400 11px 'JetBrains Mono',monospace;color:#7f8a84;margin-top:6px">yassine@sportym.io · MEMBER SINCE JUN 2026 · 48 SESSIONS · 14 DAY STREAK</div>
+</div>
+<div style="position:relative;margin-left:auto;display:flex;gap:9px">
+<div style="border:1px solid #2a3033;background:#0f1214;color:#e7ebe8;font-size:13px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer" style-hover="background:#161a1c">Change photo</div>
+<div style="background:#c9f24d;color:#0a0c0d;font-size:13px;font-weight:700;padding:11px 18px;border-radius:10px;cursor:pointer" style-hover="background:#dcff77">Save changes</div>
+</div>
+</div>
+
+<div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:4px;width:fit-content">
+<sc-for list="{{ pfTabs }}" as="t" hint-placeholder-count="5">
+<div onClick="{{ t.go }}" style="font:600 12px 'JetBrains Mono',monospace;letter-spacing:.06em;color:{{ t.fg }};background:{{ t.bg }};padding:9px 16px;border-radius:8px;cursor:pointer">{{ t.n }}</div>
+</sc-for>
+</div>
+
+<sc-if value="{{ pf1 }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Account</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">WHO YOU ARE</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">DISPLAY NAME</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:13px 14px;font-size:13.5px;color:#e7ebe8">Yassine</div></div><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">EMAIL</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:13px 14px;font-size:13.5px;color:#e7ebe8">yassine@sportym.io</div></div><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">PASSWORD</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:13px 14px;font-size:13.5px;color:#7f8a84">••••••••••••</div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">CONNECTED</div><div style="display:flex;align-items:center;gap:9px;background:#0c0e0f;border:1px solid #2c3a14;border-radius:11px;padding:13px 14px;font-size:13.5px"><div style="width:8px;height:8px;border-radius:50%;background:#c9f24d"></div>Google · linked</div></div></div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Body</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">USED FOR TARGETS</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">SEX</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">Male</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">Female</div></div></div><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">BIRTH YEAR</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:13px 14px;font-size:13.5px;color:#e7ebe8">1996</div></div><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">HEIGHT</div><div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:13px 14px;font-size:13.5px;color:#e7ebe8">178 cm</div></div>
+</div><div style="margin-top:12px"><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">ACTIVITY OUTSIDE THE GYM</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">Desk</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">Light</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">Active</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">On feet</div></div></div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Units & preferences</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">HOW THINGS DISPLAY</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px">
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">WEIGHT</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">kg</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">lb</div></div></div><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">LENGTH</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">cm</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">in</div></div></div>
+<div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">WEEK STARTS</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">Mon</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">Sun</div></div></div><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">DEFAULT REST</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">60s</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">90s</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">120s</div></div></div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Keyboard shortcuts in session</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Space completes a set, R starts rest</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Auto-start rest timer</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Starts the moment you tick a set</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Show est. 1RM on every set</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Epley formula, shown in the set row</div></div><div style="width:40px;height:22px;border-radius:11px;background:#1d2124;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#5d6763"></div></div></div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Training schedule</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">WHICH DAYS YOU LIFT</div></div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">
+<sc-for list="{{ pfDays }}" as="d" hint-placeholder-count="7">
+<div style="text-align:center;padding:14px 0;border-radius:12px;border:1px solid {{ d.bd }};background:{{ d.bg }};font:700 11px 'JetBrains Mono',monospace;color:{{ d.fg }};cursor:pointer">{{ d.n }}</div>
+</sc-for></div>
+<div style="font-size:12px;color:#7f8a84;margin-top:12px;line-height:1.5">Training days get the +250 kcal carb bonus in your meal plan and appear as session slots in the program builder.</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ pf2 }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Nutrition targets</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">RECALCULATED FROM YOUR LAST 4 WEIGH-INS</div></div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+<div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:14px"><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">ESTIMATED MAINTENANCE</div><div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:24px;font-weight:800;letter-spacing:-.03em">2,550</div><div style="font-size:12px;color:#7f8a84">kcal</div></div><div style="font-size:11px;color:#7d9440;margin-top:4px;font-weight:600">Adjusted +80 from weigh-in trend</div></div>
+<div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:12px;padding:14px"><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">WEEKLY RATE</div><div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:24px;font-weight:800;letter-spacing:-.03em">-0.5</div><div style="font-size:12px;color:#7f8a84">{{ unitLabel }} / wk</div></div><div style="font-size:11px;color:#7f8a84;margin-top:4px">≈ 0.65 % of bodyweight</div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:18px">
+<div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:13px;font-weight:600">Daily deficit</div><div style="font:700 12px 'JetBrains Mono',monospace;color:#c9f24d">-400 kcal</div></div>
+<div style="height:8px;border-radius:4px;background:#1d2124;position:relative"><div style="width:53%;height:100%;background:#c9f24d;border-radius:4px"></div><div style="position:absolute;left:53%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#c9f24d;border:3px solid #0a0c0d"></div></div>
+<div style="display:flex;justify-content:space-between;font:400 10px 'JetBrains Mono',monospace;color:#48524e;margin-top:6px"><div>-200 GENTLE</div><div>-500 STANDARD</div><div>-750 AGGRESSIVE</div></div></div>
+<div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:13px;font-weight:600">Protein per {{ unitLabel }} bodyweight</div><div style="font:700 12px 'JetBrains Mono',monospace;color:#c9f24d">2.4 g → 185 g</div></div>
+<div style="height:8px;border-radius:4px;background:#1d2124;position:relative"><div style="width:70%;height:100%;background:#c9f24d;border-radius:4px"></div><div style="position:absolute;left:70%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#c9f24d;border:3px solid #0a0c0d"></div></div>
+<div style="display:flex;justify-content:space-between;font:400 10px 'JetBrains Mono',monospace;color:#48524e;margin-top:6px"><div>1.6</div><div>2.2</div><div>3.0</div></div></div>
+<div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:13px;font-weight:600">Fat share of remaining calories</div><div style="font:700 12px 'JetBrains Mono',monospace;color:#c9f24d">28 % → 62 g</div></div>
+<div style="height:8px;border-radius:4px;background:#1d2124;position:relative"><div style="width:40%;height:100%;background:#c9f24d;border-radius:4px"></div><div style="position:absolute;left:40%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#c9f24d;border:3px solid #0a0c0d"></div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">TRAINING-DAY BONUS</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">0</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">+150</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">+250</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">+400</div></div></div><div><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">REFEED DAY</div><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">None</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">Sunday</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">Saturday</div></div></div></div>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="background:#151b0c;border:1px solid #2c3a14;border-radius:18px;padding:20px">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">RESULTING TARGETS</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+<div><div style="font-size:28px;font-weight:800;letter-spacing:-.03em">2,150</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">KCAL · REST DAY</div></div>
+<div><div style="font-size:28px;font-weight:800;letter-spacing:-.03em">2,400</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">KCAL · TRAINING</div></div>
+<div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">185 g</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">PROTEIN</div></div>
+<div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">210 g</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">CARBS</div></div>
+<div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">62 g</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">FAT</div></div>
+<div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">3.0 L</div><div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440">WATER</div></div>
+</div>
+<div style="font-size:12px;color:#dfe7d5;margin-top:14px;line-height:1.5">Applies from tomorrow's meal plan. Past days keep the targets they were planned with.</div>
+</div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Auto-adjust</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">THE WEEKLY LOOP</div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Adjust from weigh-in trend</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">If the 7-day average stalls 2 weeks, drop 100 kcal</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Protect the protein floor</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Never cut protein when lowering calories</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Ask before changing</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Show a Sunday review instead of changing silently</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ pf3 }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Allergies</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">HARD FILTERS · NEVER IN A RECIPE</div></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ allergyPick }}" as="a" hint-placeholder-count="9">
+<div onClick="{{ a.toggle }}" style="font-size:13px;font-weight:600;padding:10px 15px;border-radius:99px;background:{{ a.bg }};border:1px solid {{ a.bd }};color:{{ a.fg }};cursor:pointer">{{ a.n }}</div>
+</sc-for></div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Preferences</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">SOFT RULES FOR THE PLANNER</div></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ prefPick }}" as="a" hint-placeholder-count="6">
+<div onClick="{{ a.toggle }}" style="font-size:13px;font-weight:600;padding:10px 15px;border-radius:99px;background:{{ a.bg }};border:1px solid {{ a.bd }};color:{{ a.fg }};cursor:pointer">{{ a.n }}</div>
+</sc-for></div>
+<div style="margin-top:16px"><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">MEALS PER DAY</div><div style="width:300px"><div style="display:flex;gap:4px;background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:4px"><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">3</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:700;color:#0a0c0d;background:#c9f24d;padding:8px;border-radius:8px;cursor:pointer">4</div><div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#7f8a84;background:transparent;padding:8px;border-radius:8px;cursor:pointer">5</div></div></div></div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Excluded ingredients</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">THINGS YOU JUST DON’T LIKE</div></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:9px 13px;border-radius:99px;background:#0c0e0f;border:1px solid #2a3033;color:#e7ebe8">Mushrooms <span style="color:#5d6763;cursor:pointer">×</span></div>
+<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:9px 13px;border-radius:99px;background:#0c0e0f;border:1px solid #2a3033;color:#e7ebe8">Cottage cheese <span style="color:#5d6763;cursor:pointer">×</span></div>
+<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:9px 13px;border-radius:99px;background:#0c0e0f;border:1px solid #2a3033;color:#e7ebe8">Tuna <span style="color:#5d6763;cursor:pointer">×</span></div>
+<div style="font-size:13px;font-weight:600;padding:9px 13px;border-radius:99px;border:1px dashed #2a3033;color:#5d6763;cursor:pointer" style-hover="border-color:#c9f24d;color:#c9f24d">+ Add ingredient</div>
+</div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Kitchen</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">WHAT THE PLANNER CAN ASSUME</div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Meal prep on Sunday</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Planner batches lunches for Mon–Fri</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Air fryer available</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Unlocks 34 more recipes</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Max 25 min weekday dinners</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Longer recipes only on weekends</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ pf4 }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Your crew</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">4 FRIENDS · STREAKS ONLY, NEVER PHOTOS OR WEIGHTS</div></div>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{ crew }}" as="c" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid #171b1d">
+<div style="width:40px;height:40px;border-radius:50%;background:url({{ c.img }}) center/cover;flex:none"></div>
+<div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600">{{ c.n }}</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763;margin-top:3px">{{ c.meta }}</div></div>
+<div style="display:flex;gap:4px">
+<sc-for list="{{ c.week }}" as="w" hint-placeholder-count="7"><div style="width:14px;height:14px;border-radius:4px;background:{{ w }}"></div></sc-for>
+</div>
+<div style="width:70px;text-align:right;font:700 12px 'JetBrains Mono',monospace;color:{{ c.streakFg }}">{{ c.streak }}</div>
+</div>
+</sc-for></div></div>
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="background:#151b0c;border:1px solid #2c3a14;border-radius:18px;padding:20px">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">INVITE A FRIEND</div>
+<div style="font-size:13px;color:#dfe7d5;margin-top:8px;line-height:1.5">They get their own account and their own private data. You only ever see each other's streaks and sessions done.</div>
+<div style="display:flex;gap:8px;margin-top:14px"><div style="flex:1;background:#0a0c0d;border:1px solid #2c3a14;border-radius:10px;padding:12px 14px;font:700 14px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">CREW-7K2P</div><div style="background:#c9f24d;color:#0a0c0d;font-size:13px;font-weight:700;padding:12px 16px;border-radius:10px;cursor:pointer">Copy</div></div>
+<div style="font:400 10px 'JetBrains Mono',monospace;color:#7d9440;margin-top:10px">3 USES LEFT · EXPIRES IN 6 DAYS</div>
+</div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Sharing</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">WHAT YOUR CREW CAN SEE</div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Sessions completed this week</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Shown as dots on the crew list</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Current streak</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Number only</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Program name</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">e.g. “4-Day Upper / Lower”</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Bodyweight & measurements</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Off for everyone by default</div></div><div style="width:40px;height:22px;border-radius:11px;background:#1d2124;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#5d6763"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Progress photos</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Cannot be turned on</div></div><div style="width:40px;height:22px;border-radius:11px;background:#1d2124;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#5d6763"></div></div></div></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ pf5 }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Progress photos</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">PRIVATE STORAGE</div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:4px 0 14px"><div style="width:44px;height:44px;border-radius:12px;background:#151b0c;border:1px solid #2c3a14;display:flex;align-items:center;justify-content:center"><div style="width:14px;height:14px;border-radius:3px;background:#c9f24d"></div></div><div><div style="font-size:13.5px;font-weight:600">37 photos · 84 MB</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Private bucket, signed links that expire in 60 seconds. No one else — including your crew — can open them.</div></div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Blur thumbnails on Today</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Only the comparison view shows full photos</div></div><div style="width:40px;height:22px;border-radius:11px;background:#1d2124;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#5d6763"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Strip location metadata on upload</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">EXIF GPS removed before storing</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Notifications</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">EMAIL · ONLY WHAT MATTERS</div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Sunday weigh-in & photo reminder</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">08:00 · once a week</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Week not published by Sunday night</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Nudge to paste next week’s program</div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Friend joined your crew</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px"></div></div><div style="width:40px;height:22px;border-radius:11px;background:#c9f24d;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:21px;width:16px;height:16px;border-radius:50%;background:#0a0c0d"></div></div></div><div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Marketing</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">There is none</div></div><div style="width:40px;height:22px;border-radius:11px;background:#1d2124;position:relative;flex:none;cursor:pointer"><div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#5d6763"></div></div></div></div>
+<div style="background:#101214;border:1px solid #1d2124;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><div style="font-size:15px;font-weight:700">Your data</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">EXPORT ANY TIME</div></div>
+<div style="display:flex;gap:10px"><div style="flex:1;border:1px solid #2a3033;background:#0f1214;border-radius:11px;padding:13px;text-align:center;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#161a1c">Export everything (JSON)</div><div style="flex:1;border:1px solid #2a3033;background:#0f1214;border-radius:11px;padding:13px;text-align:center;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#161a1c">Download photos (ZIP)</div></div>
+<div style="font-size:12px;color:#7f8a84;margin-top:12px;line-height:1.5">Sessions, sets, weigh-ins, measurements, meal plans and program history. Last export: never.</div></div>
+<div style="background:#101214;border:1px solid #4a1c1c;border-radius:18px;padding:20px">
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px"><div style="font-size:15px;font-weight:700;color:#e88b8b">Danger zone</div><div style="font:400 10.5px 'JetBrains Mono',monospace;color:#5d6763">IRREVERSIBLE</div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #171b1d"><div style="flex:1"><div style="font-size:13px;font-weight:600">Sign out everywhere</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Ends 2 other sessions</div></div><div style="border:1px solid #2a3033;color:#e7ebe8;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer">Sign out</div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px 0"><div style="flex:1"><div style="font-size:13px;font-weight:600">Delete account</div><div style="font-size:11.5px;color:#7f8a84;margin-top:3px">Removes every row and photo within 24 h</div></div><div style="border:1px solid #6a2626;background:#2a1010;color:#e88b8b;font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:9px;cursor:pointer">Delete…</div></div>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:18px;align-items:stretch;min-height:820px">
+<div style="flex:1;background:#101214;border:1px solid #1d2124;border-radius:20px;padding:38px;display:flex;flex-direction:column;justify-content:center;align-items:center">
+<div style="width:100%;max-width:392px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:30px">
+<div style="width:30px;height:30px;border-radius:9px;background:#c9f24d;display:flex;align-items:center;justify-content:center"><div style="width:11px;height:11px;background:#08090a;transform:rotate(45deg)"></div></div>
+<div style="font-size:17px;font-weight:800;letter-spacing:-.02em">JLIKA GYM</div>
+</div>
+<div style="font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1.12">Welcome back.</div>
+<div style="font-size:13.5px;color:#7f8a84;margin-top:9px;line-height:1.5">Your training, body photos and meals stay in your own account. Friends you invite get their own space.</div>
+<div style="display:flex;flex-direction:column;gap:11px;margin:26px 0 16px">
+<div>
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:8px">EMAIL</div>
+<div style="background:#0c0e0f;border:1px solid #1d2124;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#e7ebe8">you@example.com</div>
+</div>
+<div>
+<div style="display:flex;margin-bottom:8px"><div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763">PASSWORD</div><div style="margin-left:auto;font:500 10px 'JetBrains Mono',monospace;color:#c9f24d;cursor:pointer">FORGOT?</div></div>
+<div style="background:#0c0e0f;border:1px solid #2c3a14;border-radius:11px;padding:14px 15px;font-size:13.5px;color:#7f8a84;letter-spacing:.2em">••••••••••</div>
+</div>
+</div>
+<div style="background:#c9f24d;color:#0a0c0d;font-size:14px;font-weight:700;padding:15px;border-radius:11px;text-align:center;cursor:pointer" style-hover="background:#dcff77">Sign in</div>
+<div style="display:flex;align-items:center;gap:12px;margin:20px 0"><div style="flex:1;height:1px;background:#1d2124"></div><div style="font:400 10px 'JetBrains Mono',monospace;color:#48524e">OR</div><div style="flex:1;height:1px;background:#1d2124"></div></div>
+<div style="display:flex;gap:10px">
+<div style="flex:1;border:1px solid #2a3033;background:#0f1214;border-radius:11px;padding:13px;text-align:center;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#161a1c">Google</div>
+<div style="flex:1;border:1px solid #2a3033;background:#0f1214;border-radius:11px;padding:13px;text-align:center;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#161a1c">Magic link</div>
+</div>
+<div style="font-size:12.5px;color:#7f8a84;margin-top:24px;text-align:center">New here? <a href="#" onClick="{{ goOnboarding }}">Create an account</a></div>
+</div>
+</div>
+<div style="width:452px;flex:none;border-radius:20px;border:1px solid #1d2124;overflow:hidden;position:relative;background:url(https://images.unsplash.com/photo-1534367610401-9f5ed68180aa?auto=format&fit=crop&w=1400&q=80) center/cover">
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,#08090ab0 0%,#08090a70 45%,#08090af7 100%)"></div>
+<div style="position:relative;height:100%;padding:32px;display:flex;flex-direction:column">
+<div style="font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">BUILT FOR YOU AND YOUR CREW</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+<sc-for list="{{ authPoints }}" as="p" hint-placeholder-count="3">
+<div style="background:#0f1214d9;border:1px solid #1d2124;border-radius:14px;padding:15px 17px">
+<div style="font-size:14px;font-weight:700">{{ p.t }}</div>
+<div style="font-size:12.5px;color:#98a29c;margin-top:6px;line-height:1.5">{{ p.d }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+
+<sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;background:#04050699;display:flex;justify-content:flex-end;z-index:40" onClick="{{ closeDrawer }}">
+<div onClick="{{ stop }}" style="width:520px;height:100%;background:#0b0d0e;border-left:1px solid #1d2124;overflow-y:auto;animation:riseIn .22s ease both">
+<div style="position:relative;aspect-ratio:16/10;background:url(https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=1400&q=80) center/cover;display:flex;align-items:center;justify-content:center">
+<div style="width:60px;height:60px;border-radius:50%;background:#c9f24d;display:flex;align-items:center;justify-content:center;cursor:pointer"><div style="width:0;height:0;border-left:18px solid #0a0c0d;border-top:11px solid transparent;border-bottom:11px solid transparent;margin-left:5px"></div></div>
+<div style="position:absolute;left:14px;top:14px;font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#f2f4f2;background:#0a0c0dcc;padding:4px 7px;border-radius:5px">FULL TUTORIAL · 2:40</div>
+<div onClick="{{ closeDrawer }}" style="position:absolute;right:14px;top:14px;width:32px;height:32px;border-radius:9px;background:#0a0c0dcc;border:1px solid #2a3033;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#98a29c">×</div>
+</div>
+<div style="padding:24px 26px 40px">
+<div style="font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">{{ drawerTag }}</div>
+<div style="font-size:26px;font-weight:800;letter-spacing:-.03em;margin:10px 0 6px;line-height:1.15">{{ focusName }}</div>
+<div style="font:400 11px 'JetBrains Mono',monospace;color:#5d6763">{{ focusMuscles }}</div>
+<div style="display:flex;gap:10px;margin:20px 0 22px">
+<div style="flex:1;background:#101214;border:1px solid #1d2124;border-radius:12px;padding:13px"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">TODAY</div><div style="font-size:16px;font-weight:800;margin-top:6px">3 × 8-12</div></div>
+<div style="flex:1;background:#101214;border:1px solid #1d2124;border-radius:12px;padding:13px"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">BEST SET</div><div style="font-size:16px;font-weight:800;margin-top:6px">34 × 10</div></div>
+<div style="flex:1;background:#101214;border:1px solid #1d2124;border-radius:12px;padding:13px"><div style="font:500 10px 'JetBrains Mono',monospace;color:#5d6763">EST. 1RM</div><div style="font-size:16px;font-weight:800;margin-top:6px">45 {{ unitLabel }}</div></div>
+</div>
+<div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#5d6763;margin-bottom:12px">HOW TO DO IT</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<sc-for list="{{ steps4 }}" as="s" hint-placeholder-count="4">
+<div style="display:flex;gap:13px;align-items:flex-start">
+<div style="width:26px;height:26px;border-radius:8px;background:#151b0c;border:1px solid #2c3a14;color:#c9f24d;font:700 11px 'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;flex:none">{{ s.i }}</div>
+<div style="font-size:13px;line-height:1.6;color:#c2ccc6">{{ s.t }}</div>
+</div>
+</sc-for>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0">
+<div style="aspect-ratio:4/3;border-radius:12px;border:1px solid #1d2124;url(https://images.unsplash.com/photo-1540497077202-7c8a3999166f?auto=format&fit=crop&w=400&q=70) center/cover;position:relative"><div style="position:absolute;bottom:9px;left:10px;font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#f2f4f2;background:#0a0c0dcc;padding:3px 6px;border-radius:4px">START POSITION</div></div>
+<div style="aspect-ratio:4/3;border-radius:12px;border:1px solid #1d2124;url(https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=70) center/cover;position:relative"><div style="position:absolute;bottom:9px;left:10px;font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.08em;color:#f2f4f2;background:#0a0c0dcc;padding:3px 6px;border-radius:4px">END POSITION</div></div>
+</div>
+<div style="background:#151b0c;border:1px solid #2c3a14;border-radius:14px;padding:16px 18px">
+<div style="font:700 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c9f24d">COMMON MISTAKE</div>
+<div style="font-size:13px;line-height:1.55;color:#dfe7d5;margin-top:8px">Bench too steep turns this into a shoulder press. Keep it at 30° and drive the dumbbells slightly back over your collarbones.</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1024},&quot;userName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Yassine&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;units&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kg&quot;,&quot;lb&quot;],&quot;default&quot;:&quot;kg&quot;,&quot;tsType&quot;:&quot;'kg' | 'lb'&quot;}}">
+const LIME = '#c9f24d', DIM = '#7f8a84';
+const POOL = ['photo-1583454110551-21f2fa2afe61','photo-1605296867304-46d5465a13f1','photo-1534438327276-14e5300c3a48','photo-1581009146145-b5ef050c2e1e',
+  'photo-1540497077202-7c8a3999166f','photo-1571902943202-507ec2618e8f','photo-1526506118085-60ce8714f8c5','photo-1574680096145-d05b474e2155',
+  'photo-1532384748853-8f54a8f476e2','photo-1599058917212-d750089bc07e','photo-1517836357463-d25dfeac3438','photo-1541534741688-6078c6bfb5c5'];
+const IMG = name => { let x = 0; for (const c of name) x = (x * 31 + c.charCodeAt(0)) >>> 0; return 'https://images.unsplash.com/' + POOL[x % POOL.length] + '?auto=format&fit=crop&w=300&q=60'; };
+
+const UPPER_A = [
+  ['Incline Dumbbell Press', '3 × 8-12', 'Upper chest · Front delts', '30 × 10, 32 × 9, 32 × 8'],
+  ['Wide Grip Lat Pulldown', '3 × 8-12', 'Lats · Mid back', '65 × 10, 65 × 9, 60 × 10'],
+  ['Machine Chest Press', '3 × 10-12', 'Chest · Triceps', '55 × 12, 55 × 11, 50 × 12'],
+  ['Seated Cable Row', '3 × 10-12', 'Mid back · Biceps', '60 × 12, 60 × 11, 55 × 12'],
+  ['Dumbbell Lateral Raise', '3 × 12-15', 'Side delts', '10 × 14, 10 × 13, 8 × 15'],
+  ['Cable Tricep Pushdown', '3 × 10-15', 'Triceps', '30 × 14, 30 × 12, 25 × 15'],
+  ['EZ Bar Curl', '3 × 10-15', 'Biceps', '25 × 12, 25 × 11, 20 × 14']
+];
+
+const PROGRAM = [
+  { tag: 'DAY 1 · MON', name: 'Upper A', focus: 'Controlled reps, full range of motion, 1–2 reps in reserve.', items: [
+    ['Incline Dumbbell Press','3 × 8-12'],['Wide Grip Lat Pulldown','3 × 8-12'],['Machine Chest Press','3 × 10-12'],
+    ['Seated Cable Row','3 × 10-12'],['Dumbbell Lateral Raise','3 × 12-15'],['Cable Tricep Pushdown','3 × 10-15'],['EZ Bar Curl','3 × 10-15']] },
+  { tag: 'DAY 2 · TUE', name: 'Lower A', focus: 'Build strength without beating up your joints.', items: [
+    ['Leg Press','3 × 8-12'],['Romanian Deadlift','3 × 8-10'],['Walking Lunges','3 × 10 / leg'],['Leg Extension','3 × 12-15'],
+    ['Hamstring Curl','3 × 10-15'],['Standing Calf Raise','4 × 12-15'],['Hanging Knee Raises','3 sets']] },
+  { tag: 'DAY 3 · THU', name: 'Upper B', focus: 'Different angles. Same muscle groups. More quality volume.', items: [
+    ['Flat Dumbbell Press','3 × 8-12'],['Close Grip Lat Pulldown','3 × 8-12'],['Chest Supported Row','3 × 10-12'],
+    ['Machine Shoulder Press','3 × 8-12'],['Cable Lateral Raise','3 × 12-15'],['Overhead Cable Tricep Ext.','3 × 10-15'],['Incline Dumbbell Curl','3 × 10-15']] },
+  { tag: 'DAY 4 · FRI', name: 'Lower B', focus: 'Train hard, recover well, come back stronger next week.', items: [
+    ['Hack Squat','3 × 8-12'],['Bulgarian Split Squat','3 × 8 / leg'],['Seated Hamstring Curl','3 × 10-15'],['Leg Extension','3 × 12-15'],
+    ['Seated Calf Raise','4 × 12-15'],['Cable Crunch','3 sets']] }
+];
+
+class Component extends DCLogic {
+  state = { screen: 'today', ob: 1, pf: 0, lg: 0, allergies: { Shellfish: 1, Peanuts: 1 }, prefs: { 'No pork': 1 }, progStart: 0, done: {}, drawer: false, paste: false, resting: false, restLeft: 90, cmp: 52, bought: { 0: true, 2: true } };
+
+  componentWillUnmount() { clearInterval(this._t); }
+
+  toggleRest = () => {
+    clearInterval(this._t);
+    if (this.state.resting) { this.setState({ resting: false, restLeft: 90 }); return; }
+    this.setState({ resting: true, restLeft: 90 });
+    this._t = setInterval(() => this.setState(s => {
+      if (s.restLeft <= 1) { clearInterval(this._t); return { resting: false, restLeft: 90 }; }
+      return { restLeft: s.restLeft - 1 };
+    }), 1000);
+  };
+
+  go = (screen) => () => this.setState({ screen, drawer: false });
+
+  sparkline(pts, color) {
+    const w = 90, h = 26, mn = Math.min(...pts), mx = Math.max(...pts);
+    const d = pts.map((p, i) => `${(i / (pts.length - 1)) * w},${h - ((p - mn) / (mx - mn || 1)) * (h - 4) - 2}`).join(' ');
+    return React.createElement('svg', { width: '100%', height: h, viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: 'none' },
+      React.createElement('polyline', { points: d, fill: 'none', stroke: color, strokeWidth: 1.6, strokeLinejoin: 'round' }));
+  }
+
+  lineChart(series, w, h) {
+    const all = series.flatMap(s => s.pts), mn = Math.min(...all) * 0.985, mx = Math.max(...all) * 1.015;
+    const x = i => (i / (series[0].pts.length - 1)) * w;
+    const y = v => h - ((v - mn) / (mx - mn || 1)) * h;
+    const kids = [];
+    for (let g = 0; g <= 4; g++) kids.push(React.createElement('line', { key: 'g' + g, x1: 0, x2: w, y1: (h / 4) * g, y2: (h / 4) * g, stroke: '#1a1e20', strokeWidth: 1 }));
+    series.forEach((s, si) => {
+      const pts = s.pts.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+      if (s.fill) kids.push(React.createElement('polygon', { key: 'f' + si, points: `0,${h} ${pts} ${w},${h}`, fill: s.fill }));
+      kids.push(React.createElement('polyline', { key: 'l' + si, points: pts, fill: 'none', stroke: s.color, strokeWidth: s.width || 2, strokeLinejoin: 'round', strokeLinecap: 'round', strokeDasharray: s.dash || undefined }));
+      const li = s.pts.length - 1;
+      kids.push(React.createElement('circle', { key: 'c' + si, cx: x(li), cy: y(s.pts[li]), r: 3.5, fill: s.color }));
+    });
+    return React.createElement('svg', { width: '100%', height: h, viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: 'none', style: { display: 'block' } }, kids);
+  }
+
+  ring(size, pct, cal, target) {
+    const r = size / 2 - 9, c = 2 * Math.PI * r;
+    return React.createElement('div', { style: { position: 'relative', width: size, height: size, flex: 'none' } },
+      React.createElement('svg', { width: size, height: size, style: { transform: 'rotate(-90deg)' } },
+        React.createElement('circle', { cx: size / 2, cy: size / 2, r, fill: 'none', stroke: '#1d2124', strokeWidth: 10 }),
+        React.createElement('circle', { cx: size / 2, cy: size / 2, r, fill: 'none', stroke: LIME, strokeWidth: 10, strokeLinecap: 'round', strokeDasharray: c, strokeDashoffset: c * (1 - pct) })),
+      React.createElement('div', { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' } },
+        React.createElement('div', { style: { fontSize: size > 130 ? 30 : 22, fontWeight: 800, letterSpacing: '-.03em' } }, cal),
+        React.createElement('div', { style: { font: "400 10px 'JetBrains Mono',monospace", color: '#5d6763', marginTop: 2 } }, target)));
+  }
+
+  compare() {
+    const p = this.state.cmp;
+    return React.createElement('div', { style: { position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid #1d2124', height: 372, background: 'url(https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=1400&q=80) center/cover' } },
+      React.createElement('div', { style: { position: 'absolute', inset: 0, width: p + '%', overflow: 'hidden', background: 'url(https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=1400&q=80) center/cover', filter: 'grayscale(.5) brightness(.85)' } }),
+      React.createElement('div', { style: { position: 'absolute', left: p + '%', top: 0, bottom: 0, width: 2, background: LIME } }),
+      React.createElement('div', { style: { position: 'absolute', left: p + '%', top: '50%', transform: 'translate(-50%,-50%)', width: 34, height: 34, borderRadius: '50%', background: LIME, border: '3px solid #0a0c0d' } }),
+      React.createElement('div', { style: { position: 'absolute', left: 14, top: 14, font: "700 10px 'JetBrains Mono',monospace", letterSpacing: '.1em', color: LIME } }, 'JUN 02 · 82.1 KG'),
+      React.createElement('div', { style: { position: 'absolute', right: 14, top: 14, font: "700 10px 'JetBrains Mono',monospace", letterSpacing: '.1em', color: '#7f8a84' } }, 'SEP 01 · 77.3 KG'),
+      React.createElement('input', { type: 'range', min: 0, max: 100, value: p, onChange: e => this.setState({ cmp: +e.target.value }), style: { position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'ew-resize' } }));
+  }
+
+  renderVals() {
+    const s = this.state, unit = this.props.units ?? 'kg';
+    const nav = (id, label, meta) => ({
+      label, meta: meta || '', go: this.go(id),
+      bg: s.screen === id ? '#151b0c' : 'transparent',
+      dot: s.screen === id ? LIME : '#2f3639',
+      fg: s.screen === id ? '#f2f4f2' : '#98a29c',
+      fw: s.screen === id ? 700 : 500
+    });
+    const titles = {
+      today: ['Let\'s get after it', 'MONDAY, SEP 01 · WEEK 12 OF THE CUT'],
+      session: ['Upper A · in progress', 'SET LOGGING · AUTOSAVED'],
+      program: ['Program builder', 'YOU WRITE THE WEEK · WE TRACK THE REST'],
+      progress: ['Body progress', 'PHOTOS · WEIGHT · MEASUREMENTS'],
+      nutrition: ['Nutrition', 'FAT LOSS · 2,150 KCAL · 185 G PROTEIN'],
+      onboarding: ['Onboarding flow', 'STEP ' + s.ob + ' OF 5 \u00b7 ' + ['ACCOUNT', 'BODY', 'GOAL', 'FOOD', 'PROGRAM'][s.ob - 1]],
+      auth: ['Sign in', 'EMAIL · GOOGLE · MAGIC LINK'],
+      league: ['Crew league', 'SEASON 1 · WEEK 1 OF 12 · 4 ATHLETES'],
+      profile: ['Profile & settings', ['ACCOUNT', 'TARGETS', 'FOOD', 'CREW', 'DATA & PRIVACY'][s.pf] + ' · CHANGES APPLY FROM TOMORROW']
+    };
+    const doneCount = Object.values(s.done).filter(Boolean).length;
+    const hr = new Date().getHours();
+    titles.today[0] = (hr < 12 ? 'Morning' : hr < 18 ? 'Afternoon' : 'Evening') + ', ' + (this.props.userName ?? 'Yassine') + ' — Upper A is up';
+
+    const sessionExercises = UPPER_A.slice(0, 3).map(([name, target, muscles, last], ei) => ({
+      name, target, last, img: IMG(name), open: () => this.setState({ drawer: true }),
+      bd: ei === 0 ? '#2c3a14' : '#1d2124',
+      headBg: ei === 0 ? '#0f1409' : 'transparent',
+      sets: [0, 1, 2].map(si => {
+        const key = ei + '-' + si, on = !!s.done[key];
+        return {
+          i: si + 1, weight: [34, 32, 30][si] + '', reps: [10, 9, 9][si] + '', rpe: on ? '8' : '—', pr: ei === 0 && si === 0 && on,
+          toggle: () => this.setState(st => ({ done: { ...st.done, [key]: !st.done[key] } })),
+          fieldBg: on ? '#0f1409' : '#0c0e0f', fieldBd: on ? '#2c3a14' : '#1d2124', fieldFg: on ? LIME : '#e7ebe8',
+          checkBg: on ? LIME : '#0c0e0f', checkBd: on ? LIME : '#2a3033', checkDot: on ? '#0a0c0d' : '#2f3639'
+        };
+      })
+    }));
+
+    const groceryData = [
+      ['PROTEIN', [['Chicken breast', '1.6 kg'], ['Greek yogurt 0%', '1 kg'], ['Eggs', '18'], ['Salmon fillet', '600 g']]],
+      ['CARBS', [['Basmati rice', '1 kg'], ['Rolled oats', '800 g'], ['Sweet potato', '1.2 kg']]],
+      ['PRODUCE', [['Broccoli', '700 g'], ['Spinach', '400 g'], ['Tomatoes', '6'], ['Bananas', '7']]],
+      ['OTHER', [['Olive oil', '500 ml'], ['Almonds', '250 g']]]
+    ];
+    let gidx = 0;
+    const grocery = groceryData.map(([cat, items]) => ({
+      cat, items: items.map(([n, q]) => {
+        const key = gidx++, on = !!s.bought[key];
+        return { n, q, toggle: () => this.setState(st => ({ bought: { ...st.bought, [key]: !st.bought[key] } })),
+          bg: on ? LIME : 'transparent', bd: on ? LIME : '#2a3033', dot: on ? '#0a0c0d' : 'transparent',
+          fg: on ? '#5d6763' : '#e7ebe8', td: on ? 'line-through' : 'none' };
+      })
+    }));
+
+    const day = (d, title, meta, state) => ({
+      day: d, title, meta,
+      bg: state === 'done' ? '#0f1409' : state === 'today' ? '#151b0c' : '#0c0e0f',
+      bd: state === 'today' ? '#4a6120' : state === 'done' ? '#2c3a14' : '#1d2124',
+      fg: state === 'rest' ? '#5d6763' : '#f2f4f2',
+      dayFg: state === 'today' ? LIME : '#5d6763',
+      metaFg: state === 'done' ? '#7d9440' : '#5d6763'
+    });
+
+    return {
+      userName: this.props.userName ?? 'Yassine',
+      unitLabel: unit,
+      weightHeader: unit.toUpperCase(),
+      weightNow: unit === 'lb' ? '170.4' : '77.3',
+      pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
+      isToday: s.screen === 'today', isSession: s.screen === 'session', isProgram: s.screen === 'program',
+      isProgress: s.screen === 'progress', isNutrition: s.screen === 'nutrition',
+      isOnboarding: s.screen === 'onboarding', isAuth: s.screen === 'auth', isProfile: s.screen === 'profile', isLeague: s.screen === 'league',
+      lgTabs: ['OVERALL', 'CONSISTENCY', 'TRANSFORMATION'].map((n, i) => ({ n, go: () => this.setState({ lg: i }), fg: s.lg === i ? '#0a0c0d' : '#7f8a84', bg: s.lg === i ? LIME : 'transparent' })),
+      lgColLabel: ['SESSIONS', 'SESSIONS', 'TOWARD GOAL'][s.lg],
+      standings: (() => {
+        const A = [
+          { n: 'Sara', meta: 'FULL BODY 3× · BULK', img: 'photo-1494790108377-be9c29b29330', wk: [1, 0, 1, 0, 2, 0, 1], c: 1380, t: 1310, ses: '12 / 12', goal: '+1.8 %' },
+          { n: 'Yassine', meta: 'UPPER / LOWER · CUT', img: 'photo-1500648767791-00dcc994a43e', wk: [1, 1, 0, 1, 2, 0, 0], c: 1284, t: 1310 - 96, ses: '11 / 12', goal: '-2.4 %', me: 1 },
+          { n: 'Amine', meta: 'PUSH PULL LEGS · RECOMP', img: 'photo-1507003211169-0a1dd7228f2d', wk: [1, 1, 1, 0, 1, 2, 0], c: 1160, t: 640, ses: '10 / 12', goal: '-0.6 %' },
+          { n: 'Karim', meta: 'UPPER / LOWER · CUT', img: 'photo-1506794778202-cad84cf45f1d', wk: [0, 1, 0, 0, 0, 0, 0], c: 420, t: 380, ses: '4 / 12', goal: '-0.9 %' }
+        ];
+        const score = a => s.lg === 0 ? a.c + a.t : s.lg === 1 ? a.c : a.t;
+        return A.sort((a, b) => score(b) - score(a)).map((a, i) => ({
+          rank: String(i + 1).padStart(2, '0'), n: a.n + (a.me ? ' (you)' : ''), meta: a.meta,
+          img: 'https://images.unsplash.com/' + a.img + '?auto=format&fit=crop&w=200&q=60',
+          week: a.wk.map(v => v === 1 ? LIME : v === 2 ? '#3f5320' : '#1d2124'),
+          metric: s.lg === 2 ? a.goal : a.ses, metricFg: s.lg === 2 ? LIME : '#e7ebe8',
+          pts: score(a).toLocaleString(), delta: i === 0 ? 'LEADER' : '-' + (score(A[0]) - score(a)), deltaFg: i === 0 ? LIME : '#5d6763',
+          bg: a.me ? '#151b0c' : '#0c0e0f', bd: a.me ? '#4a6120' : '#171b1d', rankFg: i === 0 ? LIME : '#5d6763', ring: i === 0 ? LIME : 'transparent'
+        }));
+      })(),
+      leagueChart: this.lineChart([
+        { pts: [0, 420, 840, 1300, 1700, 2100, 2400, 2690], color: '#e7ebe8', width: 2 },
+        { pts: [0, 380, 760, 1150, 1520, 1900, 2280, 2594], color: LIME, width: 2.5 },
+        { pts: [0, 300, 600, 850, 1150, 1400, 1600, 1800], color: '#7d9440', width: 1.6 },
+        { pts: [0, 120, 240, 300, 420, 540, 700, 800], color: '#4a5560', width: 1.6, dash: '4 4' }
+      ], 640, 150),
+      lgLegend: [{ n: 'SARA', c: '#e7ebe8' }, { n: 'YASSINE', c: LIME }, { n: 'AMINE', c: '#7d9440' }, { n: 'KARIM', c: '#4a5560' }],
+      challenges: [
+        { tag: 'CREW · LIVE', tagFg: LIME, tagBg: '#151b0c', left: '3 WEEKS LEFT', n: '16 sessions in September', d: 'Everyone · first to 16 wins, others owe a coffee', pct: '69%', prog: '11 / 16', barC: LIME, bd: '#2c3a14', bg: '#0f1409', faces: 4 },
+        { tag: 'HEAD-TO-HEAD', tagFg: '#c98d4d', tagBg: '#2a1e10', left: '9 DAYS LEFT', n: 'Waist race vs Amine', d: '% waist change from Sep 1 · loser cooks', pct: '55%', prog: '-1.6 cm', barC: '#c98d4d', bd: '#1d2124', bg: '#0c0e0f', faces: 2 },
+        { tag: 'PERSONAL', tagFg: '#7f8a84', tagBg: '#171b1d', left: 'ENDS SUNDAY', n: 'Hit 185 g protein every day', d: 'Only you can see this one', pct: '86%', prog: '6 / 7', barC: '#7d9440', bd: '#1d2124', bg: '#0c0e0f', faces: 1 }
+      ].map(c => ({ ...c, faces: ['photo-1500648767791-00dcc994a43e', 'photo-1494790108377-be9c29b29330', 'photo-1507003211169-0a1dd7228f2d', 'photo-1506794778202-cad84cf45f1d'].slice(0, c.faces).map(p => 'https://images.unsplash.com/' + p + '?auto=format&fit=crop&w=100&q=60') })),
+      badges: [['Perfect week', '4 / 4 SESSIONS', 1], ['Early bird', '5 AM SESSIONS', 1], ['Iron waist', '-5 CM', 1], ['Volume king', '50K KG / WK', 0], ['Streak 30', '30 DAYS', 0], ['Photo day', '12 WEEKS', 0]]
+        .map(([n, d, on]) => ({ n, d, bd: on ? '#2c3a14' : '#1d2124', bg: on ? '#0f1409' : '#0c0e0f', ic: on ? LIME : '#1d2124', fg: on ? '#f2f4f2' : '#5d6763' })), goProfile: this.go('profile'),
+      pfTabs: ['ACCOUNT', 'TARGETS', 'FOOD', 'CREW', 'DATA & PRIVACY'].map((n, i) => ({ n, go: () => this.setState({ pf: i }), fg: s.pf === i ? '#0a0c0d' : '#7f8a84', bg: s.pf === i ? LIME : 'transparent' })),
+      pf1: s.pf === 0, pf2: s.pf === 1, pf3: s.pf === 2, pf4: s.pf === 3, pf5: s.pf === 4,
+      pfDays: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((n, i) => { const on = [1, 1, 0, 1, 1, 0, 0][i]; return { n, bd: on ? '#4a6120' : '#1d2124', bg: on ? '#151b0c' : '#0c0e0f', fg: on ? LIME : '#5d6763' }; }),
+      crew: [['Yassine (you)', 'UPPER / LOWER · W12', [1, 1, 0, 1, 2, 0, 0], '14 d', 'photo-1500648767791-00dcc994a43e', 1],
+        ['Amine', 'PUSH PULL LEGS · W4', [1, 1, 1, 0, 1, 2, 0], '9 d', 'photo-1507003211169-0a1dd7228f2d', 1],
+        ['Sara', 'FULL BODY 3×', [1, 0, 1, 0, 2, 0, 0], '21 d', 'photo-1494790108377-be9c29b29330', 1],
+        ['Karim', 'UPPER / LOWER · W2', [0, 1, 0, 0, 0, 0, 0], '—', 'photo-1506794778202-cad84cf45f1d', 0]]
+        .map(([n, meta, wk, streak, img, active]) => ({ n, meta, streak, streakFg: active ? LIME : '#5d6763', img: 'https://images.unsplash.com/' + img + '?auto=format&fit=crop&w=200&q=60',
+          week: wk.map(v => v === 1 ? LIME : v === 2 ? '#3f5320' : '#1d2124') })),
+
+      navTrain: [nav('today', 'Today', 'D1'), nav('session', 'Live session', 'ON'), nav('program', 'Program', 'W12')],
+      navBody: [nav('progress', 'Body progress'), nav('nutrition', 'Nutrition'), nav('league', 'Crew league', '2ND')],
+      navFlows: [nav('profile', 'Profile & settings'), nav('onboarding', 'Onboarding'), nav('auth', 'Sign in')],
+
+      startSession: this.go('session'), goProgram: this.go('program'), goNutrition: this.go('nutrition'),
+      goProgress: this.go('progress'), goOnboarding: this.go('onboarding'),
+
+      stats: [
+        { label: 'SESSIONS', value: '3', unit: '/ 4 this week', delta: 'On plan', deltaColor: LIME, spark: this.sparkline([2, 3, 4, 3, 4, 3, 3], LIME) },
+        { label: 'VOLUME', value: '42.3', unit: 'k ' + unit, delta: '+8% vs last week', deltaColor: LIME, spark: this.sparkline([31, 34, 33, 38, 36, 39, 42], LIME) },
+        { label: 'AVG DEFICIT', value: '-410', unit: 'kcal / day', delta: 'Target -400', deltaColor: DIM, spark: this.sparkline([-380, -520, -300, -440, -410, -390, -410], '#4a5560') },
+        { label: 'SLEEP', value: '7.1', unit: 'h avg', delta: '-0.4 h vs last week', deltaColor: '#c98d4d', spark: this.sparkline([7.8, 7.2, 6.5, 7, 6.9, 7.4, 7.1], '#c98d4d') }
+      ],
+      weightChart: this.lineChart([{ pts: [82.1, 81.6, 81.2, 80.9, 80.2, 79.8, 79.5, 79.1, 78.6, 78.2, 77.8, 77.3], color: LIME, fill: '#c9f24d14' }], 640, 150),
+      strengthChart: this.lineChart([
+        { pts: [100, 101, 100, 103, 104, 103, 105, 106], color: LIME },
+        { pts: [100, 99, 98.2, 97.4, 96.5, 95.6, 94.8, 94.1], color: '#4a5560', dash: '4 4', width: 1.6 }
+      ], 300, 120),
+      week: [
+        day('MON', 'Upper A', 'TODAY · 62 MIN', 'today'),
+        day('TUE', 'Lower A', 'DONE · 58 MIN', 'done'),
+        day('WED', 'Rest', 'WALK 8K', 'rest'),
+        day('THU', 'Upper B', 'DONE · 64 MIN', 'done'),
+        day('FRI', 'Lower B', 'PLANNED', 'plan'),
+        day('SAT', 'Rest', 'MOBILITY', 'rest'),
+        day('SUN', 'Weigh-in', 'PHOTO DAY', 'plan')
+      ],
+      macros: [
+        { name: 'Protein', val: '142 / 185 g', pct: '77%', color: LIME },
+        { name: 'Carbs', val: '168 / 210 g', pct: '80%', color: '#7d9440' },
+        { name: 'Fat', val: '48 / 62 g', pct: '77%', color: '#4a5560' }
+      ],
+      macrosBig: [
+        { name: 'PROTEIN', val: '142 / 185 g', pct: '77%', color: LIME },
+        { name: 'CARBS', val: '168 / 210 g', pct: '80%', color: '#7d9440' },
+        { name: 'FAT', val: '48 / 62 g', pct: '77%', color: '#4a5560' }
+      ],
+      calRing: this.ring(112, 0.76, '1,640', 'OF 2,150'),
+      calRingBig: this.ring(152, 0.76, '1,640', 'OF 2,150 KCAL'),
+      volume: [
+        { name: 'Chest', sets: '14 sets', pct: '82%', color: LIME },
+        { name: 'Back', sets: '16 sets', pct: '94%', color: LIME },
+        { name: 'Legs', sets: '18 sets', pct: '100%', color: LIME },
+        { name: 'Shoulders', sets: '6 sets', pct: '35%', color: '#c98d4d' },
+        { name: 'Arms', sets: '12 sets', pct: '70%', color: '#7d9440' }
+      ],
+
+      setsDone: doneCount, sessionVolume: (2.1 + doneCount * 0.32).toFixed(1) + 'k',
+      restLabel: s.resting ? 'REST ' + Math.floor(s.restLeft / 60) + ':' + String(s.restLeft % 60).padStart(2, '0') : 'START REST 1:30',
+      restBg: s.resting ? LIME : '#151b0c', restBd: s.resting ? LIME : '#2c3a14', restFg: s.resting ? '#0a0c0d' : LIME,
+      toggleRest: this.toggleRest,
+      sessionExercises,
+      focusName: 'Incline Dumbbell Press', focusMuscles: 'UPPER CHEST · FRONT DELTS · TRICEPS',
+      cues: ['Bench at 30°, feet planted, shoulder blades pinned back and down.',
+        'Lower until the dumbbells are level with your upper chest — no bouncing.',
+        'Stop 1–2 reps short of failure. That is where the good volume lives.'],
+      history: [{ date: 'AUG 04', pct: '72%', load: '28 kg' }, { date: 'AUG 11', pct: '80%', load: '30 kg' }, { date: 'AUG 18', pct: '86%', load: '30 kg' }, { date: 'AUG 25', pct: '94%', load: '32 kg' }],
+      steps4: [{ i: '1', t: 'Set the bench to 30°. Steeper turns it into a shoulder press.' },
+        { i: '2', t: 'Press the dumbbells up and slightly together, elbows tucked around 45°.' },
+        { i: '3', t: 'Lower under control for 2–3 seconds until you feel a stretch across the chest.' },
+        { i: '4', t: 'Keep your ribcage down and lower back flat against the bench throughout.' }],
+      drawerOpen: s.drawer, drawerTag: 'EXERCISE · DAY 1 UPPER A',
+      closeDrawer: () => this.setState({ drawer: false }), stop: e => e.stopPropagation(),
+
+      showPaste: s.paste, togglePaste: () => this.setState({ paste: !s.paste }),
+      programDays: PROGRAM.map((d, i) => ({
+        tag: d.tag, name: d.name, focus: d.focus, meta: d.items.length + ' EXERCISES',
+        headBg: i === 0 ? '#0f1409' : 'transparent', tagFg: i === 0 ? LIME : '#5d6763',
+        items: d.items.map(([n, st]) => ({ n, s: st, img: IMG(n) }))
+      })),
+      libFilters: [{ name: 'ALL', bg: LIME, bd: LIME, fg: '#0a0c0d' }, { name: 'CHEST', bg: 'transparent', bd: '#2a3033', fg: '#98a29c' },
+        { name: 'BACK', bg: 'transparent', bd: '#2a3033', fg: '#98a29c' }, { name: 'LEGS', bg: 'transparent', bd: '#2a3033', fg: '#98a29c' },
+        { name: 'DELTS', bg: 'transparent', bd: '#2a3033', fg: '#98a29c' }, { name: 'ARMS', bg: 'transparent', bd: '#2a3033', fg: '#98a29c' }],
+      libItems: [['Barbell Bench Press', 'CHEST · BARBELL'], ['Pull-Up', 'LATS · BODYWEIGHT'], ['Hack Squat', 'QUADS · MACHINE'],
+        ['Cable Lateral Raise', 'SIDE DELTS · CABLE'], ['Romanian Deadlift', 'HAMSTRINGS · BARBELL'], ['Cable Crunch', 'ABS · CABLE']]
+        .map(([n, m]) => ({ n, m, img: IMG(n), open: () => this.setState({ drawer: true }) })),
+
+      compareView: this.compare(),
+      photoTimeline: ['JUN 02', 'JUN 16', 'JUN 30', 'JUL 14', 'JUL 28', 'AUG 11', 'AUG 25', 'SEP 01']
+        .map((d, i) => ({ d, bd: i === 7 ? LIME : '#1d2124', fg: i === 7 ? LIME : '#5d6763', gray: i === 7 ? 0 : ((7 - i) / 9).toFixed(2),
+          img: 'https://images.unsplash.com/' + (i % 2 ? 'photo-1605296867304-46d5465a13f1' : 'photo-1571019614242-c5c5dee9f50b') + '?auto=format&fit=crop&w=300&q=60' })),
+      measures: [
+        { name: 'Weight', now: '77.3 ' + unit, delta: '-4.8', color: LIME },
+        { name: 'Waist', now: '82.0 cm', delta: '-6.5', color: LIME },
+        { name: 'Chest', now: '104.5 cm', delta: '-1.0', color: DIM },
+        { name: 'Arm (flexed)', now: '37.2 cm', delta: '+0.4', color: LIME },
+        { name: 'Thigh', now: '58.6 cm', delta: '-0.8', color: DIM },
+        { name: 'Body fat (est.)', now: '15.4 %', delta: '-4.1', color: LIME }
+      ],
+
+      meals: [
+        { slot: 'BREAKFAST', time: '07:30', name: 'Oats, whey & berries', items: 'Rolled oats · Whey · Blueberries · Almonds', kcal: '480', macros: '42P / 58C / 9F', state: 1 },
+        { slot: 'LUNCH', time: '13:00', name: 'Chicken, rice & greens bowl', items: 'Chicken breast · Basmati · Broccoli · Olive oil', kcal: '610', macros: '52P / 64C / 14F', state: 1 },
+        { slot: 'PRE-WORKOUT', time: '17:30', name: 'Greek yogurt & banana', items: 'Yogurt 0% · Banana · Honey', kcal: '280', macros: '24P / 38C / 3F', state: 0 },
+        { slot: 'DINNER', time: '20:30', name: 'Salmon, potatoes & salad', items: 'Salmon · Sweet potato · Spinach · Lemon', kcal: '780', macros: '48P / 50C / 36F', state: 0 }
+      ].map((m, i) => ({ ...m, img: 'https://images.unsplash.com/' + ["photo-1517673400267-0251440c45dc","photo-1546069901-ba9599a7e63c","photo-1488477181946-6428a0291777","photo-1467003909585-2f8a72700288"][i] + '?auto=format&fit=crop&w=300&q=60', bd: m.state ? '#2c3a14' : '#1d2124', bg: m.state ? '#0f1409' : '#0c0e0f',
+        slotFg: m.state ? LIME : '#5d6763', checkBg: m.state ? LIME : 'transparent', checkBd: m.state ? LIME : '#2a3033', checkDot: m.state ? '#0a0c0d' : '#2f3639' })),
+      mealWeek: [['MON', '2,400', '185 P', 'TRAINING', 1], ['TUE', '2,400', '185 P', 'TRAINING', 0], ['WED', '2,150', '185 P', 'REST', 0],
+        ['THU', '2,400', '185 P', 'TRAINING', 0], ['FRI', '2,400', '185 P', 'TRAINING', 0], ['SAT', '2,150', '185 P', 'REST', 0], ['SUN', '2,300', '175 P', 'REFEED', 0]]
+        .map(([d, k, p, tag, today]) => ({ day: d, kcal: k, p, tag, bg: today ? '#151b0c' : '#0c0e0f', bd: today ? '#4a6120' : '#1d2124',
+          dayFg: today ? LIME : '#5d6763', fg: '#f2f4f2', metaFg: tag === 'REST' ? '#5d6763' : '#7d9440' })),
+      grocery,
+      allergyTags: [['Shellfish', 1], ['Peanuts', 1], ['No pork', 1], ['Dairy', 0], ['Gluten', 0], ['Eggs', 0]]
+        .map(([n, on]) => ({ n, bg: on ? '#2a1010' : 'transparent', bd: on ? '#4a1c1c' : '#2a3033', fg: on ? '#e88b8b' : '#5d6763' })),
+
+      steps: ['ACCOUNT', 'BODY', 'GOAL', 'FOOD', 'PROGRAM'].map((n, i) => ({ n, bg: i < s.ob ? LIME : '#1d2124', fg: i < s.ob ? '#c9f24d' : '#48524e' })),
+      obStepNum: s.ob, ob1: s.ob === 1, ob2: s.ob === 2, ob3: s.ob === 3, ob4: s.ob === 4, ob5: s.ob === 5,
+      obBack: () => s.ob > 1 ? this.setState({ ob: s.ob - 1 }) : this.setState({ screen: 'auth' }),
+      obNext: () => s.ob < 5 ? this.setState({ ob: s.ob + 1 }) : this.setState({ screen: 'today', ob: 1 }),
+      obNextLabel: s.ob === 5 ? 'Finish & open Today' : 'Continue',
+      obNextHint: ['Next: height, weight & activity', 'Next: your goal', 'Next: allergies & foods you won\u2019t eat', 'Next: your first program', 'You can edit every answer in Settings'][s.ob - 1],
+      obSideTag: ['PRIVATE BY DEFAULT', 'JUST THE MATH', 'FAT LOSS, MUSCLE KEPT', 'HARD FILTERS', 'YOUR WEEK, YOUR RULES'][s.ob - 1],
+      obSideTitle: ['One account each. Nothing shared unless you say so.', 'We only need this once \u2014 your scale takes over.', 'Every week you write the plan. JLIKA Gym remembers the rest.', 'No allergen ever slips into a recipe or a grocery list.', 'Paste it, build it, or start blank.'][s.ob - 1],
+      obSideBody: ['Friends you invite get their own login, their own photos and their own numbers.', 'Maintenance calories are an estimate; weekly weigh-ins and photos correct it automatically.', 'Sets, loads, photos, macros \u2014 all stitched into one timeline you and your friends can each keep private.', 'Excludes apply to plans, swaps and search, and you can change them any time.', 'Whatever you paste becomes structured sets and reps, matched to the exercise library.'][s.ob - 1],
+      activity: [['Desk', '1.35 \u00d7', 0], ['Light', '1.45 \u00d7', 1], ['Active', '1.55 \u00d7', 0], ['On feet', '1.7 \u00d7', 0]]
+        .map(([n, d, on]) => ({ n, d, bd: on ? '#4a6120' : '#1d2124', bg: on ? '#151b0c' : '#0c0e0f', fg: '#f2f4f2' })),
+      allergyPick: ['Dairy', 'Eggs', 'Gluten', 'Peanuts', 'Tree nuts', 'Shellfish', 'Fish', 'Soy', 'Sesame'].map(n => {
+        const on = !!s.allergies[n];
+        return { n, toggle: () => this.setState(st => ({ allergies: { ...st.allergies, [n]: !st.allergies[n] } })),
+          bg: on ? '#2a1010' : 'transparent', bd: on ? '#6a2626' : '#2a3033', fg: on ? '#e88b8b' : '#98a29c' };
+      }),
+      prefPick: ['No pork', 'No red meat', 'Vegetarian', 'Halal', 'No sugar drinks', 'Low lactose'].map(n => {
+        const on = !!s.prefs[n];
+        return { n, toggle: () => this.setState(st => ({ prefs: { ...st.prefs, [n]: !st.prefs[n] } })),
+          bg: on ? '#151b0c' : 'transparent', bd: on ? '#4a6120' : '#2a3033', fg: on ? LIME : '#98a29c' };
+      }),
+      progStart: [['Paste as text', 'Any format \u2014 day headers, sets \u00d7 reps.'], ['Build by hand', 'Pick from 412 exercises with video.'], ['Start blank', 'Log freely; structure it later.']]
+        .map(([n, d], i) => ({ n, d, pick: () => this.setState({ progStart: i }), bd: s.progStart === i ? '#4a6120' : '#1d2124',
+          bg: s.progStart === i ? '#151b0c' : '#0c0e0f', ringBd: s.progStart === i ? LIME : '#2a3033', ringDot: s.progStart === i ? LIME : 'transparent' })),
+      goals: [
+        { n: 'Lose fat, keep muscle', d: 'Moderate deficit, high protein, strength held steady.', on: 1 },
+        { n: 'Build muscle', d: 'Small surplus with progressive overload week to week.', on: 0 },
+        { n: 'Recomp', d: 'Maintenance calories, slower on both fronts.', on: 0 },
+        { n: 'Strength numbers', d: 'Lower reps, longer rests, tracked 1RM estimates.', on: 0 }
+      ].map(g => ({ ...g, pick: () => {}, bd: g.on ? '#4a6120' : '#1d2124', bg: g.on ? '#151b0c' : '#0c0e0f',
+        fg: '#f2f4f2', ringBd: g.on ? LIME : '#2a3033', ringDot: g.on ? LIME : 'transparent' })),
+      ticks: Array.from({ length: 26 }, (_, i) => ({ h: (i === 12 ? 26 : i % 5 === 0 ? 16 : 10) + 'px', c: i === 12 ? LIME : '#252b2d' })),
+      authPoints: [
+        { t: 'One account per person', d: 'You and your friends each get a private space — nobody sees another\'s photos or numbers.' },
+        { t: 'Your week, your rules', d: 'Paste or build the program yourself. Nothing is auto-generated unless you ask.' },
+        { t: 'Everything in one timeline', d: 'Sets, bodyweight, photos and meals line up on the same dates so progress is obvious.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

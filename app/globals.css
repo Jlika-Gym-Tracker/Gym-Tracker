@@ -1,0 +1,223 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+  JLIKA GYM design tokens.
+  Source of truth: design/JLIKA Gym.dc.html. Dark-only surface — there is no light theme.
+  shadcn's semantic variables are mapped onto this palette so its components inherit the
+  look without restyling each one.
+*/
+
+:root {
+  /* Surfaces */
+  --bg: #08090a;
+  --surface: #101214;          /* cards */
+  --surface-2: #0c0e0f;        /* fields, inset tiles */
+  --sidebar-bg: #0b0d0e;
+  --topbar-bg: #0a0c0d;
+  --hover: #14181a;            /* row hover */
+  --ghost: #0f1214;            /* secondary button face */
+  --done: #0f1409;             /* completed set / done day */
+
+  /* Lines */
+  --border: #1d2124;
+  --border-hi: #2c3a14;        /* lime-tinted hairline */
+  --border-sel: #4a6120;       /* selected */
+  --stroke: #2a3033;           /* button + chip outline */
+  --rule: #191d1f;             /* sidebar / topbar divider */
+
+  /* Text */
+  --fg: #f2f4f2;
+  --fg-2: #e7ebe8;
+  --fg-muted: #98a29c;
+  --fg-soft: #7f8a84;
+  --fg-dim: #5d6763;
+  --fg-faint: #48524e;
+
+  /* Accent */
+  --accent: #c9f24d;
+  --accent-hi: #dcff77;
+  --accent-soft: #151b0c;
+  --accent-2: #7d9440;
+  --accent-deep: #3f5320;
+
+  /* Status */
+  --warn: #c98d4d;
+  --warn-soft: #2a1e10;
+  --danger: #e88b8b;
+  --danger-soft: #2a1010;
+  --danger-border: #6a2626;
+
+  --radius: 0.6875rem; /* 11px — buttons/fields; cards use radius-2xl (~20px) */
+
+  /* shadcn semantic mapping */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --card-foreground: var(--fg);
+  --popover: var(--sidebar-bg);
+  --popover-foreground: var(--fg);
+  --primary: var(--accent);
+  --primary-foreground: #0a0c0d;
+  --secondary: var(--ghost);
+  --secondary-foreground: var(--fg-2);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--fg-soft);
+  --accent-foreground: #0a0c0d;
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--border-sel);
+  --chart-1: var(--accent);
+  --chart-2: var(--accent-2);
+  --chart-3: var(--accent-deep);
+  --chart-4: #4a5560;
+  --chart-5: var(--warn);
+  --sidebar: var(--sidebar-bg);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: #0a0c0d;
+  --sidebar-accent: var(--hover);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--border-sel);
+}
+
+/* The app is dark-only; `.dark` exists so shadcn primitives that gate on it behave. */
+.dark { color-scheme: dark; }
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-topbar: var(--topbar-bg);
+  --color-hover: var(--hover);
+  --color-ghost: var(--ghost);
+  --color-done: var(--done);
+
+  --color-line: var(--border);
+  --color-line-hi: var(--border-hi);
+  --color-line-sel: var(--border-sel);
+  --color-stroke: var(--stroke);
+  --color-rule: var(--rule);
+
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-soft: var(--fg-soft);
+  --color-fg-dim: var(--fg-dim);
+  --color-fg-faint: var(--fg-faint);
+
+  --color-accent-hi: var(--accent-hi);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-2: var(--accent-2);
+  --color-accent-deep: var(--accent-deep);
+
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-heading: var(--font-archivo), system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.27);  /* 14px — tiles */
+  --radius-2xl: calc(var(--radius) * 1.64); /* 18px */
+  --radius-3xl: calc(var(--radius) * 1.82); /* 20px — cards */
+
+  --animate-rise-in: riseIn 0.3s ease both;
+  --animate-pulse-dot: pulseDot 2s infinite;
+
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-bg text-fg antialiased;
+  }
+  ::selection {
+    background: var(--accent);
+    color: #0a0c0d;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #22282a; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  /* Numbers read as mono everywhere in this design. */
+  input[type="number"] { @apply font-mono; }
+}
+
+@utility eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  line-height: 1;
+}
+
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+/* Display type: 34–46px / 800 / -0.035em */
+@utility display {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  text-wrap: pretty;
+}
