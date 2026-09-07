@@ -68,7 +68,7 @@ export async function startSession(formData: FormData) {
   if (parsedDayId) {
     const { data: planned } = await supabase
       .from("program_exercises")
-      .select("exercise_id, target_sets")
+      .select("exercise_id, target_sets, target_weight_kg")
       .eq("day_id", parsedDayId)
       .order("position");
 
@@ -77,6 +77,9 @@ export async function startSession(formData: FormData) {
         session_id: session.id,
         exercise_id: p.exercise_id,
         set_index: i,
+        // Pre-fill the planned load so the common case is tick, not type. It is
+        // an editable starting value, not a record of anything.
+        weight_kg: p.target_weight_kg,
       })),
     );
     if (rows.length) await supabase.from("set_logs").insert(rows);

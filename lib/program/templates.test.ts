@@ -29,6 +29,7 @@ function asLoadInput(
       rep_max: e.repMax,
       per_side: e.perSide,
       note: null,
+      target_weight_kg: null,
       exercise: {
         id: e.exerciseId,
         name: e.name,

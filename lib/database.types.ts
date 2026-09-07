@@ -176,6 +176,7 @@ export type Database = {
           rep_max: number | null;
           per_side: boolean;
           note: string | null;
+          target_weight_kg: number | null;
         };
         Insert: {
           id?: string;
@@ -187,6 +188,7 @@ export type Database = {
           rep_max?: number | null;
           per_side?: boolean;
           note?: string | null;
+          target_weight_kg?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["program_exercises"]["Insert"]>;
         Relationships: [];

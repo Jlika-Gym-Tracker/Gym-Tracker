@@ -5,8 +5,14 @@ import { GripVertical, Plus, X } from "lucide-react";
 import { removeProgramExercise, reorderDayExercises } from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
 import { DAY_NAMES } from "@/lib/dates";
+import { trimNumber } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
+
+function loadLabel(item: DayWithExercises["exercises"][number], unit: string) {
+  if (item.target_weight_kg == null) return null;
+  return `${trimNumber(Number(item.target_weight_kg))} ${unit}`;
+}
 
 function repLabel(item: DayWithExercises["exercises"][number]) {
   const reps =
@@ -115,8 +121,11 @@ export function DayCard({
             <span className="min-w-0 truncate text-[12.5px] leading-[1.3] font-semibold">
               {item.exercise.name}
             </span>
-            <span className="ml-auto flex-none font-mono text-[11px] font-semibold text-fg-soft">
-              {repLabel(item)}
+            <span className="ml-auto flex flex-none items-baseline gap-2 font-mono text-[11px] font-semibold">
+              {loadLabel(item, "kg") ? (
+                <span className="text-accent">{loadLabel(item, "kg")}</span>
+              ) : null}
+              <span className="text-fg-soft">{repLabel(item)}</span>
             </span>
             <form
               action={(fd) => startTransition(() => void removeProgramExercise({}, fd))}

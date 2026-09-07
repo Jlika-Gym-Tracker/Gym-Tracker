@@ -98,7 +98,7 @@ The program is always yours — nothing is AI-generated. Four ways to fill a wee
 |---|---|
 | **Template** | Pick a split (3-day full body, 4-day upper/lower, 6-day PPL) and equipment; it fills a draft you edit. Fixed blueprints in `lib/program/templates.ts`, not generation — the same choice always gives the same week. |
 | **Paste** | Plain text like `1 Incline Dumbbell Press 3 x 8-12`, fuzzy-matched to the library with a review step. |
-| **Copy last week** | Duplicates the most recent week as a fresh draft. |
+| **Copy last week** | Duplicates the most recent week as a fresh draft. With *Step loads up* on (the default), each planned load moves up wherever last week cleared its rep range with reps to spare — the same rule the session screen shows as a hint. |
 | **Blank** | Build it by hand from the library. |
 
 The beginner template deliberately prescribes less than the load check's weekly
@@ -111,6 +111,9 @@ UI says so rather than showing an unexplained warning.
   interaction (set logging, drag-reorder, photo slider, checkboxes).
 - All weights stored in kg, all lengths in cm — convert at the display edge
   from `profiles.unit_system`.
+- `program_exercises.target_weight_kg` is the *planned* load and may be null.
+  `set_logs` remains the record of what was actually lifted; editing a plan
+  never rewrites it.
 - Anything day-scoped (weigh-ins, photos, plans) is a `date`, never a
   timestamp, to avoid timezone drift.
 - No `any`.

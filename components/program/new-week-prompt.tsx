@@ -65,14 +65,18 @@ export function NewWeekPrompt({
             </button>
           </form>
           {hasEarlierWeek ? (
-            <form action={copy}>
+            <form action={copy} className="flex flex-col gap-1.5">
               <input type="hidden" name="weekStart" value={weekStart} />
+              <input type="hidden" name="applyProgression" value="on" />
               <button
                 type="submit"
                 className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
               >
                 Copy last week
               </button>
+              <span className="pl-1 font-mono text-[10px] tracking-[0.06em] text-fg-dim uppercase">
+                Loads step up where earned
+              </span>
             </form>
           ) : null}
         </div>

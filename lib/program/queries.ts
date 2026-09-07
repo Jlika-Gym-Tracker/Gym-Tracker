@@ -17,6 +17,7 @@ export type DayWithExercises = {
     rep_max: number | null;
     per_side: boolean;
     note: string | null;
+    target_weight_kg: number | null;
     exercise: Pick<
       Exercise,
       "id" | "name" | "slug" | "primary_muscle" | "equipment" | "image_start_url"
@@ -36,7 +37,7 @@ export async function getWeek(weekStart: string): Promise<WeekDetail | null> {
        days:program_days (
          id, day_index, name, focus_note, is_rest,
          exercises:program_exercises (
-           id, position, target_sets, rep_min, rep_max, per_side, note,
+           id, position, target_sets, rep_min, rep_max, per_side, note, target_weight_kg,
            exercise:exercises ( id, name, slug, primary_muscle, equipment, image_start_url )
          )
        )`,

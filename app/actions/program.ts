@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { currentWeekStart } from "@/lib/dates";
+import { addDays, parseISO } from "date-fns";
+import { currentWeekStart, toDateString } from "@/lib/dates";
 import { findPreviousWeek, getLibrary, getWeek } from "@/lib/program/queries";
 import {
   EQUIPMENT_PROFILES,
@@ -11,6 +12,8 @@ import {
   resolveTemplate,
   type EquipmentProfile,
 } from "@/lib/program/templates";
+import { progressWeek, summariseProgression } from "@/lib/program/progression";
+import type { CompletedSet } from "@/lib/training/e1rm";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -140,8 +143,12 @@ export async function unpublishWeek(
 }
 
 /**
- * Duplicates the most recent earlier week into this one. Copies structure only —
- * never logged sets, which stay attached to the sessions that produced them.
+ * Duplicates the most recent earlier week into this one.
+ *
+ * Structure only — logged sets stay attached to the sessions that produced
+ * them. With `applyProgression` on, the planned loads step up wherever last
+ * week actually earned it, using the same rule the session screen shows as a
+ * hint, so the advice you read is the number you get.
  */
 export async function copyLastWeek(
   _prev: ActionState,
@@ -156,6 +163,47 @@ export async function copyLastWeek(
 
     const source = await getWeek(previous.week_start);
     if (!source) return { error: "There is no earlier week to copy." };
+
+    const applyProgression = formData.get("applyProgression") === "on";
+
+    // Completed sets from the source week, per exercise, for the progression rule.
+    const setsByExercise = new Map<string, CompletedSet[]>();
+    if (applyProgression) {
+      const sourceEnd = toDateString(addDays(parseISO(source.week_start), 7));
+      const { data: logs } = await supabase
+        .from("set_logs")
+        .select("exercise_id, weight_kg, reps, rpe, session:workout_sessions!inner ( started_at )")
+        .eq("is_complete", true)
+        .gte("logged_at", source.week_start)
+        .lt("logged_at", sourceEnd);
+
+      for (const row of logs ?? []) {
+        const list = setsByExercise.get(row.exercise_id) ?? [];
+        list.push({
+          weight_kg: row.weight_kg == null ? null : Number(row.weight_kg),
+          reps: row.reps,
+          rpe: row.rpe == null ? null : Number(row.rpe),
+        });
+        setsByExercise.set(row.exercise_id, list);
+      }
+    }
+
+    const outcomes = applyProgression
+      ? progressWeek({
+          exercises: source.days.flatMap((day) =>
+            day.exercises.map((item) => ({
+              exerciseId: item.exercise.id,
+              exerciseName: item.exercise.name,
+              repMin: item.rep_min,
+              repMax: item.rep_max,
+              targetWeightKg:
+                item.target_weight_kg == null ? null : Number(item.target_weight_kg),
+            })),
+          ),
+          setsByExercise,
+        })
+      : [];
+    const nextLoadByExercise = new Map(outcomes.map((o) => [o.exerciseId, o.nextKg]));
 
     const weekId = await ensureWeek(weekStart, source.label);
 
@@ -197,6 +245,9 @@ export async function copyLastWeek(
         rep_max: item.rep_max,
         per_side: item.per_side,
         note: item.note,
+        target_weight_kg: applyProgression
+          ? (nextLoadByExercise.get(item.exercise.id) ?? item.target_weight_kg)
+          : item.target_weight_kg,
       })),
     );
     if (rows.length) {
@@ -206,7 +257,11 @@ export async function copyLastWeek(
 
     await supabase.from("program_weeks").update({ status: "draft" }).eq("id", weekId);
     refresh();
-    return { notice: `Copied ${source.label} — ${rows.length} exercises, as a draft.` };
+    return {
+      notice: applyProgression
+        ? `Copied ${source.label} with progression applied — ${summariseProgression(outcomes)}.`
+        : `Copied ${source.label} — ${rows.length} exercises, as a draft.`,
+    };
   } catch (error) {
     return fail(error);
   }

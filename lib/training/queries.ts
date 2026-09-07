@@ -16,6 +16,7 @@ export type SessionExercise = {
     rep_max: number | null;
     per_side: boolean;
     note: string | null;
+    target_weight_kg: number | null;
   } | null;
   sets: SetLog[];
 };
@@ -76,7 +77,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
       ? supabase
           .from("program_exercises")
           .select(
-            `position, target_sets, rep_min, rep_max, per_side, note,
+            `position, target_sets, rep_min, rep_max, per_side, note, target_weight_kg,
              exercise:exercises ( ${EXERCISE_FIELDS} )`,
           )
           .eq("day_id", day.id)
@@ -101,6 +102,7 @@ export async function getSession(sessionId: string): Promise<SessionDetail | nul
         rep_max: row.rep_max,
         per_side: row.per_side,
         note: row.note,
+        target_weight_kg: row.target_weight_kg,
       },
       sets: [],
     });

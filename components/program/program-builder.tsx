@@ -32,6 +32,8 @@ export function ProgramBuilder({
 }) {
   const [showPaste, setShowPaste] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  // Default on: the whole point of copying is to carry progress, not repeat a week.
+  const [progressLoads, setProgressLoads] = useState(true);
   const firstTrainingDay = week.days.find((d) => !d.is_rest) ?? week.days[0];
   const [activeDayId, setActiveDayId] = useState<string | null>(
     firstTrainingDay?.id ?? null,
@@ -96,18 +98,36 @@ export function ProgramBuilder({
               Paste program
             </button>
 
-            <form action={copy}>
-              <input type="hidden" name="weekStart" value={week.week_start} />
-              <button
-                type="submit"
-                disabled={!hasEarlierWeek}
-                title={hasEarlierWeek ? undefined : "No earlier week to copy yet"}
-                className="flex items-center gap-2 rounded-[10px] border border-stroke bg-ghost px-4 py-[11px] text-[13px] font-semibold text-fg-2 transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+            <div className="flex flex-col gap-1.5">
+              <form action={copy} className="flex items-stretch">
+                <input type="hidden" name="weekStart" value={week.week_start} />
+                {progressLoads ? <input type="hidden" name="applyProgression" value="on" /> : null}
+                <button
+                  type="submit"
+                  disabled={!hasEarlierWeek}
+                  title={hasEarlierWeek ? undefined : "No earlier week to copy yet"}
+                  className="flex items-center gap-2 rounded-[10px] border border-stroke bg-ghost px-4 py-[11px] text-[13px] font-semibold text-fg-2 transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Copy className="size-3.5" strokeWidth={2} />
+                  Copy last week
+                </button>
+              </form>
+              <label
+                className={cn(
+                  "flex cursor-pointer items-center gap-1.5 pl-1 font-mono text-[10px] tracking-[0.06em] uppercase",
+                  hasEarlierWeek ? "text-fg-dim" : "pointer-events-none opacity-40",
+                )}
+                title="Steps each load up where last week cleared its rep range with reps to spare"
               >
-                <Copy className="size-3.5" strokeWidth={2} />
-                Copy last week
-              </button>
-            </form>
+                <input
+                  type="checkbox"
+                  checked={progressLoads}
+                  onChange={(e) => setProgressLoads(e.target.checked)}
+                  className="size-3 accent-[#c9f24d]"
+                />
+                Step loads up
+              </label>
+            </div>
 
             <form action={published ? unpublish : publish}>
               <input type="hidden" name="weekId" value={week.id} />
