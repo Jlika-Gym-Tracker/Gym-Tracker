@@ -105,6 +105,23 @@ The beginner template deliberately prescribes less than the load check's weekly
 set floor — that floor is tuned for an intermediate lifter in a deficit, and the
 UI says so rather than showing an unexplained warning.
 
+## Imagery
+
+Three sources, all hotlinked for now — **mirror them into Supabase Storage
+before this serves real traffic**:
+
+| Where | Source | Licence |
+|---|---|---|
+| Exercise photos | [free-exercise-db](https://github.com/yuhonas/free-exercise-db) | Public domain |
+| Ingredient photos | [TheMealDB](https://www.themealdb.com) | Free tier; check terms for commercial use |
+| Auth / onboarding panels | Unsplash | Placeholder — replace with real photography |
+
+Four ingredients are deliberately left without a photo because the source had
+the wrong food for them. `FoodThumb` draws a category-coloured tile instead —
+no picture beats a misleading one. Meals have no photo of their own either;
+`mealImage` shows the meal's main protein, which is at least true about what is
+on the plate, rather than a stock photo of some other dish.
+
 ## Conventions
 
 - Server Components fetch data; Client Components only where there is

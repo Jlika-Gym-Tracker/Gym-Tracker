@@ -45,6 +45,7 @@ export type PlannableRecipe = {
       category: string;
       allergens: string[];
       unit_hint: string;
+      image_url: string | null;
       kcal_per_100g: number;
       protein_g: number;
       carb_g: number;

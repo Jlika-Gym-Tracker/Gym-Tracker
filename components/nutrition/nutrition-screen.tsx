@@ -17,6 +17,7 @@ import { DAY_NAMES } from "@/lib/dates";
 import { Card } from "@/components/kit/card";
 import { cn } from "@/lib/utils";
 import { CalorieRing, MacroTile } from "./calorie-ring";
+import { FoodThumb, mealImage } from "./food-thumb";
 import { GroceryList } from "./grocery-list";
 import { AllergiesPanel } from "./allergies-panel";
 
@@ -128,6 +129,7 @@ export function NutritionScreen({
                 const alternatives = recipes.filter(
                   (r) => r.slot_hint === entry.slot && r.id !== entry.recipe?.id,
                 );
+                const thumb = entry.recipe ? mealImage(entry.recipe) : null;
 
                 return (
                   <div key={entry.id}>
@@ -137,6 +139,16 @@ export function NutritionScreen({
                         entry.eaten ? "border-line-hi bg-done" : "border-line bg-surface-2",
                       )}
                     >
+                      {thumb ? (
+                        <FoodThumb
+                          src={thumb.src}
+                          category={thumb.category}
+                          alt={entry.recipe?.name ?? ""}
+                          size={56}
+                          className="rounded-xl"
+                        />
+                      ) : null}
+
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2.5">
                           <span
@@ -224,8 +236,14 @@ export function NutritionScreen({
                                   await swapMeal(entry.id, r.id);
                                 })
                               }
-                              className="rounded-full border border-line px-3 py-1.5 text-[12px] font-medium text-fg-2 hover:border-line-sel hover:bg-accent-soft hover:text-accent"
+                              className="flex items-center gap-2 rounded-full border border-line py-1 pr-3 pl-1 text-[12px] font-medium text-fg-2 hover:border-line-sel hover:bg-accent-soft hover:text-accent"
                             >
+                              <FoodThumb
+                                {...mealImage(r)}
+                                alt=""
+                                size={24}
+                                className="rounded-full p-0.5"
+                              />
                               {r.name}
                             </button>
                           ))

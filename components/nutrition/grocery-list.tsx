@@ -7,6 +7,7 @@ import { CATEGORY_LABELS, formatQuantity } from "@/lib/nutrition/plan";
 import type { WeekPlan } from "@/lib/nutrition/queries";
 import { Card } from "@/components/kit/card";
 import { weekRangeLabel } from "@/lib/dates";
+import { FoodThumb } from "./food-thumb";
 import { cn } from "@/lib/utils";
 
 export function GroceryList({
@@ -104,6 +105,13 @@ export function GroceryList({
                         <Check className="size-3 text-[#0a0c0d]" strokeWidth={3} />
                       ) : null}
                     </span>
+                    <FoodThumb
+                      src={item.ingredient.image_url}
+                      category={item.ingredient.category}
+                      alt=""
+                      size={28}
+                      className={cn("rounded-lg", item.checked && "opacity-40")}
+                    />
                     <span
                       className={cn(
                         "text-[12.5px] font-medium",

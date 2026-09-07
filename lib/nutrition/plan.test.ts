@@ -15,8 +15,9 @@ const ing = (
   macros: [number, number, number, number],
   allergens: string[] = [],
   unit_hint = "g",
+  image_url: string | null = null,
 ) => ({
-  id: slug, slug, name, category, allergens, unit_hint,
+  id: slug, slug, name, category, allergens, unit_hint, image_url,
   kcal_per_100g: macros[0], protein_g: macros[1], carb_g: macros[2], fat_g: macros[3],
 });
 

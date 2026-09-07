@@ -120,6 +120,10 @@ if (missing.length) {
   process.exit(1);
 }
 
+// NOTE: ingredient photos live in 20260907000014_ingredient_images.sql, which
+// runs after this and fills image_url by slug. Regenerating this file does not
+// drop them — the column is not touched here.
+
 const sql = `-- JLIKA Gym — Phase 5 seed: ingredients and recipes.
 --
 -- Per-100g values are from public nutrition tables (USDA / CIQUAL), rounded.

@@ -12,7 +12,7 @@ const RECIPE_SELECT = `
   ingredients:recipe_ingredients (
     grams,
     ingredient:ingredients (
-      id, slug, name, category, allergens, unit_hint,
+      id, slug, name, category, allergens, unit_hint, image_url,
       kcal_per_100g, protein_g, carb_g, fat_g
     )
   )
@@ -111,7 +111,8 @@ export type WeekPlan = {
     checked: boolean;
     total_grams: number;
     ingredient: {
-      id: string; slug: string; name: string; category: string; unit_hint: string;
+      id: string; slug: string; name: string; category: string;
+      unit_hint: string; image_url: string | null;
     };
   }[];
 };
@@ -128,7 +129,7 @@ export async function getWeekPlan(weekStart = currentWeekStart()): Promise<WeekP
        ),
        groceries:grocery_items (
          id, checked, total_grams,
-         ingredient:ingredients ( id, slug, name, category, unit_hint )
+         ingredient:ingredients ( id, slug, name, category, unit_hint, image_url )
        )`,
     )
     .eq("week_start", weekStart)
