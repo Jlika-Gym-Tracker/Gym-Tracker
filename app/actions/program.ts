@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { currentWeekStart } from "@/lib/dates";
-import { findPreviousWeek, getWeek } from "@/lib/program/queries";
+import { findPreviousWeek, getLibrary, getWeek } from "@/lib/program/queries";
+import {
+  EQUIPMENT_PROFILES,
+  findTemplate,
+  resolveTemplate,
+  type EquipmentProfile,
+} from "@/lib/program/templates";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -492,6 +498,118 @@ export async function applyPastedWeek(
 
     refresh();
     return { notice: `Imported ${rows.length} exercises across ${parsedDays.length} days.` };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+
+/**
+ * Fills a week from one of the fixed templates.
+ *
+ * Not generation — the blueprints are hand-written and the same choice always
+ * produces the same week. It exists because a blank builder is useless to
+ * somebody who does not yet know what to write; they still edit and publish it,
+ * so the program remains theirs.
+ */
+export async function applyTemplate(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const weekStart = weekStartSchema.parse(formData.get("weekStart"));
+    const templateSlug = z.string().trim().min(1).parse(formData.get("template"));
+    const equipment = z
+      .enum(EQUIPMENT_PROFILES.map((p) => p.key) as [EquipmentProfile, ...EquipmentProfile[]])
+      .parse(formData.get("equipment") ?? "full_gym");
+
+    const template = findTemplate(templateSlug);
+    if (!template) return { error: "That template no longer exists." };
+
+    const library = await getLibrary();
+    const resolved = resolveTemplate(template, library, equipment);
+
+    const planned = resolved.days.filter((d) => d.exercises.length > 0);
+    if (planned.length === 0) {
+      return {
+        error:
+          "Nothing in the library fits that equipment. Try a fuller equipment option.",
+      };
+    }
+
+    const weekId = await ensureWeek(weekStart, template.name);
+
+    // Replace the week outright — a template merged into existing days would be
+    // neither the template nor what was there before.
+    const { data: oldDays } = await supabase
+      .from("program_days")
+      .select("id")
+      .eq("week_id", weekId);
+    if (oldDays?.length) {
+      await supabase
+        .from("program_exercises")
+        .delete()
+        .in("day_id", oldDays.map((d) => d.id));
+    }
+    await supabase.from("program_days").delete().eq("week_id", weekId);
+
+    // Rest days for everything the template does not use, so the week is whole.
+    const trainingIndexes = new Set(resolved.days.map((d) => d.dayIndex));
+    const dayRows = [
+      ...resolved.days.map((d) => ({
+        week_id: weekId,
+        day_index: d.dayIndex,
+        name: d.name,
+        focus_note: d.focusNote,
+        is_rest: false,
+      })),
+      ...[0, 1, 2, 3, 4, 5, 6]
+        .filter((i) => !trainingIndexes.has(i))
+        .map((i) => ({
+          week_id: weekId,
+          day_index: i,
+          name: "Rest",
+          focus_note: null,
+          is_rest: true,
+        })),
+    ];
+
+    const { data: newDays, error: daysError } = await supabase
+      .from("program_days")
+      .insert(dayRows)
+      .select("id, day_index");
+    if (daysError) throw daysError;
+
+    const dayIdByIndex = new Map(newDays.map((d) => [d.day_index, d.id]));
+    const exerciseRows = resolved.days.flatMap((day) =>
+      day.exercises.map((exercise, position) => ({
+        day_id: dayIdByIndex.get(day.dayIndex)!,
+        exercise_id: exercise.exerciseId,
+        position,
+        target_sets: exercise.targetSets,
+        rep_min: exercise.repMin,
+        rep_max: exercise.repMax,
+        per_side: exercise.perSide,
+      })),
+    );
+    if (exerciseRows.length) {
+      const { error } = await supabase.from("program_exercises").insert(exerciseRows);
+      if (error) throw error;
+    }
+
+    await supabase
+      .from("program_weeks")
+      .update({ label: template.name, status: "draft" })
+      .eq("id", weekId);
+
+    refresh();
+    return {
+      notice:
+        resolved.unfilled.length > 0
+          ? `Filled ${exerciseRows.length} exercises. Your equipment could not cover: ${resolved.unfilled.join(", ")}.`
+          : `Filled ${exerciseRows.length} exercises across ${planned.length} days. Edit anything before you publish.`,
+    };
   } catch (error) {
     return fail(error);
   }

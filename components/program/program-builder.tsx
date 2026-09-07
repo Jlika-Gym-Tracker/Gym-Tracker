@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ClipboardPaste, Copy, Upload } from "lucide-react";
+import { ClipboardPaste, Copy, LayoutTemplate, Upload } from "lucide-react";
 import {
   copyLastWeek,
   publishWeek,
@@ -17,6 +17,7 @@ import { DayCard } from "./day-card";
 import { LibraryPanel } from "./library-panel";
 import { LoadCheck } from "./load-check";
 import { PastePanel } from "./paste-panel";
+import { TemplatePicker } from "./template-picker";
 
 export function ProgramBuilder({
   week,
@@ -30,6 +31,7 @@ export function ProgramBuilder({
   hasEarlierWeek: boolean;
 }) {
   const [showPaste, setShowPaste] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const firstTrainingDay = week.days.find((d) => !d.is_rest) ?? week.days[0];
   const [activeDayId, setActiveDayId] = useState<string | null>(
     firstTrainingDay?.id ?? null,
@@ -62,7 +64,27 @@ export function ProgramBuilder({
           <div className="ml-auto flex flex-wrap gap-2.5">
             <button
               type="button"
-              onClick={() => setShowPaste((v) => !v)}
+              onClick={() => {
+                setShowTemplates((v) => !v);
+                setShowPaste(false);
+              }}
+              className={cn(
+                "flex items-center gap-2 rounded-[10px] border px-4 py-[11px] text-[13px] font-semibold transition-colors",
+                showTemplates
+                  ? "border-line-sel bg-accent-soft text-accent"
+                  : "border-stroke bg-ghost text-fg-2 hover:bg-hover",
+              )}
+            >
+              <LayoutTemplate className="size-3.5" strokeWidth={2} />
+              Template
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowPaste((v) => !v);
+                setShowTemplates(false);
+              }}
               className={cn(
                 "flex items-center gap-2 rounded-[10px] border px-4 py-[11px] text-[13px] font-semibold transition-colors",
                 showPaste
@@ -117,6 +139,13 @@ export function ProgramBuilder({
             </p>
           ) : null}
         </header>
+
+        {showTemplates ? (
+          <TemplatePicker
+            weekStart={week.week_start}
+            onDone={() => setShowTemplates(false)}
+          />
+        ) : null}
 
         {showPaste ? (
           <PastePanel

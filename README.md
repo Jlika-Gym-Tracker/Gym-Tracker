@@ -90,6 +90,21 @@ lib/
 supabase/migrations/
 ```
 
+## Writing a week
+
+The program is always yours — nothing is AI-generated. Four ways to fill a week:
+
+| | |
+|---|---|
+| **Template** | Pick a split (3-day full body, 4-day upper/lower, 6-day PPL) and equipment; it fills a draft you edit. Fixed blueprints in `lib/program/templates.ts`, not generation — the same choice always gives the same week. |
+| **Paste** | Plain text like `1 Incline Dumbbell Press 3 x 8-12`, fuzzy-matched to the library with a review step. |
+| **Copy last week** | Duplicates the most recent week as a fresh draft. |
+| **Blank** | Build it by hand from the library. |
+
+The beginner template deliberately prescribes less than the load check's weekly
+set floor — that floor is tuned for an intermediate lifter in a deficit, and the
+UI says so rather than showing an unexplained warning.
+
 ## Conventions
 
 - Server Components fetch data; Client Components only where there is

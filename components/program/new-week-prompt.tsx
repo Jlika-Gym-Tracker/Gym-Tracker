@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { copyLastWeek, createCurrentWeek, type ActionState } from "@/app/actions/program";
 import { weekRangeLabel } from "@/lib/dates";
+import { TemplatePicker } from "./template-picker";
 
 /** Shown when no week exists for the date being viewed. */
 export function NewWeekPrompt({
@@ -17,9 +18,11 @@ export function NewWeekPrompt({
     {} as ActionState,
   );
   const [copyState, copy] = useActionState(copyLastWeek, {} as ActionState);
+  const [showTemplates, setShowTemplates] = useState(false);
   const error = createState.error ?? copyState.error;
 
   return (
+    <div className="flex max-w-[860px] flex-col gap-4">
     <div className="relative flex min-h-[268px] max-w-[860px] flex-col overflow-hidden rounded-[20px] border border-line bg-surface px-7 py-[26px]">
       <div
         aria-hidden
@@ -41,17 +44,24 @@ export function NewWeekPrompt({
           Nothing written for this week yet.
         </h1>
         <p className="max-w-[440px] text-[13.5px] leading-[1.5] text-fg-muted">
-          Start blank and build it day by day, paste it as plain text, or duplicate
-          the last week you wrote. Nothing is generated for you.
+          Not sure what to write? Start from a template and edit it. Otherwise
+          paste your week as plain text, duplicate the last one, or start blank.
         </p>
 
         <div className="mt-auto flex flex-wrap items-center gap-2.5 pt-6">
+          <button
+            type="button"
+            onClick={() => setShowTemplates((v) => !v)}
+            className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
+          >
+            {showTemplates ? "Hide templates" : "Start from a template"}
+          </button>
           <form action={create}>
             <button
               type="submit"
-              className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
+              className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
             >
-              Start this week
+              Start blank
             </button>
           </form>
           {hasEarlierWeek ? (
@@ -73,6 +83,9 @@ export function NewWeekPrompt({
           </p>
         ) : null}
       </div>
+    </div>
+
+      {showTemplates ? <TemplatePicker weekStart={weekStart} /> : null}
     </div>
   );
 }
