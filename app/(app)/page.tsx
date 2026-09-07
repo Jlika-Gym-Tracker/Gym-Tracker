@@ -29,8 +29,10 @@ export default async function TodayPage() {
   ]);
 
   const today = toDateString(new Date());
-  const todayIsTraining = targets?.trainingDays.includes(overview.todayIndex) ?? false;
-  const dayTarget = todayIsTraining ? targets?.targets.trainingDay : targets?.targets;
+  const todayIsTraining = targets.ok && targets.trainingDays.includes(overview.todayIndex);
+  const dayTarget = targets.ok
+    ? (todayIsTraining ? targets.targets.trainingDay : targets.targets)
+    : null;
   const eatenKcal = (plan?.entries ?? [])
     .filter((e) => e.planned_on === today && e.eaten && e.recipe)
     .reduce((sum, e) => sum + recipeMacros(e.recipe!, Number(e.servings)).kcal, 0);

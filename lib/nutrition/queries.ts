@@ -38,15 +38,20 @@ export async function getSettings(): Promise<UserSettings | null> {
   return data;
 }
 
+/** Which inputs the calorie formula is still waiting on. */
+export type MissingTargetInput = "sex" | "birth_date" | "height" | "weight";
+
+export type TargetsResult =
+  | { ok: true; targets: Targets; trainingDays: number[] }
+  | { ok: false; missing: MissingTargetInput[] };
+
 /**
  * Targets derived from the profile and settings.
  *
- * Returns null when the profile is missing the body details the formula needs,
- * so screens can prompt for them instead of showing invented numbers.
+ * Says which inputs are missing rather than just failing, so the screen can
+ * name the one thing to fix instead of listing everything it might be.
  */
-export async function getTargets(): Promise<
-  { targets: Targets; trainingDays: number[] } | null
-> {
+export async function getTargets(): Promise<TargetsResult> {
   const supabase = await createClient();
   const [{ data: profile }, settings] = await Promise.all([
     supabase
@@ -55,8 +60,6 @@ export async function getTargets(): Promise<
       .maybeSingle(),
     getSettings(),
   ]);
-  if (!profile?.height_cm || !profile.birth_date || !profile.sex) return null;
-
   const { data: weightRow } = await supabase
     .from("body_metrics")
     .select("weight_kg")
@@ -64,14 +67,21 @@ export async function getTargets(): Promise<
     .order("measured_on", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (!weightRow?.weight_kg) return null;
+
+  const missing: MissingTargetInput[] = [];
+  if (!profile?.sex) missing.push("sex");
+  if (!profile?.birth_date) missing.push("birth_date");
+  if (!profile?.height_cm) missing.push("height");
+  if (!weightRow?.weight_kg) missing.push("weight");
+  if (missing.length > 0 || !profile) return { ok: false, missing };
 
   return {
+    ok: true,
     targets: calculateTargets({
-      weightKg: Number(weightRow.weight_kg),
+      weightKg: Number(weightRow!.weight_kg),
       heightCm: Number(profile.height_cm),
-      age: ageFromBirthDate(profile.birth_date),
-      sex: profile.sex,
+      age: ageFromBirthDate(profile.birth_date!),
+      sex: profile.sex!,
       activityFactor: Number(profile.activity_factor),
       goal: profile.goal,
       deficitKcal: settings?.deficit_kcal ?? 400,

@@ -148,7 +148,7 @@ export async function saveTargets(
 export async function recalculateTargets(): Promise<void> {
   const { getTargets } = await import("@/lib/nutrition/queries");
   const result = await getTargets();
-  if (!result) return;
+  if (!result.ok) return;
 
   const { supabase, user } = await requireUser();
   await supabase

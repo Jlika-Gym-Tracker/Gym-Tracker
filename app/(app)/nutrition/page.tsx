@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { currentWeekStart, toDateString } from "@/lib/dates";
 import {
   getExcludes,
@@ -8,7 +7,9 @@ import {
 } from "@/lib/nutrition/queries";
 import { NutritionScreen } from "@/components/nutrition/nutrition-screen";
 import { AllergiesPanel } from "@/components/nutrition/allergies-panel";
-import { Card } from "@/components/kit/card";
+import { TargetsMissing } from "@/components/nutrition/targets-missing";
+import { createClient } from "@/lib/supabase/server";
+import type { UnitSystem } from "@/lib/database.types";
 
 export default async function NutritionPage() {
   const weekStart = currentWeekStart();
@@ -19,37 +20,21 @@ export default async function NutritionPage() {
     getExcludes(),
   ]);
 
-  // Targets need height, birth date, sex and a weigh-in. Ask rather than guess.
-  if (!targets) {
+  // Targets need height, birth date, sex and a weigh-in. Name what is missing
+  // rather than listing everything it might be.
+  if (!targets.ok) {
+    const supabase = await createClient();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("unit_system")
+      .maybeSingle();
+
     return (
       <div className="grid items-start gap-[18px] xl:grid-cols-[1fr_336px]">
-        <Card className="rounded-[18px]">
-          <div className="w-fit rounded-md border border-line-hi bg-accent-soft px-[9px] py-[5px] font-mono text-[10.5px] font-bold tracking-[0.12em] text-accent uppercase">
-            Targets not set
-          </div>
-          <h1 className="display mt-4 mb-2 max-w-[460px] text-[34px]">
-            We need four numbers first.
-          </h1>
-          <p className="max-w-[440px] text-[13.5px] leading-[1.55] text-fg-muted">
-            Calorie and macro targets come from your height, birth date, sex and a
-            current bodyweight — Mifflin-St Jeor, then an activity factor and your
-            deficit. Nothing is invented, so nothing shows until those are in.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            <Link
-              href="/profile"
-              className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
-            >
-              Fill in your profile
-            </Link>
-            <Link
-              href="/progress"
-              className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 hover:bg-hover"
-            >
-              Log a weigh-in
-            </Link>
-          </div>
-        </Card>
+        <TargetsMissing
+          missing={targets.missing}
+          system={(profile?.unit_system ?? "metric") as UnitSystem}
+        />
         <AllergiesPanel excludes={excludes} />
       </div>
     );

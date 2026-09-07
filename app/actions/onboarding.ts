@@ -68,6 +68,10 @@ export async function completeOnboarding(
     const heightCm = displayToCm(input.height, input.unitSystem);
     const weightKg = displayToKg(input.weight, input.unitSystem);
 
+    // These are separate PostgREST calls with no shared transaction, so
+    // onboarded_at is written last, on its own. Marking someone onboarded
+    // before their weigh-in lands strands them: they never see this flow again
+    // and every screen that needs a bodyweight sits empty with no way back.
     const { error: profileError } = await supabase
       .from("profiles")
       .update({
@@ -79,7 +83,6 @@ export async function completeOnboarding(
         unit_system: input.unitSystem,
         goal: input.goal,
         activity_factor: input.activityFactor,
-        onboarded_at: new Date().toISOString(),
       })
       .eq("id", user.id);
     if (profileError) throw profileError;
@@ -95,7 +98,7 @@ export async function completeOnboarding(
     );
     if (metricError) throw metricError;
 
-    await supabase.from("user_settings").upsert(
+    const { error: settingsError } = await supabase.from("user_settings").upsert(
       {
         user_id: user.id,
         meals_per_day: input.mealsPerDay,
@@ -103,6 +106,7 @@ export async function completeOnboarding(
       },
       { onConflict: "user_id" },
     );
+    if (settingsError) throw settingsError;
 
     // Replace excludes wholesale — onboarding is the full picture, not a diff.
     await supabase.from("user_excludes").delete().eq("user_id", user.id);
@@ -111,6 +115,13 @@ export async function completeOnboarding(
       ...input.preferences.map((value) => ({ user_id: user.id, kind: "preference", value })),
     ];
     if (excludes.length) await supabase.from("user_excludes").insert(excludes);
+
+    // Last, now that everything it implies actually exists.
+    const { error: doneError } = await supabase
+      .from("profiles")
+      .update({ onboarded_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (doneError) throw doneError;
 
     revalidatePath("/", "layout");
   } catch (error) {

@@ -81,7 +81,7 @@ export default async function ProfilePage() {
       excludes={excludes}
       crew={(crew ?? []) as CrewMember[]}
       invites={invites ?? []}
-      targets={targets?.targets ?? null}
+      targets={targets.ok ? targets.targets : null}
       email={user.email ?? ""}
       stats={{ sessions: sessions ?? 0, weeks: weeks ?? 0, photos: photos ?? 0 }}
     />
