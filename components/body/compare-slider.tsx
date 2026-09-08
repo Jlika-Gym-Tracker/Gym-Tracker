@@ -1,14 +1,20 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import type { PhotoWithUrl } from "@/lib/body/queries";
 
 /**
  * Before/after with a draggable divider.
  *
- * The divider is a real range input underneath a painted handle, so it works
- * with a mouse, a finger and arrow keys without three separate code paths.
+ * Both photos are laid out identically — same box, same object-fit — and the
+ * divider reveals one over the other with a clip-path. Sizing the top image
+ * from a measured width instead put the two out of register, because the ref is
+ * null on first paint and nothing re-rendered once it filled in.
+ *
+ * The frame's width is capped rather than its height: `aspect-[3/4]` with only
+ * a max-height leaves the width free to fill a wide screen, which turns a
+ * portrait photo into a cropped sliver of torso.
  */
 export function CompareSlider({
   before,
@@ -18,25 +24,11 @@ export function CompareSlider({
   after: PhotoWithUrl;
 }) {
   const [position, setPosition] = useState(50);
-  const frame = useRef<HTMLDivElement>(null);
-
-  const drag = useCallback((clientX: number) => {
-    const box = frame.current?.getBoundingClientRect();
-    if (!box) return;
-    const pct = ((clientX - box.left) / box.width) * 100;
-    setPosition(Math.min(100, Math.max(0, pct)));
-  }, []);
-
   const days = differenceInCalendarDays(parseISO(after.taken_on), parseISO(before.taken_on));
 
   return (
     <div>
-      <div
-        ref={frame}
-        onPointerMove={(e) => e.buttons === 1 && drag(e.clientX)}
-        onPointerDown={(e) => drag(e.clientX)}
-        className="relative aspect-[3/4] max-h-[520px] w-full touch-none overflow-hidden rounded-[14px] border border-line bg-surface-2 select-none"
-      >
+      <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] overflow-hidden rounded-[14px] border border-line bg-surface-2 select-none">
         {after.url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -47,33 +39,32 @@ export function CompareSlider({
           />
         ) : null}
 
+        {/* Same box, same fit — only the reveal differs. */}
         <div
-          className="absolute inset-y-0 left-0 overflow-hidden"
-          style={{ width: `${position}%` }}
+          className="absolute inset-0"
+          style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
         >
           {before.url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={before.url}
               alt={`Progress photo from ${before.taken_on}`}
-              // Sized to the frame, not to the clipped box, so the two images
-              // stay in register as the divider moves.
-              className="absolute inset-0 h-full object-cover"
-              style={{ width: frame.current?.clientWidth ?? "100%" }}
+              className="absolute inset-0 size-full object-cover"
               draggable={false}
             />
           ) : null}
-          <span className="absolute top-3 left-3 rounded-md bg-[#0a0c0dcc] px-2 py-1 font-mono text-[10px] font-bold tracking-[0.1em] text-fg">
-            {format(parseISO(before.taken_on), "MMM dd").toUpperCase()}
-          </span>
         </div>
 
-        <span className="absolute top-3 right-3 rounded-md bg-[#0a0c0dcc] px-2 py-1 font-mono text-[10px] font-bold tracking-[0.1em] text-fg">
+        {/* Labels sit outside the clip so neither disappears as you drag. */}
+        <span className="pointer-events-none absolute top-3 left-3 rounded-md bg-[#0a0c0dcc] px-2 py-1 font-mono text-[10px] font-bold tracking-[0.1em] text-fg">
+          {format(parseISO(before.taken_on), "MMM dd").toUpperCase()}
+        </span>
+        <span className="pointer-events-none absolute top-3 right-3 rounded-md bg-[#0a0c0dcc] px-2 py-1 font-mono text-[10px] font-bold tracking-[0.1em] text-fg">
           {format(parseISO(after.taken_on), "MMM dd").toUpperCase()}
         </span>
 
         <div
-          className="pointer-events-none absolute inset-y-0 w-0.5 bg-accent"
+          className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-accent"
           style={{ left: `${position}%` }}
         >
           <span className="absolute top-1/2 left-1/2 flex size-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-accent bg-bg font-mono text-[10px] font-bold text-accent">
@@ -81,19 +72,24 @@ export function CompareSlider({
           </span>
         </div>
 
+        {/*
+          A range input covering the frame drives it: pointer drag, touch and
+          arrow keys all work without three separate code paths.
+        */}
         <input
           type="range"
           min={0}
           max={100}
+          step={0.5}
           value={position}
           onChange={(e) => setPosition(Number(e.target.value))}
-          aria-label="Comparison position"
-          className="absolute inset-x-0 bottom-0 h-10 w-full cursor-ew-resize opacity-0"
+          aria-label="Reveal more of the earlier photo"
+          className="absolute inset-0 size-full cursor-ew-resize opacity-0"
         />
       </div>
 
       <p className="mt-2.5 text-center font-mono text-[10.5px] text-fg-dim uppercase">
-        {days} days apart
+        {days === 0 ? "Same day" : `${days} days apart`}
       </p>
     </div>
   );
