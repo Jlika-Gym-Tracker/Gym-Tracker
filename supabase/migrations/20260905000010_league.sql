@@ -77,6 +77,61 @@ create table if not exists public.badges (
   primary key (user_id, season_id, slug)
 );
 
+-- ---------------------------------------------------------------- predicates
+--
+-- Membership tests live in SECURITY DEFINER functions, not inline in the
+-- policies. A policy on league_members that selects from league_members
+-- recurses (Postgres 42P17), as does any pair of policies that read each
+-- other's tables. Running the lookup as the owner sidesteps RLS re-entry.
+-- Each function reads auth.uid() itself rather than taking it as an argument,
+-- so it can only ever answer about the caller.
+
+create or replace function public.is_league_member(target_season uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.league_members m
+    where m.season_id = target_season and m.user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_challenge_participant(target_challenge uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.challenge_participants cp
+    where cp.challenge_id = target_challenge and cp.user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_challenge_creator(target_challenge uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.challenges c
+    where c.id = target_challenge and c.creator_id = auth.uid()
+  );
+$$;
+
+revoke all on function public.is_league_member(uuid) from public;
+revoke all on function public.is_challenge_participant(uuid) from public;
+revoke all on function public.is_challenge_creator(uuid) from public;
+grant execute on function public.is_league_member(uuid) to authenticated;
+grant execute on function public.is_challenge_participant(uuid) to authenticated;
+grant execute on function public.is_challenge_creator(uuid) to authenticated;
+
 -- ----------------------------------------------------------------- policies
 
 alter table public.league_seasons enable row level security;
@@ -92,10 +147,7 @@ create policy "league_seasons: members read"
   on public.league_seasons for select
   using (
     crew_owner_id = (select auth.uid())
-    or exists (
-      select 1 from public.league_members m
-      where m.season_id = id and m.user_id = (select auth.uid())
-    )
+    or public.is_league_member(id)
   );
 
 drop policy if exists "league_seasons: owner writes" on public.league_seasons;
@@ -109,11 +161,10 @@ create policy "league_seasons: owner writes"
 drop policy if exists "league_members: co-members read" on public.league_members;
 create policy "league_members: co-members read"
   on public.league_members for select
-  using (exists (
-    select 1 from public.league_members mine
-    where mine.season_id = league_members.season_id
-      and mine.user_id = (select auth.uid())
-  ));
+  using (
+    user_id = (select auth.uid())
+    or public.is_league_member(season_id)
+  );
 
 drop policy if exists "league_members: manage own" on public.league_members;
 create policy "league_members: manage own"
@@ -124,11 +175,7 @@ create policy "league_members: manage own"
 drop policy if exists "league_scores: co-members read" on public.league_scores;
 create policy "league_scores: co-members read"
   on public.league_scores for select
-  using (exists (
-    select 1 from public.league_members mine
-    where mine.season_id = league_scores.season_id
-      and mine.user_id = (select auth.uid())
-  ));
+  using (public.is_league_member(season_id));
 
 -- A personal challenge is visible only to its creator, whatever the season.
 drop policy if exists "challenges: participants read" on public.challenges;
@@ -136,13 +183,7 @@ create policy "challenges: participants read"
   on public.challenges for select
   using (
     creator_id = (select auth.uid())
-    or (
-      kind <> 'personal'
-      and exists (
-        select 1 from public.challenge_participants cp
-        where cp.challenge_id = challenges.id and cp.user_id = (select auth.uid())
-      )
-    )
+    or (kind <> 'personal' and public.is_challenge_participant(id))
   );
 
 drop policy if exists "challenges: creator writes" on public.challenges;
@@ -156,11 +197,7 @@ create policy "challenge_participants: read own challenges"
   on public.challenge_participants for select
   using (
     user_id = (select auth.uid())
-    or exists (
-      select 1 from public.challenges c
-      where c.id = challenge_participants.challenge_id
-        and c.creator_id = (select auth.uid())
-    )
+    or public.is_challenge_creator(challenge_id)
   );
 
 drop policy if exists "challenge_participants: manage own" on public.challenge_participants;
@@ -168,19 +205,11 @@ create policy "challenge_participants: manage own"
   on public.challenge_participants for all
   using (
     user_id = (select auth.uid())
-    or exists (
-      select 1 from public.challenges c
-      where c.id = challenge_participants.challenge_id
-        and c.creator_id = (select auth.uid())
-    )
+    or public.is_challenge_creator(challenge_id)
   )
   with check (
     user_id = (select auth.uid())
-    or exists (
-      select 1 from public.challenges c
-      where c.id = challenge_participants.challenge_id
-        and c.creator_id = (select auth.uid())
-    )
+    or public.is_challenge_creator(challenge_id)
   );
 
 drop policy if exists "badges: co-members read" on public.badges;
@@ -188,9 +217,5 @@ create policy "badges: co-members read"
   on public.badges for select
   using (
     user_id = (select auth.uid())
-    or exists (
-      select 1 from public.league_members mine
-      where mine.season_id = badges.season_id
-        and mine.user_id = (select auth.uid())
-    )
+    or public.is_league_member(season_id)
   );
