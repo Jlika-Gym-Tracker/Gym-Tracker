@@ -66,6 +66,7 @@ export function ProgramBuilder({
             </h1>
             <p className="mt-1 font-mono text-[11px] text-fg-dim uppercase">
               {weekRangeLabel(week.week_start)} · {week.status}
+              {week.assigned_by_coach_id ? " · from your coach" : ""}
             </p>
           </div>
 

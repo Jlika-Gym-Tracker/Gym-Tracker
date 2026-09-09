@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_GROUPS, isActivePath } from "@/lib/nav";
+import { COACH_GROUP, NAV_GROUPS, isActivePath } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { AvatarBubble } from "./avatar-bubble";
@@ -22,13 +22,16 @@ export function Sidebar({
   avatarUrl,
   goalLine,
   summary,
+  coaching = false,
 }: {
   displayName: string;
   avatarUrl: string | null;
   goalLine: string;
   summary: SidebarSummary;
+  coaching?: boolean;
 }) {
   const pathname = usePathname();
+  const groups = coaching ? [...NAV_GROUPS, COACH_GROUP] : NAV_GROUPS;
 
   return (
     <aside className="sticky top-0 flex h-svh w-[216px] flex-none flex-col gap-[26px] border-r border-rule bg-sidebar-bg px-4 py-[22px]">
@@ -36,7 +39,7 @@ export function Sidebar({
         <Logo />
       </Link>
 
-      {NAV_GROUPS.map((group) => (
+      {groups.map((group) => (
         <nav key={group.title} className="flex flex-col gap-[3px]">
           <div className="eyebrow px-2 pb-2 tracking-[0.14em]">{group.title}</div>
           {group.items.map((item) => {

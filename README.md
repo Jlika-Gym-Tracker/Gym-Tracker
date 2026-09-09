@@ -122,6 +122,29 @@ no picture beats a misleading one. Meals have no photo of their own either;
 `mealImage` shows the meal's main protein, which is at least true about what is
 on the plate, rather than a stock photo of some other dish.
 
+## Coaching
+
+An account can also coach. `profiles.coaching_enabled` turns it on; a coach
+writes reusable programs and assigns one into an athlete's week.
+
+The sharing boundary is the important part, and it lives in one place —
+`coach_can_read(athlete, scope)`:
+
+| Scope | Default | What it exposes |
+|---|---|---|
+| `training` | **on** | Program, sessions completed, every set / load / RPE |
+| `body` | off | Weigh-ins and measurements |
+| `photos` | off | Progress photos (and the matching Storage policy) |
+| `nutrition` | off | Targets and meal plan |
+
+Only the athlete can change these, enforced by RLS as well as by the action.
+Ending a link revokes everything immediately.
+
+**Writing new SECURITY DEFINER functions:** revoke from `anon` *and*
+`authenticated` explicitly, then grant back only what the app calls. Supabase's
+default privileges grant EXECUTE on new functions to both, and
+`revoke ... from public` does not undo that.
+
 ## Conventions
 
 - Server Components fetch data; Client Components only where there is

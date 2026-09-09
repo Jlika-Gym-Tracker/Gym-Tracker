@@ -18,7 +18,7 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, avatar_url, goal, unit_system, onboarded_at")
+    .select("display_name, avatar_url, goal, unit_system, onboarded_at, coaching_enabled")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -46,6 +46,7 @@ export default async function AppLayout({
         avatarUrl={profile?.avatar_url ?? null}
         goalLine={goalLine({ goal })}
         summary={summary}
+        coaching={profile?.coaching_enabled ?? false}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar

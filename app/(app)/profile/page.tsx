@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getExcludes, getTargets } from "@/lib/nutrition/queries";
+import { getMyCoaches } from "@/lib/coach/queries";
 import { ProfileScreen } from "@/components/profile/profile-screen";
 import type { CrewMember, SharingPrefs, UserSettings } from "@/lib/database.types";
 
@@ -17,6 +18,7 @@ export default async function ProfilePage() {
     { data: sharing },
     excludes,
     targets,
+    coaches,
     { data: crew },
     { data: invites },
     { count: sessions },
@@ -28,6 +30,7 @@ export default async function ProfilePage() {
     supabase.from("sharing_prefs").select("*").maybeSingle(),
     getExcludes(),
     getTargets(),
+    getMyCoaches(),
     supabase.rpc("crew_overview"),
     supabase
       .from("crew_invites")
@@ -84,6 +87,7 @@ export default async function ProfilePage() {
       targets={targets.ok ? targets.targets : null}
       email={user.email ?? ""}
       stats={{ sessions: sessions ?? 0, weeks: weeks ?? 0, photos: photos ?? 0 }}
+      coaches={coaches}
     />
   );
 }

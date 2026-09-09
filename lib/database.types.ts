@@ -45,6 +45,7 @@ export type Database = {
           training_day_kcal_bonus: number;
           onboarded_at: string | null;
           avatar_url: string | null;
+          coaching_enabled: boolean;
           created_at: string;
         };
         Insert: {
@@ -63,6 +64,7 @@ export type Database = {
           training_day_kcal_bonus?: number;
           onboarded_at?: string | null;
           avatar_url?: string | null;
+          coaching_enabled?: boolean;
           created_at?: string;
         };
         Update: {
@@ -81,6 +83,7 @@ export type Database = {
           training_day_kcal_bonus?: number;
           onboarded_at?: string | null;
           avatar_url?: string | null;
+          coaching_enabled?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -131,6 +134,7 @@ export type Database = {
           week_start: string;
           status: WeekStatus;
           notes: string | null;
+          assigned_by_coach_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -140,6 +144,7 @@ export type Database = {
           week_start: string;
           status?: WeekStatus;
           notes?: string | null;
+          assigned_by_coach_id?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["program_weeks"]["Insert"]>;
@@ -481,6 +486,52 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["badges"]["Insert"]>;
         Relationships: [];
       };
+      coach_invites: {
+        Row: { code: string; coach_id: string; label: string | null; uses_left: number; expires_at: string; created_at: string };
+        Insert: { code: string; coach_id: string; label?: string | null; uses_left?: number; expires_at: string; created_at?: string };
+        Update: Partial<Database["public"]["Tables"]["coach_invites"]["Insert"]>;
+        Relationships: [];
+      };
+      coach_links: {
+        Row: {
+          coach_id: string; athlete_id: string; status: "active" | "paused" | "ended";
+          share_training: boolean; share_body_metrics: boolean;
+          share_photos: boolean; share_nutrition: boolean; created_at: string;
+        };
+        Insert: {
+          coach_id: string; athlete_id: string; status?: "active" | "paused" | "ended";
+          share_training?: boolean; share_body_metrics?: boolean;
+          share_photos?: boolean; share_nutrition?: boolean; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["coach_links"]["Insert"]>;
+        Relationships: [];
+      };
+      coach_programs: {
+        Row: { id: string; coach_id: string; name: string; notes: string | null; created_at: string };
+        Insert: { id?: string; coach_id: string; name: string; notes?: string | null; created_at?: string };
+        Update: Partial<Database["public"]["Tables"]["coach_programs"]["Insert"]>;
+        Relationships: [];
+      };
+      coach_program_days: {
+        Row: { id: string; program_id: string; day_index: number; name: string; focus_note: string | null; is_rest: boolean };
+        Insert: { id?: string; program_id: string; day_index: number; name: string; focus_note?: string | null; is_rest?: boolean };
+        Update: Partial<Database["public"]["Tables"]["coach_program_days"]["Insert"]>;
+        Relationships: [];
+      };
+      coach_program_exercises: {
+        Row: {
+          id: string; day_id: string; exercise_id: string; position: number;
+          target_sets: number; rep_min: number | null; rep_max: number | null;
+          per_side: boolean; note: string | null; target_weight_kg: number | null;
+        };
+        Insert: {
+          id?: string; day_id: string; exercise_id: string; position: number;
+          target_sets: number; rep_min?: number | null; rep_max?: number | null;
+          per_side?: boolean; note?: string | null; target_weight_kg?: number | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["coach_program_exercises"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -498,6 +549,31 @@ export type Database = {
       redeem_crew_invite: {
         Args: { invite_code: string };
         Returns: { friend_id: string; friend_name: string }[];
+      };
+      redeem_coach_invite: {
+        Args: { invite_code: string };
+        Returns: { coach_id: string; coach_name: string }[];
+      };
+      coach_names: {
+        Args: { coach_ids: string[] };
+        Returns: { coach_id: string; display_name: string; avatar_url: string | null }[];
+      };
+      coach_roster: {
+        Args: Record<string, never>;
+        Returns: {
+          athlete_id: string;
+          display_name: string;
+          avatar_url: string | null;
+          goal: string;
+          sessions_this_week: number;
+          planned_this_week: number;
+          sets_this_week: number;
+          last_session_at: string | null;
+          week_dots: number[];
+          shares_body: boolean;
+          shares_photos: boolean;
+          shares_nutrition: boolean;
+        }[];
       };
       league_standings: {
         Args: { target_season: string };
@@ -545,5 +621,11 @@ export type LeagueMember = Tables<"league_members">;
 export type LeagueScore = Tables<"league_scores">;
 export type Challenge = Tables<"challenges">;
 export type Badge = Tables<"badges">;
+export type CoachInvite = Tables<"coach_invites">;
+export type CoachLink = Tables<"coach_links">;
+export type CoachProgram = Tables<"coach_programs">;
+export type ShareScope = "training" | "body" | "photos" | "nutrition";
+export type RosterAthlete =
+  Database["public"]["Functions"]["coach_roster"]["Returns"][number];
 export type LeagueStandingRow =
   Database["public"]["Functions"]["league_standings"]["Returns"][number];

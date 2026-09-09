@@ -1774,3 +1774,535 @@ create policy "challenge_participants: manage own"
     user_id = (select auth.uid())
     or public.is_challenge_creator(challenge_id)
   );
+
+
+-- ========================================================================
+-- 20260909000016_coaching.sql
+-- ========================================================================
+
+-- JLIKA Gym — coaching.
+--
+-- The app's premise is that every row belongs to one person and nobody else can
+-- read it. A coach is the first deliberate exception, so it is built to be
+-- narrow, athlete-controlled and revocable:
+--
+--   * The athlete opts in per category. Training is on by default; bodyweight,
+--     photos and nutrition are off until the athlete turns them on.
+--   * Access is checked in one SECURITY DEFINER function, so there is exactly
+--     one place that decides what a coach may see.
+--   * Ending the link revokes everything immediately — nothing is copied to the
+--     coach's side except programs the coach wrote themselves.
+
+alter table public.profiles
+  add column if not exists coaching_enabled boolean not null default false;
+
+comment on column public.profiles.coaching_enabled is
+  'True when this account also acts as a coach. Coaching is a capability on a normal account, not a separate kind of user.';
+
+-- ------------------------------------------------------------------- links
+
+create table if not exists public.coach_invites (
+  code text primary key,
+  coach_id uuid not null references auth.users on delete cascade,
+  label text,
+  uses_left int not null default 10 check (uses_left >= 0),
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists coach_invites_coach_idx on public.coach_invites (coach_id);
+
+create table if not exists public.coach_links (
+  coach_id uuid not null references auth.users on delete cascade,
+  athlete_id uuid not null references auth.users on delete cascade,
+  status text not null default 'active' check (status in ('active','paused','ended')),
+  -- Athlete-controlled. Training on, everything else off until they say so.
+  share_training boolean not null default true,
+  share_body_metrics boolean not null default false,
+  share_photos boolean not null default false,
+  share_nutrition boolean not null default false,
+  created_at timestamptz not null default now(),
+  primary key (coach_id, athlete_id),
+  constraint coach_links_no_self check (coach_id <> athlete_id)
+);
+
+create index if not exists coach_links_athlete_idx on public.coach_links (athlete_id);
+
+-- ------------------------------------------------------------ coach programs
+
+create table if not exists public.coach_programs (
+  id uuid primary key default gen_random_uuid(),
+  coach_id uuid not null references auth.users on delete cascade,
+  name text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.coach_program_days (
+  id uuid primary key default gen_random_uuid(),
+  program_id uuid not null references public.coach_programs on delete cascade,
+  day_index int not null check (day_index between 0 and 6),
+  name text not null,
+  focus_note text,
+  is_rest boolean not null default false,
+  unique (program_id, day_index)
+);
+
+create table if not exists public.coach_program_exercises (
+  id uuid primary key default gen_random_uuid(),
+  day_id uuid not null references public.coach_program_days on delete cascade,
+  exercise_id uuid not null references public.exercises,
+  position int not null,
+  target_sets int not null check (target_sets between 1 and 20),
+  rep_min int, rep_max int,
+  per_side boolean not null default false,
+  note text,
+  target_weight_kg numeric(6,2)
+);
+
+create index if not exists coach_program_exercises_day_idx
+  on public.coach_program_exercises (day_id, position);
+
+-- A week the athlete did not write themselves is marked, so the program screen
+-- can say where it came from instead of pretending they wrote it.
+alter table public.program_weeks
+  add column if not exists assigned_by_coach_id uuid references auth.users on delete set null;
+
+-- --------------------------------------------------------------- predicates
+
+/**
+ * The single place that decides what a coach may read.
+ *
+ * SECURITY DEFINER so the lookup does not re-enter RLS (see the league
+ * migration for what that costs). auth.uid() is read inside, so it can only
+ * ever answer "may *I* read this athlete's <scope>".
+ */
+create or replace function public.coach_can_read(athlete uuid, scope text)
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.coach_links cl
+    where cl.coach_id = auth.uid()
+      and cl.athlete_id = athlete
+      and cl.status = 'active'
+      and case scope
+        when 'training'  then cl.share_training
+        when 'body'      then cl.share_body_metrics
+        when 'photos'    then cl.share_photos
+        when 'nutrition' then cl.share_nutrition
+        else false
+      end
+  );
+$$;
+
+revoke all on function public.coach_can_read(uuid, text) from public;
+grant execute on function public.coach_can_read(uuid, text) to authenticated;
+
+/** Owner of a program week, for the child-table policies. */
+create or replace function public.program_week_owner(week uuid)
+returns uuid
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select w.user_id from public.program_weeks w where w.id = week;
+$$;
+
+create or replace function public.program_day_owner(day uuid)
+returns uuid
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select w.user_id
+  from public.program_days d
+  join public.program_weeks w on w.id = d.week_id
+  where d.id = day;
+$$;
+
+create or replace function public.session_owner(session uuid)
+returns uuid
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select s.user_id from public.workout_sessions s where s.id = session;
+$$;
+
+revoke all on function public.program_week_owner(uuid) from public;
+revoke all on function public.program_day_owner(uuid) from public;
+revoke all on function public.session_owner(uuid) from public;
+grant execute on function public.program_week_owner(uuid) to authenticated;
+grant execute on function public.program_day_owner(uuid) to authenticated;
+grant execute on function public.session_owner(uuid) to authenticated;
+
+-- ------------------------------------------------------------------ policies
+
+alter table public.coach_invites enable row level security;
+alter table public.coach_links enable row level security;
+alter table public.coach_programs enable row level security;
+alter table public.coach_program_days enable row level security;
+alter table public.coach_program_exercises enable row level security;
+
+drop policy if exists "coach_invites: own rows" on public.coach_invites;
+create policy "coach_invites: own rows"
+  on public.coach_invites for all
+  using (coach_id = (select auth.uid()))
+  with check (coach_id = (select auth.uid()));
+
+-- Both sides can see the link. Only the athlete may change what it shares;
+-- either side may end it.
+drop policy if exists "coach_links: both sides read" on public.coach_links;
+create policy "coach_links: both sides read"
+  on public.coach_links for select
+  using (coach_id = (select auth.uid()) or athlete_id = (select auth.uid()));
+
+drop policy if exists "coach_links: athlete controls" on public.coach_links;
+create policy "coach_links: athlete controls"
+  on public.coach_links for update
+  using (athlete_id = (select auth.uid()))
+  with check (athlete_id = (select auth.uid()));
+
+drop policy if exists "coach_links: either side ends it" on public.coach_links;
+create policy "coach_links: either side ends it"
+  on public.coach_links for delete
+  using (coach_id = (select auth.uid()) or athlete_id = (select auth.uid()));
+
+drop policy if exists "coach_programs: own rows" on public.coach_programs;
+create policy "coach_programs: own rows"
+  on public.coach_programs for all
+  using (coach_id = (select auth.uid()))
+  with check (coach_id = (select auth.uid()));
+
+drop policy if exists "coach_program_days: through program" on public.coach_program_days;
+create policy "coach_program_days: through program"
+  on public.coach_program_days for all
+  using (exists (
+    select 1 from public.coach_programs p
+    where p.id = program_id and p.coach_id = (select auth.uid())
+  ))
+  with check (exists (
+    select 1 from public.coach_programs p
+    where p.id = program_id and p.coach_id = (select auth.uid())
+  ));
+
+drop policy if exists "coach_program_exercises: through day" on public.coach_program_exercises;
+create policy "coach_program_exercises: through day"
+  on public.coach_program_exercises for all
+  using (exists (
+    select 1 from public.coach_program_days d
+    join public.coach_programs p on p.id = d.program_id
+    where d.id = day_id and p.coach_id = (select auth.uid())
+  ))
+  with check (exists (
+    select 1 from public.coach_program_days d
+    join public.coach_programs p on p.id = d.program_id
+    where d.id = day_id and p.coach_id = (select auth.uid())
+  ));
+
+-- ------------------------------------------- coach read access to athletes
+
+drop policy if exists "program_weeks: coach reads" on public.program_weeks;
+create policy "program_weeks: coach reads"
+  on public.program_weeks for select
+  using (public.coach_can_read(user_id, 'training'));
+
+drop policy if exists "program_days: coach reads" on public.program_days;
+create policy "program_days: coach reads"
+  on public.program_days for select
+  using (public.coach_can_read(public.program_week_owner(week_id), 'training'));
+
+drop policy if exists "program_exercises: coach reads" on public.program_exercises;
+create policy "program_exercises: coach reads"
+  on public.program_exercises for select
+  using (public.coach_can_read(public.program_day_owner(day_id), 'training'));
+
+drop policy if exists "workout_sessions: coach reads" on public.workout_sessions;
+create policy "workout_sessions: coach reads"
+  on public.workout_sessions for select
+  using (public.coach_can_read(user_id, 'training'));
+
+drop policy if exists "set_logs: coach reads" on public.set_logs;
+create policy "set_logs: coach reads"
+  on public.set_logs for select
+  using (public.coach_can_read(public.session_owner(session_id), 'training'));
+
+drop policy if exists "body_metrics: coach reads" on public.body_metrics;
+create policy "body_metrics: coach reads"
+  on public.body_metrics for select
+  using (public.coach_can_read(user_id, 'body'));
+
+drop policy if exists "progress_photos: coach reads" on public.progress_photos;
+create policy "progress_photos: coach reads"
+  on public.progress_photos for select
+  using (public.coach_can_read(user_id, 'photos'));
+
+-- A coach may write a week for an athlete they coach — that is the point.
+drop policy if exists "program_weeks: coach assigns" on public.program_weeks;
+create policy "program_weeks: coach assigns"
+  on public.program_weeks for insert
+  with check (public.coach_can_read(user_id, 'training'));
+
+drop policy if exists "program_days: coach assigns" on public.program_days;
+create policy "program_days: coach assigns"
+  on public.program_days for insert
+  with check (public.coach_can_read(public.program_week_owner(week_id), 'training'));
+
+drop policy if exists "program_exercises: coach assigns" on public.program_exercises;
+create policy "program_exercises: coach assigns"
+  on public.program_exercises for insert
+  with check (public.coach_can_read(public.program_day_owner(day_id), 'training'));
+
+-- Signed URLs are minted with the caller's own token, so a coach needs storage
+-- read on the athlete's folder for shared photos to resolve at all.
+drop policy if exists "coaches read shared progress photos" on storage.objects;
+create policy "coaches read shared progress photos"
+  on storage.objects for select
+  using (
+    bucket_id = 'progress-photos'
+    and (storage.foldername(name))[1] ~ '^[0-9a-f-]{36}$'
+    and public.coach_can_read(((storage.foldername(name))[1])::uuid, 'photos')
+  );
+
+
+-- ========================================================================
+-- 20260909000017_redeem_coach_invite.sql
+-- ========================================================================
+
+-- JLIKA Gym — redeeming a coach invite.
+--
+-- SECURITY DEFINER because the athlete cannot read coach_invites; the code is
+-- the credential, so it must not be enumerable. The link is created with the
+-- default sharing: training on, body/photos/nutrition off.
+
+create or replace function public.redeem_coach_invite(invite_code text)
+returns table (coach_id uuid, coach_name text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := auth.uid();
+  invite public.coach_invites%rowtype;
+begin
+  if caller is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select * into invite
+  from public.coach_invites
+  where code = upper(trim(invite_code))
+  for update;
+
+  if not found then
+    raise exception 'That coach code does not exist';
+  end if;
+  if invite.expires_at < now() then
+    raise exception 'That coach code has expired';
+  end if;
+  if invite.uses_left <= 0 then
+    raise exception 'That coach code has been used up';
+  end if;
+  if invite.coach_id = caller then
+    raise exception 'You cannot coach yourself';
+  end if;
+
+  -- Re-joining an existing link must not silently re-widen what is shared, so
+  -- an existing row is only reactivated, never reset to defaults.
+  insert into public.coach_links (coach_id, athlete_id)
+  values (invite.coach_id, caller)
+  on conflict (coach_id, athlete_id) do update set status = 'active';
+
+  update public.coach_invites
+  set uses_left = uses_left - 1
+  where code = invite.code;
+
+  return query
+  select p.id, p.display_name
+  from public.profiles p
+  where p.id = invite.coach_id;
+end;
+$$;
+
+revoke all on function public.redeem_coach_invite(text) from public;
+grant execute on function public.redeem_coach_invite(text) to authenticated;
+
+/**
+ * A coach's roster with the compliance numbers the dashboard needs.
+ *
+ * SECURITY DEFINER so it can read each athlete's sessions, but it returns only
+ * counts — never loads, weights or anything the athlete did not share. Rows
+ * appear only for links that are active and sharing training.
+ */
+create or replace function public.coach_roster()
+returns table (
+  athlete_id uuid,
+  display_name text,
+  avatar_url text,
+  goal text,
+  sessions_this_week int,
+  planned_this_week int,
+  sets_this_week int,
+  last_session_at timestamptz,
+  week_dots int[],
+  shares_body boolean,
+  shares_photos boolean,
+  shares_nutrition boolean
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := auth.uid();
+  week_start date := (date_trunc('week', now() at time zone 'utc'))::date;
+begin
+  if caller is null then
+    raise exception 'Not signed in';
+  end if;
+
+  return query
+  select
+    a.id,
+    p.display_name,
+    p.avatar_url,
+    p.goal,
+    coalesce(s.done, 0)::int,
+    coalesce(pl.planned, 0)::int,
+    coalesce(s.sets, 0)::int,
+    s.last_at,
+    coalesce(s.dots, '{}'::int[]),
+    cl.share_body_metrics,
+    cl.share_photos,
+    cl.share_nutrition
+  from public.coach_links cl
+  join auth.users a on a.id = cl.athlete_id
+  join public.profiles p on p.id = cl.athlete_id
+  left join lateral (
+    select
+      count(distinct ws.id)::int as done,
+      count(sl.id) filter (where sl.is_complete)::int as sets,
+      max(ws.started_at) as last_at,
+      array_agg(distinct extract(isodow from ws.started_at)::int - 1) as dots
+    from public.workout_sessions ws
+    left join public.set_logs sl on sl.session_id = ws.id
+    where ws.user_id = cl.athlete_id
+      and ws.ended_at is not null
+      and ws.started_at >= week_start
+  ) s on true
+  left join lateral (
+    select count(*)::int as planned
+    from public.program_days d
+    join public.program_weeks w on w.id = d.week_id
+    where w.user_id = cl.athlete_id
+      and w.week_start = week_start
+      and not d.is_rest
+      and exists (select 1 from public.program_exercises pe where pe.day_id = d.id)
+  ) pl on true
+  where cl.coach_id = caller
+    and cl.status = 'active'
+    and cl.share_training
+  order by p.display_name;
+end;
+$$;
+
+revoke all on function public.coach_roster() from public;
+grant execute on function public.coach_roster() to authenticated;
+
+
+-- ========================================================================
+-- 20260909000018_coach_names.sql
+-- ========================================================================
+
+-- JLIKA Gym — names for the coaches an athlete is linked to.
+--
+-- profiles is readable only by its owner, so an athlete cannot join to their
+-- coach's row to get a name. This returns the display name and avatar for
+-- coaches the caller is actually linked to, and nothing else about them.
+
+create or replace function public.coach_names(coach_ids uuid[])
+returns table (coach_id uuid, display_name text, avatar_url text)
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select p.id, p.display_name, p.avatar_url
+  from public.profiles p
+  where p.id = any(coach_ids)
+    and exists (
+      select 1 from public.coach_links cl
+      where cl.coach_id = p.id and cl.athlete_id = auth.uid()
+    );
+$$;
+
+revoke all on function public.coach_names(uuid[]) from public;
+grant execute on function public.coach_names(uuid[]) to authenticated;
+
+
+-- ========================================================================
+-- 20260909000019_revoke_anon_execute.sql
+-- ========================================================================
+
+-- JLIKA Gym — take EXECUTE away from anon on every SECURITY DEFINER function.
+--
+-- Supabase sets default privileges that grant EXECUTE on new functions to anon
+-- and authenticated. `revoke all ... from public` does not undo that, because
+-- the grant to anon is explicit rather than inherited — so every helper written
+-- so far was callable by anyone holding the publishable key, which ships in the
+-- browser.
+--
+-- Nothing leaked: each function reads auth.uid() itself and returns false, zero
+-- rows, or raises for an anonymous caller. But two were genuinely wrong:
+--
+--   * recompute_league_scores rewrites every score in every season. Callable by
+--     anyone, it is a free way to hammer the database.
+--   * the *_owner helpers map a resource id to its owner's user id with no
+--     auth check at all.
+--
+-- New SECURITY DEFINER functions must revoke from anon explicitly. Revoking
+-- from public is not enough.
+
+do $$
+declare fn record;
+begin
+  for fn in
+    select p.oid::regprocedure as signature
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prosecdef
+  loop
+    execute format('revoke all on function %s from anon', fn.signature);
+    execute format('revoke all on function %s from authenticated', fn.signature);
+    execute format('revoke all on function %s from public', fn.signature);
+  end loop;
+end
+$$;
+
+-- Grant back only what the app calls from a signed-in session.
+grant execute on function public.crew_overview() to authenticated;
+grant execute on function public.redeem_crew_invite(text) to authenticated;
+grant execute on function public.league_standings(uuid) to authenticated;
+grant execute on function public.is_league_member(uuid) to authenticated;
+grant execute on function public.is_challenge_participant(uuid) to authenticated;
+grant execute on function public.is_challenge_creator(uuid) to authenticated;
+grant execute on function public.coach_can_read(uuid, text) to authenticated;
+grant execute on function public.program_week_owner(uuid) to authenticated;
+grant execute on function public.program_day_owner(uuid) to authenticated;
+grant execute on function public.session_owner(uuid) to authenticated;
+grant execute on function public.redeem_coach_invite(text) to authenticated;
+grant execute on function public.coach_roster() to authenticated;
+grant execute on function public.coach_names(uuid[]) to authenticated;
+
+-- Deliberately not granted to anyone:
+--   recompute_league_scores — rewrites every score in every season; only the
+--     nightly pg_cron job, which runs as the table owner, should call it.
+--   handle_new_user — a trigger function; nothing should invoke it directly.

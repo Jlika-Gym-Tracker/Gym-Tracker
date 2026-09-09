@@ -28,9 +28,11 @@ import { GOAL_LABELS } from "@/lib/profile";
 import { Card } from "@/components/kit/card";
 import { AvatarBubble } from "@/components/shell/avatar-bubble";
 import { cn } from "@/lib/utils";
+import { MyCoaches } from "@/components/coach/my-coaches";
+import type { MyCoach } from "@/lib/coach/queries";
 import { Field, Message, Segmented, Slider, Toggle } from "./controls";
 
-const TABS = ["Account", "Targets", "Food", "Crew", "Data & privacy"] as const;
+const TABS = ["Account", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProfileScreen({
@@ -43,6 +45,7 @@ export function ProfileScreen({
   targets,
   email,
   stats,
+  coaches,
 }: {
   profile: Profile;
   settings: UserSettings;
@@ -53,6 +56,7 @@ export function ProfileScreen({
   targets: Targets | null;
   email: string;
   stats: { sessions: number; weeks: number; photos: number };
+  coaches: MyCoach[];
 }) {
   const [tab, setTab] = useState<Tab>("Account");
   const system = profile.unit_system;
@@ -107,6 +111,7 @@ export function ProfileScreen({
         <TargetsTab profile={profile} settings={settings} targets={targets} />
       ) : null}
       {tab === "Food" ? <FoodTab excludes={excludes} settings={settings} /> : null}
+      {tab === "Coach" ? <MyCoaches coaches={coaches} meId={profile.id} /> : null}
       {tab === "Crew" ? (
         <CrewTab crew={crew} invites={invites} sharing={sharing} meId={profile.id} />
       ) : null}

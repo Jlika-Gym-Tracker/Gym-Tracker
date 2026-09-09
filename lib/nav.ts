@@ -7,6 +7,12 @@ export type NavItem = {
 
 export type NavGroup = { title: string; items: NavItem[] };
 
+/** Only shown to accounts with coaching turned on. */
+export const COACH_GROUP: NavGroup = {
+  title: "Coach",
+  items: [{ href: "/coach", label: "My athletes" }],
+};
+
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Train",
@@ -41,6 +47,7 @@ export const PAGE_TITLES: Record<string, { title: string; sub: string }> = {
   "/nutrition": { title: "Nutrition", sub: "Fat loss · meal plan · groceries" },
   "/league": { title: "Crew league", sub: "Consistency · transformation" },
   "/profile": { title: "Profile & settings", sub: "Account · targets · food · crew" },
+  "/coach": { title: "Coaching", sub: "Athletes · programs · invites" },
 };
 
 export function titleForPath(pathname: string) {
