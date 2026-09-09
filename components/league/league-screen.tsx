@@ -22,6 +22,7 @@ import { DAY_NAMES } from "@/lib/dates";
 import { Card } from "@/components/kit/card";
 import { AvatarBubble } from "@/components/shell/avatar-bubble";
 import { ChartLegend, DualLineChart } from "@/components/charts/line-chart";
+import { HeroBackdrop } from "@/components/kit/hero-backdrop";
 import { Message } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
 
@@ -226,16 +227,9 @@ function SeasonHero({
   const leading = myRank === 1;
   return (
     <div className="relative flex min-h-[240px] flex-col overflow-hidden rounded-[20px] border border-line bg-surface px-7 py-[26px]">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-2 -bottom-[26px] leading-none font-extrabold tracking-[-0.06em] text-accent opacity-[0.07] select-none"
-        style={{ fontSize: 150 }}
-      >
-        {view.season.name.toUpperCase()}
-      </div>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#101214f5_0%,#101214cc_45%,#10121444_100%)]"
+      <HeroBackdrop
+        images={view.standings.map((s) => s.avatarUrl)}
+        watermark={view.season.name.toUpperCase()}
       />
       <div className="relative flex flex-1 flex-col">
         <div className="flex flex-wrap items-center gap-2">

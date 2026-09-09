@@ -27,6 +27,8 @@ export type TodayOverview = {
     muscles: string[];
   } | null;
   activeSessionId: string | null;
+  /** Photos of today's movements, for the hero backdrop. */
+  todayImages: string[];
   strip: WeekStripDay[];
   sessionsThisWeek: number;
   plannedThisWeek: number;
@@ -139,6 +141,10 @@ export async function getTodayOverview(today = new Date()): Promise<TodayOvervie
           }
         : null,
     activeSessionId: active?.id ?? null,
+    todayImages: (todayDay?.exercises ?? [])
+      .map((e) => e.exercise.image_start_url)
+      .filter((url): url is string => Boolean(url))
+      .slice(0, 6),
     strip,
     sessionsThisWeek: thisWeek.length,
     plannedThisWeek:

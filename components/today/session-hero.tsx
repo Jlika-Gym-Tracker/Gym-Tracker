@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { TodayOverview } from "@/lib/dashboard/queries";
 import { StartSessionButton } from "@/components/session/start-session-button";
+import { HeroBackdrop } from "@/components/kit/hero-backdrop";
 
 const MUSCLE_LABEL: Record<string, string> = {
   chest: "CHEST", lats: "LATS", middle_back: "BACK", lower_back: "LOWER BACK",
@@ -16,18 +17,9 @@ export function SessionHero({ overview }: { overview: TodayOverview }) {
 
   return (
     <div className="relative flex min-h-[268px] flex-col overflow-hidden rounded-[20px] border border-line bg-surface px-7 py-[26px]">
-      {today ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-1.5 -bottom-[22px] leading-none font-extrabold tracking-[-0.06em] text-accent opacity-[0.07] select-none"
-          style={{ fontSize: 150 }}
-        >
-          {today.name.toUpperCase()}
-        </div>
-      ) : null}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#101214f5_0%,#101214cc_50%,#10121455_100%)]"
+      <HeroBackdrop
+        images={overview.todayImages}
+        watermark={today ? today.name.toUpperCase() : undefined}
       />
 
       <div className="relative flex flex-1 flex-col">
@@ -79,8 +71,9 @@ export function SessionHero({ overview }: { overview: TodayOverview }) {
               Resume session
             </Link>
           ) : today ? (
-            <div className="w-[220px]">
+            <div className="w-[230px]">
               <StartSessionButton
+                variant="primary"
                 dayId={today.dayId}
                 name="Start session"
                 meta={`${today.exerciseCount} exercises · ${today.setCount} sets`}

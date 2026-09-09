@@ -13,6 +13,7 @@ import type { LibraryExercise } from "@/lib/program/match";
 import type { MuscleLoad } from "@/lib/program/volume";
 import { weekRangeLabel } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { HeroBackdrop } from "@/components/kit/hero-backdrop";
 import { DayCard } from "./day-card";
 import { LibraryPanel } from "./library-panel";
 import { LoadCheck } from "./load-check";
@@ -53,8 +54,13 @@ export function ProgramBuilder({
   return (
     <div className="grid items-start gap-[18px] xl:grid-cols-[1fr_320px]">
       <div className="flex min-w-0 flex-col gap-4">
-        <header className="flex flex-wrap items-center gap-3.5 rounded-[18px] border border-line bg-surface p-5">
-          <div className="min-w-0">
+        <header className="relative flex flex-wrap items-center gap-3.5 overflow-hidden rounded-[18px] border border-line bg-surface p-5">
+          <HeroBackdrop
+            images={week.days.flatMap((d) =>
+              d.exercises.map((e) => e.exercise.image_start_url),
+            )}
+          />
+          <div className="relative min-w-0">
             <h1 className="truncate text-base font-bold tracking-[-0.01em]">
               {week.label}
             </h1>
@@ -63,7 +69,7 @@ export function ProgramBuilder({
             </p>
           </div>
 
-          <div className="ml-auto flex flex-wrap gap-2.5">
+          <div className="relative ml-auto flex flex-wrap gap-2.5">
             <button
               type="button"
               onClick={() => {
@@ -149,7 +155,7 @@ export function ProgramBuilder({
           {message ? (
             <p
               className={cn(
-                "w-full rounded-[10px] border px-3 py-2 text-xs",
+                "relative w-full rounded-[10px] border px-3 py-2 text-xs",
                 isError
                   ? "border-danger-border bg-danger-soft text-danger"
                   : "border-line-hi bg-accent-soft text-accent",
