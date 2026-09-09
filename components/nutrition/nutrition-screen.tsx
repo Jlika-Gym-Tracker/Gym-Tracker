@@ -2,7 +2,7 @@
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
 import { format, parseISO } from "date-fns";
-import { Check, RefreshCw, Shuffle } from "lucide-react";
+import { Check, ChevronDown, RefreshCw, Shuffle } from "lucide-react";
 import {
   generateWeekPlan,
   swapMeal,
@@ -10,7 +10,12 @@ import {
   type ActionState,
 } from "@/app/actions/nutrition";
 import type { PlannableRecipe } from "@/lib/nutrition/plan";
-import { SLOT_LABELS, recipeMacros } from "@/lib/nutrition/plan";
+import {
+  SLOT_LABELS,
+  orderedIngredients,
+  portionLine,
+  recipeMacros,
+} from "@/lib/nutrition/plan";
 import type { WeekPlan } from "@/lib/nutrition/queries";
 import type { Targets } from "@/lib/nutrition/targets";
 import { DAY_NAMES } from "@/lib/dates";
@@ -18,6 +23,7 @@ import { Card } from "@/components/kit/card";
 import { cn } from "@/lib/utils";
 import { CalorieRing, MacroTile } from "./calorie-ring";
 import { FoodThumb, mealImage } from "./food-thumb";
+import { MealDetail } from "./meal-detail";
 import { GroceryList } from "./grocery-list";
 import { AllergiesPanel } from "./allergies-panel";
 
@@ -41,6 +47,10 @@ export function NutritionScreen({
   const [genState, generate] = useActionState(generateWeekPlan, {} as ActionState);
   const [, startTransition] = useTransition();
   const [swapping, setSwapping] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  // Servings echo locally while the write lands, so portions and macros move
+  // together the moment you press the stepper.
+  const [localServings, setLocalServings] = useState<Record<string, number>>({});
 
   const entries = plan?.entries ?? [];
   const [optimisticEntries, markEaten] = useOptimistic(
@@ -123,9 +133,9 @@ export function NutritionScreen({
           ) : (
             <div className="flex flex-col gap-2.5">
               {todayEntries.map((entry) => {
-                const macros = entry.recipe
-                  ? recipeMacros(entry.recipe, Number(entry.servings))
-                  : null;
+                const servings = localServings[entry.id] ?? Number(entry.servings);
+                const macros = entry.recipe ? recipeMacros(entry.recipe, servings) : null;
+                const isOpen = expanded === entry.id;
                 const alternatives = recipes.filter(
                   (r) => r.slot_hint === entry.slot && r.id !== entry.recipe?.id,
                 );
@@ -169,10 +179,15 @@ export function NutritionScreen({
                           {entry.recipe?.name ?? "Nothing planned"}
                         </div>
                         <div className="mt-1 truncate text-[11.5px] text-fg-soft">
-                          {entry.recipe?.ingredients
-                            .map((i) => i.ingredient.name)
-                            .slice(0, 4)
-                            .join(" · ")}
+                          {entry.recipe
+                            ? orderedIngredients(entry.recipe.ingredients)
+                                .slice(0, 3)
+                                .map((row) => portionLine(row, servings))
+                                .join(" · ")
+                            : null}
+                          {entry.recipe && entry.recipe.ingredients.length > 3
+                            ? ` · +${entry.recipe.ingredients.length - 3} more`
+                            : null}
                         </div>
                       </div>
 
@@ -190,7 +205,30 @@ export function NutritionScreen({
 
                       <button
                         type="button"
-                        onClick={() => setSwapping(swapping === entry.id ? null : entry.id)}
+                        disabled={!entry.recipe}
+                        onClick={() => {
+                          setExpanded(isOpen ? null : entry.id);
+                          setSwapping(null);
+                        }}
+                        aria-expanded={isOpen}
+                        aria-label={`${isOpen ? "Hide" : "Show"} the recipe for ${entry.recipe?.name ?? "this meal"}`}
+                        className={cn(
+                          "flex-none rounded-lg p-1.5 transition-colors disabled:opacity-30",
+                          isOpen ? "text-accent" : "text-fg-dim hover:text-accent",
+                        )}
+                      >
+                        <ChevronDown
+                          className={cn("size-4 transition-transform", isOpen && "rotate-180")}
+                          strokeWidth={2}
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSwapping(swapping === entry.id ? null : entry.id);
+                          setExpanded(null);
+                        }}
                         aria-label={`Swap ${entry.recipe?.name ?? "this meal"}`}
                         className="flex-none rounded-lg p-1.5 text-fg-dim hover:text-accent"
                       >
@@ -217,6 +255,17 @@ export function NutritionScreen({
                         ) : null}
                       </button>
                     </div>
+
+                    {isOpen && entry.recipe ? (
+                      <MealDetail
+                        entryId={entry.id}
+                        recipe={entry.recipe}
+                        servings={servings}
+                        onServingsChange={(next) =>
+                          setLocalServings((prev) => ({ ...prev, [entry.id]: next }))
+                        }
+                      />
+                    ) : null}
 
                     {swapping === entry.id ? (
                       <div className="mt-1.5 flex flex-wrap gap-1.5 rounded-[12px] border border-line bg-surface-2 p-2.5">

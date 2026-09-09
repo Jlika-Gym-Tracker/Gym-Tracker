@@ -162,6 +162,44 @@ export async function toggleMealEaten(entryId: string, eaten: boolean): Promise<
   }
 }
 
+/**
+ * Changes how much of a planned meal you are eating.
+ *
+ * Rebuilds the shopping list afterwards: servings feed the aggregation, so
+ * leaving it alone would quietly put the grocery totals out of step with the
+ * plan they claim to come from.
+ */
+export async function setMealServings(
+  entryId: string,
+  servings: number,
+): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    uuid.parse(entryId);
+    // Quarter-serving steps, capped — past four helpings it is a different meal.
+    const value = z
+      .number()
+      .min(0.25)
+      .max(4)
+      .multipleOf(0.25)
+      .parse(Math.round(servings * 4) / 4);
+
+    const { data: entry, error } = await supabase
+      .from("meal_plan_entries")
+      .update({ servings: value })
+      .eq("id", entryId)
+      .select("plan_id")
+      .single();
+    if (error) throw error;
+
+    await rebuildGroceries(entry.plan_id);
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
 export async function toggleGroceryItem(itemId: string, checked: boolean): Promise<ActionState> {
   try {
     const { supabase } = await requireUser();

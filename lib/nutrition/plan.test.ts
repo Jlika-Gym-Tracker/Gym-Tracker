@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   aggregateGroceries,
   buildWeekPlan,
+  formatPortion,
   formatQuantity,
+  orderedIngredients,
+  portionLine,
   recipeMacros,
   slotsForMealCount,
   type PlannableRecipe,
@@ -167,5 +170,75 @@ describe("formatQuantity", () => {
   it("uses litres for large volumes", () => {
     expect(formatQuantity(line(1500, "ml"))).toBe("1.5 l");
     expect(formatQuantity(line(500, "ml"))).toBe("500 ml");
+  });
+});
+
+describe("formatPortion", () => {
+  it("rounds to nearest for a plate, unlike the shopping list which rounds up", () => {
+    // 2.6 eggs is 3 on a plate; formatQuantity would also say 3, but 2.1 must
+    // not become 3 just because you would buy three.
+    expect(formatPortion(130, "unit", "eggs")).toBe("3");
+    expect(formatPortion(105, "unit", "eggs")).toBe("2");
+    expect(formatQuantity({
+      ingredientId: "eggs", slug: "eggs", name: "Eggs",
+      category: "protein", unitHint: "unit", totalGrams: 105,
+    })).toBe("3");
+  });
+
+  it("never tells you to eat zero of something", () => {
+    expect(formatPortion(10, "unit", "eggs")).toBe("1");
+  });
+
+  it("keeps grams and millilitres readable", () => {
+    expect(formatPortion(200, "g")).toBe("200 g");
+    expect(formatPortion(1200, "g")).toBe("1.2 kg");
+    expect(formatPortion(15, "ml")).toBe("15 ml");
+  });
+});
+
+describe("portionLine", () => {
+  const row = {
+    grams: 200,
+    ingredient: { name: "Chicken breast", unit_hint: "g", slug: "chicken-breast" },
+  };
+
+  it("reads as an instruction", () => {
+    expect(portionLine(row)).toBe("200 g chicken breast");
+  });
+
+  it("scales with servings", () => {
+    expect(portionLine(row, 2)).toBe("400 g chicken breast");
+    expect(portionLine(row, 0.5)).toBe("100 g chicken breast");
+  });
+
+  it("counts unit foods rather than weighing them", () => {
+    expect(
+      portionLine({ grams: 150, ingredient: { name: "Eggs", unit_hint: "unit", slug: "eggs" } }),
+    ).toBe("3 × Eggs");
+  });
+});
+
+describe("orderedIngredients", () => {
+  const oil = { grams: 8, ingredient: { category: "fats", name: "Olive oil" } };
+  const spice = { grams: 5, ingredient: { category: "pantry", name: "Spices" } };
+  const chicken = { grams: 200, ingredient: { category: "protein", name: "Chicken" } };
+  const rice = { grams: 80, ingredient: { category: "carbs", name: "Rice" } };
+
+  it("puts the protein first, then the heaviest", () => {
+    expect(
+      orderedIngredients([oil, spice, chicken, rice]).map((r) => r.ingredient.name),
+    ).toEqual(["Chicken", "Rice", "Olive oil", "Spices"]);
+  });
+
+  it("falls back to weight when nothing is a protein", () => {
+    expect(orderedIngredients([spice, oil, rice]).map((r) => r.ingredient.name)).toEqual([
+      "Rice", "Olive oil", "Spices",
+    ]);
+  });
+
+  it("does not mutate the input", () => {
+    const rows = [oil, chicken];
+    orderedIngredients(rows);
+    expect(rows[0]).toBe(oil);
   });
 });

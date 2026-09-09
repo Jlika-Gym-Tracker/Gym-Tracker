@@ -105,6 +105,20 @@ The beginner template deliberately prescribes less than the load check's weekly
 set floor — that floor is tuned for an intermediate lifter in a deficit, and the
 UI says so rather than showing an unexplained warning.
 
+## Today's meals
+
+Each meal row expands to the recipe: every ingredient with its portion and
+calorie contribution, the method, and a servings stepper. Portions scale live,
+so the number on screen is the number for the plate you are actually making.
+
+Changing servings rewrites the grocery list — servings feed the aggregation, so
+leaving it alone would put the shopping totals out of step with the plan they
+come from.
+
+`formatPortion` rounds to nearest; `formatQuantity` (the shopping list) rounds
+up. A list should never send you home short, and a plate should not tell you to
+eat three eggs when the recipe says 2.1.
+
 ## Imagery
 
 Three sources, all hotlinked for now — **mirror them into Supabase Storage

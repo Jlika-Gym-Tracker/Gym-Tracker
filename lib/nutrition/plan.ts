@@ -191,6 +191,63 @@ export function formatQuantity(line: GroceryLine): string {
     : `${Math.round(line.totalGrams)} g`;
 }
 
+/**
+ * Ingredients ordered by how much of the meal they actually are.
+ *
+ * Seed order is arbitrary, and reading "8 ml olive oil · 5 g mixed spices"
+ * before the 200 g of chicken tells you nothing about what you are eating.
+ * Heaviest first, with the protein promoted — that is the line people scan.
+ */
+export function orderedIngredients<T extends {
+  grams: number;
+  ingredient: { category: string };
+}>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const proteinFirst =
+      Number(b.ingredient.category === "protein") - Number(a.ingredient.category === "protein");
+    return proteinFirst || b.grams - a.grams;
+  });
+}
+
+/**
+ * How much of one ingredient is on the plate.
+ *
+ * Distinct from formatQuantity, which rounds *up* because a shopping list
+ * should never send you home short. A portion rounds to nearest — telling
+ * someone to eat 3 eggs when the recipe says 2.6 is right; telling them 3 when
+ * it says 2.1 is not.
+ */
+export function formatPortion(
+  grams: number,
+  unitHint: string,
+  slug?: string,
+): string {
+  if (unitHint === "unit") {
+    const perItem = slug === "eggs" ? 50 : 120;
+    const count = Math.max(1, Math.round(grams / perItem));
+    return String(count);
+  }
+  if (unitHint === "ml") {
+    return grams >= 1000
+      ? `${(grams / 1000).toFixed(1).replace(/\.0$/, "")} l`
+      : `${Math.round(grams)} ml`;
+  }
+  return grams >= 1000
+    ? `${(grams / 1000).toFixed(2).replace(/0$/, "").replace(/\.$/, "")} kg`
+    : `${Math.round(grams)} g`;
+}
+
+/** "3 eggs" / "200 g" — the portion with its noun, for a plain-text recipe. */
+export function portionLine(row: {
+  grams: number;
+  ingredient: { name: string; unit_hint: string; slug: string };
+}, servings = 1): string {
+  const amount = formatPortion(row.grams * servings, row.ingredient.unit_hint, row.ingredient.slug);
+  return row.ingredient.unit_hint === "unit"
+    ? `${amount} × ${row.ingredient.name}`
+    : `${amount} ${row.ingredient.name.toLowerCase()}`;
+}
+
 export const CATEGORY_LABELS: Record<string, string> = {
   protein: "Protein",
   carbs: "Carbs",
