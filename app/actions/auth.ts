@@ -158,6 +158,42 @@ export async function sendMagicLink(
   return { notice: `Magic link sent to ${parsed.data.email}.` };
 }
 
+/**
+ * Sends a fresh confirmation or magic link.
+ *
+ * Deliberately reports success either way: telling an anonymous caller whether
+ * an address has an account, or whether it is already confirmed, turns this
+ * into an account-enumeration oracle.
+ */
+export async function resendLink(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const parsed = emailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) return { error: "Enter a valid email address." };
+
+  const kind = formData.get("kind") === "signup" ? "signup" : "magiclink";
+  const supabase = await createClient();
+  const redirect = `${await siteUrl()}/auth/confirm`;
+
+  if (kind === "signup") {
+    await supabase.auth.resend({
+      type: "signup",
+      email: parsed.data,
+      options: { emailRedirectTo: redirect },
+    });
+  } else {
+    await supabase.auth.signInWithOtp({
+      email: parsed.data,
+      options: { emailRedirectTo: redirect },
+    });
+  }
+
+  return {
+    notice: `If ${parsed.data} needs a link, one is on its way. It expires in an hour and works once.`,
+  };
+}
+
 export async function signInWithGoogle(formData: FormData) {
   const supabase = await createClient();
   const next = safeNext(formData.get("next"));
