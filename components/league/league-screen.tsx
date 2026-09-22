@@ -25,6 +25,7 @@ import { ChartLegend, DualLineChart } from "@/components/charts/line-chart";
 import { HeroBackdrop } from "@/components/kit/hero-backdrop";
 import { Message } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/kit/action-button";
 
 const TABS: { key: StandingsTab; label: string }[] = [
   { key: "overall", label: "Overall" },
@@ -52,12 +53,11 @@ export function LeagueScreen({ view, meId }: { view: SeasonView; meId: string })
         </p>
         <form action={join} className="mt-6">
           <input type="hidden" name="seasonId" value={view.season.id} />
-          <button
-            type="submit"
+          <ActionButton
             className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
             Join {view.season.name}
-          </button>
+          </ActionButton>
         </form>
         <div className="mt-3">
           <Message error={joinState.error} notice={joinState.notice} />
@@ -361,12 +361,11 @@ function ChallengesPanel({ view, meId }: { view: SeasonView; meId: string }) {
             className="w-full rounded-[9px] border border-line bg-surface px-3 py-2 text-[12.5px] outline-none focus:border-line-hi"
           />
           <Message error={createState.error} notice={createState.notice} />
-          <button
-            type="submit"
+          <ActionButton
             className="rounded-[10px] bg-accent px-4 py-2.5 text-[12.5px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
             Create challenge
-          </button>
+          </ActionButton>
         </form>
       ) : null}
 
@@ -432,16 +431,16 @@ function ChallengesPanel({ view, meId }: { view: SeasonView; meId: string }) {
                     <form action={respond}>
                       <input type="hidden" name="challengeId" value={challenge.id} />
                       <input type="hidden" name="accept" value="yes" />
-                      <button className="rounded-lg bg-accent px-3 py-1.5 text-[11.5px] font-bold text-[#0a0c0d]">
+                      <ActionButton className="rounded-lg bg-accent px-3 py-1.5 text-[11.5px] font-bold text-[#0a0c0d]">
                         Accept
-                      </button>
+                      </ActionButton>
                     </form>
                     <form action={respond}>
                       <input type="hidden" name="challengeId" value={challenge.id} />
                       <input type="hidden" name="accept" value="no" />
-                      <button className="rounded-lg border border-stroke px-3 py-1.5 text-[11.5px] font-semibold text-fg-soft">
+                      <ActionButton className="rounded-lg border border-stroke px-3 py-1.5 text-[11.5px] font-semibold text-fg-soft">
                         Decline
-                      </button>
+                      </ActionButton>
                     </form>
                   </div>
                 ) : null}

@@ -6,6 +6,7 @@ import { COACH_GROUP, NAV_GROUPS, isActivePath } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { AvatarBubble } from "./avatar-bubble";
+import { NavSpinner } from "./nav-spinner";
 
 export type SidebarSummary = {
   /** e.g. "Week 12 · Cut" */
@@ -70,6 +71,7 @@ export function Sidebar({
                 >
                   {item.label}
                 </span>
+                <NavSpinner className="ml-auto" />
                 {item.meta ? (
                   <span className="ml-auto font-mono text-[10px] font-medium text-fg-dim">
                     {item.meta}

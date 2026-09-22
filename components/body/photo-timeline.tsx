@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { deletePhoto, type ActionState } from "@/app/actions/body";
 import type { PhotoWithUrl } from "@/lib/body/queries";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/kit/action-button";
 
 export function PhotoTimeline({ photos }: { photos: PhotoWithUrl[] }) {
   const [state, remove] = useActionState(deletePhoto, {} as ActionState);
@@ -44,13 +45,13 @@ export function PhotoTimeline({ photos }: { photos: PhotoWithUrl[] }) {
 
             <form action={remove} className="absolute top-1 right-1">
               <input type="hidden" name="id" value={photo.id} />
-              <button
-                type="submit"
+              <ActionButton
+                spinnerOnly
                 aria-label={`Delete photo from ${photo.taken_on}`}
                 className="flex size-5 items-center justify-center rounded-md bg-[#0a0c0dcc] text-fg-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger focus-visible:opacity-100"
               >
                 <X className="size-3" strokeWidth={2.5} />
-              </button>
+              </ActionButton>
             </form>
           </div>
         ))}

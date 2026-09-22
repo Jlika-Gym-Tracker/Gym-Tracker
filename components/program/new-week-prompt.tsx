@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { copyLastWeek, createCurrentWeek, type ActionState } from "@/app/actions/program";
 import { weekRangeLabel } from "@/lib/dates";
 import { TemplatePicker } from "./template-picker";
+import { ActionButton } from "@/components/kit/action-button";
 
 /** Shown when no week exists for the date being viewed. */
 export function NewWeekPrompt({
@@ -57,23 +58,21 @@ export function NewWeekPrompt({
             {showTemplates ? "Hide templates" : "Start from a template"}
           </button>
           <form action={create}>
-            <button
-              type="submit"
+            <ActionButton
               className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
             >
               Start blank
-            </button>
+            </ActionButton>
           </form>
           {hasEarlierWeek ? (
             <form action={copy} className="flex flex-col gap-1.5">
               <input type="hidden" name="weekStart" value={weekStart} />
               <input type="hidden" name="applyProgression" value="on" />
-              <button
-                type="submit"
+              <ActionButton
                 className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
               >
                 Copy last week
-              </button>
+              </ActionButton>
               <span className="pl-1 font-mono text-[10px] tracking-[0.06em] text-fg-dim uppercase">
                 Loads step up where earned
               </span>

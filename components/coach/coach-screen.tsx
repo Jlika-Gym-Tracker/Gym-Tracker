@@ -23,6 +23,8 @@ import { AvatarBubble } from "@/components/shell/avatar-bubble";
 import { ExerciseThumb } from "@/components/program/exercise-thumb";
 import { Message } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/kit/action-button";
+import { Saving } from "@/components/kit/skeleton";
 
 export function CoachScreen({
   roster,
@@ -173,21 +175,22 @@ export function CoachScreen({
                                 <option key={p.id} value={p.id}>{p.name}</option>
                               ))}
                             </select>
-                            <button className="rounded-lg bg-accent px-2.5 py-1.5 text-[11.5px] font-bold text-[#0a0c0d] hover:bg-accent-hi">
+                            <ActionButton className="rounded-lg bg-accent px-2.5 py-1.5 text-[11.5px] font-bold text-[#0a0c0d] hover:bg-accent-hi">
                               Assign
-                            </button>
+                            </ActionButton>
                           </form>
                         ) : null}
 
                         <form action={end}>
                           <input type="hidden" name="coachId" value={meId} />
                           <input type="hidden" name="athleteId" value={athlete.athlete_id} />
-                          <button
+                          <ActionButton
+                spinnerOnly
                             className="rounded p-1 text-fg-faint hover:text-danger"
                             aria-label={`Stop coaching ${athlete.display_name}`}
                           >
                             <X className="size-3.5" strokeWidth={2} />
-                          </button>
+                          </ActionButton>
                         </form>
                       </div>
                     </div>
@@ -227,9 +230,10 @@ export function CoachScreen({
               placeholder="Autumn intake (optional)"
               className="rounded-[10px] border border-line bg-surface-2 px-3 py-2.5 text-[12.5px] outline-none focus:border-line-hi"
             />
-            <button className="rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi">
+            <ActionButton
+            pendingLabel="Creating…" className="rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi">
               Create a coach code
-            </button>
+            </ActionButton>
           </form>
           <div className="mt-3">
             <Message error={inviteState.error} notice={inviteState.notice} />
@@ -324,9 +328,9 @@ function ProgramLibrary({
             placeholder="New program name"
             className="rounded-[10px] border border-line bg-surface-2 px-3 py-2 text-[12.5px] outline-none focus:border-line-hi"
           />
-          <button className="rounded-[10px] border border-stroke bg-ghost px-3.5 py-2 text-[12.5px] font-semibold text-fg-2 hover:bg-hover">
+          <ActionButton className="rounded-[10px] border border-stroke bg-ghost px-3.5 py-2 text-[12.5px] font-semibold text-fg-2 hover:bg-hover">
             Create
-          </button>
+          </ActionButton>
         </form>
       </div>
       <Message error={createState.error ?? deleteState.error} notice={createState.notice ?? deleteState.notice} />
@@ -363,10 +367,10 @@ function ProgramLibrary({
                 </span>
                 <form action={remove} className="ml-auto">
                   <input type="hidden" name="programId" value={open.id} />
-                  <button className="flex items-center gap-1.5 font-mono text-[10px] text-fg-dim uppercase hover:text-danger">
+                  <ActionButton className="flex items-center gap-1.5 font-mono text-[10px] text-fg-dim uppercase hover:text-danger">
                     <Trash2 className="size-3" strokeWidth={2} />
                     Delete program
-                  </button>
+                  </ActionButton>
                 </form>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
@@ -389,7 +393,7 @@ function CoachDayCard({
   day: CoachProgramDetail["days"][number];
   library: LibraryExercise[];
 }) {
-  const [, startTransition] = useTransition();
+  const [saving, startTransition] = useTransition();
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -404,7 +408,8 @@ function CoachDayCard({
           {DAY_NAMES[day.day_index]?.toUpperCase()}
         </span>
         <span className="text-[13.5px] font-bold">{day.name}</span>
-        <span className="ml-auto font-mono text-[10px] text-fg-dim">
+        <Saving busy={saving} className="ml-auto" />
+        <span className="font-mono text-[10px] text-fg-dim">
           {day.exercises.length} EX
         </span>
       </header>

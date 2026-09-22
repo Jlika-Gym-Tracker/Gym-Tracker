@@ -8,6 +8,7 @@ import { DAY_NAMES } from "@/lib/dates";
 import { trimNumber } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
+import { ActionButton } from "@/components/kit/action-button";
 
 function loadLabel(item: DayWithExercises["exercises"][number], unit: string) {
   if (item.target_weight_kg == null) return null;
@@ -157,14 +158,14 @@ export function DayCard({
               className="flex-none"
             >
               <input type="hidden" name="id" value={item.id} />
-              <button
-                type="submit"
+              <ActionButton
+                spinnerOnly
                 aria-label={`Remove ${item.exercise.name}`}
                 // Hover-revealed with a mouse; always there on touch, which has no hover.
                 className="hit rounded p-0.5 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger focus-visible:opacity-100 pointer-coarse:opacity-100"
               >
                 <X className="size-3.5" strokeWidth={2} />
-              </button>
+              </ActionButton>
             </form>
           </div>
         ))}

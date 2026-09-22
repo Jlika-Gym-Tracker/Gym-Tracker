@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, CalendarRange, Dumbbell, House, Utensils } from "lucide-react";
+import { useLinkStatus } from "next/link";
+import { Activity, CalendarRange, Dumbbell, House, Loader2, Utensils } from "lucide-react";
 import { isActivePath } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +61,7 @@ export function MobileNav() {
                       : "text-fg-soft",
                 )}
               >
-                <Icon className="size-[18px]" strokeWidth={active || primary ? 2.25 : 1.75} />
+                <TabIcon Icon={Icon} active={active} primary={primary} />
               </span>
               <span
                 className={cn(
@@ -76,4 +77,21 @@ export function MobileNav() {
       </div>
     </nav>
   );
+}
+
+/** The tab's own icon, or a spinner while that tab's page is loading. */
+function TabIcon({
+  Icon,
+  active,
+  primary,
+}: {
+  Icon: typeof House;
+  active: boolean;
+  primary: boolean;
+}) {
+  const { pending } = useLinkStatus();
+  if (pending) {
+    return <Loader2 aria-label="Loading" role="status" className="size-[18px] animate-spin" />;
+  }
+  return <Icon className="size-[18px]" strokeWidth={active || primary ? 2.25 : 1.75} />;
 }

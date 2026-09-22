@@ -10,6 +10,7 @@ import {
 } from "@/lib/program/templates";
 import { DAY_NAMES } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/kit/action-button";
 
 const LEVEL_LABEL: Record<string, string> = {
   beginner: "New to lifting",
@@ -149,12 +150,12 @@ export function TemplatePicker({
         </p>
       ) : null}
 
-      <button
-        type="submit"
+      <ActionButton
+            pendingLabel="Writing the week…"
         className="mt-4 rounded-[10px] bg-accent px-[18px] py-[11px] text-[13px] font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
       >
         Fill the week with {template.name}
-      </button>
+      </ActionButton>
       <p className="mt-2 text-[11.5px] text-fg-dim">
         This replaces every day in the week. It stays a draft until you publish.
       </p>

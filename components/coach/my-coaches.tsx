@@ -7,6 +7,7 @@ import type { MyCoach } from "@/lib/coach/queries";
 import { Card } from "@/components/kit/card";
 import { AvatarBubble } from "@/components/shell/avatar-bubble";
 import { Field, Message, Toggle } from "@/components/profile/controls";
+import { ActionButton } from "@/components/kit/action-button";
 
 const SCOPES = [
   {
@@ -93,9 +94,9 @@ export function MyCoaches({
                     <form action={end} className="ml-auto">
                       <input type="hidden" name="coachId" value={coach.coach_id} />
                       <input type="hidden" name="athleteId" value={meId} />
-                      <button className="rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-[11.5px] font-semibold text-danger">
+                      <ActionButton className="rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-[11.5px] font-semibold text-danger">
                         End coaching
-                      </button>
+                      </ActionButton>
                     </form>
                   </div>
 
@@ -124,9 +125,10 @@ export function MyCoaches({
           <form action={join} className="mt-3 flex flex-col gap-2.5">
             <Field label="Coach code" name="code" placeholder="COACH-4M2XQ7" required />
             <Message error={joinState.error} notice={joinState.notice} />
-            <button className="rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi">
+            <ActionButton
+            pendingLabel="Joining…" className="rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi">
               Join
-            </button>
+            </ActionButton>
           </form>
           <p className="mt-3 text-[11.5px] leading-[1.5] text-fg-dim">
             Joining shares your training. Bodyweight, photos and nutrition stay

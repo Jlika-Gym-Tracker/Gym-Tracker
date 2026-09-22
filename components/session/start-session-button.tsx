@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { startSession } from "@/app/actions/session";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/kit/action-button";
 
 export function StartSessionButton({
   dayId,
@@ -26,8 +27,7 @@ export function StartSessionButton({
       className={cn(freeform && "mt-2.5")}
     >
       {dayId ? <input type="hidden" name="dayId" value={dayId} /> : null}
-      <button
-        type="submit"
+      <ActionButton
         disabled={pending}
         className={cn(
           "w-full text-left transition-colors disabled:opacity-60",
@@ -50,7 +50,7 @@ export function StartSessionButton({
         >
           {pending ? "Starting…" : meta}
         </span>
-      </button>
+      </ActionButton>
     </form>
   );
 }

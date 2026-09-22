@@ -9,6 +9,7 @@ import { Card } from "@/components/kit/card";
 import { weekRangeLabel } from "@/lib/dates";
 import { FoodThumb } from "./food-thumb";
 import { cn } from "@/lib/utils";
+import { Saving } from "@/components/kit/skeleton";
 
 export function GroceryList({
   groceries,
@@ -19,7 +20,7 @@ export function GroceryList({
   weekStart: string;
   mealCount: number;
 }) {
-  const [, startTransition] = useTransition();
+  const [saving, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
   const [items, setChecked] = useOptimistic(
     groceries,
@@ -64,6 +65,7 @@ export function GroceryList({
     <Card className="rounded-[18px]">
       <div className="mb-1.5 flex items-center gap-2">
         <h2 className="text-[15px] font-bold">Grocery list</h2>
+        <Saving busy={saving} />
         <span className="ml-auto font-mono text-[10.5px] text-fg-dim uppercase">
           {weekRangeLabel(weekStart)}
         </span>

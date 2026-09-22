@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { createSeason, type ActionState } from "@/app/actions/league";
 import { Message } from "@/components/profile/controls";
+import { ActionButton } from "@/components/kit/action-button";
 
 export function NewSeasonPrompt() {
   const [state, create] = useActionState(createSeason, {} as ActionState);
@@ -43,12 +44,12 @@ export function NewSeasonPrompt() {
             aria-label="Season name"
             className="rounded-[11px] border border-line bg-surface-2 px-3.5 py-3 text-[13.5px] outline-none focus:border-line-hi"
           />
-          <button
-            type="submit"
+          <ActionButton
+            pendingLabel="Starting…"
             className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
             Start a 12-week season
-          </button>
+          </ActionButton>
           <Link
             href="/profile"
             className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 hover:bg-hover"

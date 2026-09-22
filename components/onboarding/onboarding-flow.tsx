@@ -12,6 +12,7 @@ import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { Logo } from "@/components/shell/logo";
 import { Message, Segmented } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/kit/action-button";
 
 const STEPS = ["Account", "Body", "Goal", "Food", "Program"] as const;
 
@@ -367,13 +368,13 @@ DAY 2 — LOWER A
           ) : null}
 
           {isLast ? (
-            <button
-              type="submit"
+            <ActionButton
+            pendingLabel="Saving…"
               disabled={trainingDays.length === 0}
               className="rounded-[11px] bg-accent px-[26px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi disabled:opacity-50"
             >
               Finish and write week 1
-            </button>
+            </ActionButton>
           ) : (
             <button
               type="button"

@@ -9,6 +9,7 @@ import type { UnitSystem } from "@/lib/database.types";
 import { toDateString } from "@/lib/dates";
 import { weightUnit } from "@/lib/units";
 import { Card } from "@/components/kit/card";
+import { ActionButton } from "@/components/kit/action-button";
 
 const LABELS: Record<MissingTargetInput, string> = {
   sex: "sex",
@@ -72,12 +73,11 @@ export function TargetsMissing({
               className="w-[140px] rounded-[11px] border border-line bg-surface-2 px-3.5 py-3 font-mono text-[15px] text-fg-2 outline-none placeholder:text-fg-dim focus:border-line-hi"
             />
           </label>
-          <button
-            type="submit"
+          <ActionButton
             className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
           >
             Save and show my targets
-          </button>
+          </ActionButton>
           <Link
             href="/progress"
             className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"

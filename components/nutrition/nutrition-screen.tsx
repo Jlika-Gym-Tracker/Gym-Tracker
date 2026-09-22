@@ -26,6 +26,7 @@ import { FoodThumb, mealImage } from "./food-thumb";
 import { MealDetail } from "./meal-detail";
 import { GroceryList } from "./grocery-list";
 import { AllergiesPanel } from "./allergies-panel";
+import { ActionButton } from "@/components/kit/action-button";
 
 export function NutritionScreen({
   plan,
@@ -109,13 +110,12 @@ export function NutritionScreen({
             <h2 className="text-[15px] font-bold">Today&apos;s meals</h2>
             <form action={generate} className="ml-auto">
               <input type="hidden" name="weekStart" value={weekStart} />
-              <button
-                type="submit"
+              <ActionButton
                 className="hit flex items-center gap-1.5 font-mono text-[11px] font-semibold text-accent hover:text-accent-hi"
               >
                 <RefreshCw className="size-3" strokeWidth={2.5} />
                 {plan ? "REPLAN WEEK" : "PLAN THIS WEEK"}
-              </button>
+              </ActionButton>
             </form>
           </div>
 

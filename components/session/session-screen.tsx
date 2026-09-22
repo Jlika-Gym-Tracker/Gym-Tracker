@@ -22,6 +22,7 @@ import { ElapsedClock, RestTimer, useRestTimer } from "./timers";
 import { SET_GRID, SetRow, draftToPayload, toDraft, type SetDraft } from "./set-row";
 import { ExerciseDrawer, type DrawerData } from "./exercise-drawer";
 import { SidePanel, type SidePanelData } from "./side-panel";
+import { ActionButton } from "@/components/kit/action-button";
 
 export function SessionScreen({
   session,
@@ -318,28 +319,28 @@ function SessionActions({
       {canFinish ? (
         <form action={finish}>
           <input type="hidden" name="sessionId" value={sessionId} />
-          <button
-            type="submit"
+          <ActionButton
+            pendingLabel="Finishing…"
             className={cn(
               "rounded-[11px] bg-accent font-bold text-[#0a0c0d] hover:bg-accent-hi",
               size,
             )}
           >
             Finish
-          </button>
+          </ActionButton>
         </form>
       ) : (
         <form action={discard}>
           <input type="hidden" name="sessionId" value={sessionId} />
-          <button
-            type="submit"
+          <ActionButton
+            pendingLabel="Discarding…"
             className={cn(
               "rounded-[11px] border border-stroke bg-ghost font-semibold text-fg-2 hover:bg-hover",
               size,
             )}
           >
             Discard
-          </button>
+          </ActionButton>
         </form>
       )}
     </>

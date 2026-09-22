@@ -6,6 +6,7 @@ import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { Logo } from "@/components/shell/logo";
 import { Message } from "@/components/profile/controls";
 import { OnboardingFlow } from "./onboarding-flow";
+import { ActionButton } from "@/components/kit/action-button";
 
 /**
  * A coach's first run: two questions, then straight to the coach screen.
@@ -97,12 +98,12 @@ export function CoachOnboarding({ defaultName }: { defaultName: string }) {
         </div>
 
         <div className="mt-auto flex flex-wrap items-center gap-3 pt-7">
-          <button
-            type="submit"
+          <ActionButton
+            pendingLabel="Setting up…"
             className="rounded-[11px] bg-accent px-[26px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
             Go to coaching
-          </button>
+          </ActionButton>
           <button
             type="button"
             onClick={() => setAlsoTrains(true)}

@@ -5,11 +5,12 @@ import { toggleExclude } from "@/app/actions/nutrition";
 import { COMMON_ALLERGENS, COMMON_PREFERENCES } from "@/lib/nutrition/excludes";
 import { Card } from "@/components/kit/card";
 import { cn } from "@/lib/utils";
+import { Saving } from "@/components/kit/skeleton";
 
 type Exclude = { kind: string; value: string };
 
 export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
-  const [, startTransition] = useTransition();
+  const [saving, startTransition] = useTransition();
   const [state, apply] = useOptimistic(
     excludes,
     (current, change: { kind: string; value: string; on: boolean }) =>
@@ -31,7 +32,10 @@ export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
 
   return (
     <Card className="rounded-[18px]">
-      <h2 className="text-[15px] font-bold">Allergies &amp; preferences</h2>
+      <div className="flex items-center gap-3">
+        <h2 className="text-[15px] font-bold">Allergies &amp; preferences</h2>
+        <Saving busy={saving} className="ml-auto" />
+      </div>
       <p className="mt-1 mb-3.5 text-xs leading-[1.5] text-fg-soft">
         Allergies are hard filters — a recipe containing one never appears in your
         plan, a swap or a search. Preferences only nudge.

@@ -19,6 +19,7 @@ import { LibraryPanel } from "./library-panel";
 import { LoadCheck } from "./load-check";
 import { PastePanel } from "./paste-panel";
 import { TemplatePicker } from "./template-picker";
+import { ActionButton } from "@/components/kit/action-button";
 
 export function ProgramBuilder({
   week,
@@ -109,15 +110,14 @@ export function ProgramBuilder({
               <form action={copy} className="flex items-stretch">
                 <input type="hidden" name="weekStart" value={week.week_start} />
                 {progressLoads ? <input type="hidden" name="applyProgression" value="on" /> : null}
-                <button
-                  type="submit"
+                <ActionButton
                   disabled={!hasEarlierWeek}
                   title={hasEarlierWeek ? undefined : "No earlier week to copy yet"}
                   className="flex items-center gap-2 rounded-[10px] border border-stroke bg-ghost px-4 py-[11px] text-[13px] font-semibold text-fg-2 transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Copy className="size-3.5" strokeWidth={2} />
                   Copy last week
-                </button>
+                </ActionButton>
               </form>
               <label
                 className={cn(
@@ -138,8 +138,7 @@ export function ProgramBuilder({
 
             <form action={published ? unpublish : publish}>
               <input type="hidden" name="weekId" value={week.id} />
-              <button
-                type="submit"
+              <ActionButton
                 className={cn(
                   "flex items-center gap-2 rounded-[10px] px-[18px] py-[11px] text-[13px] font-bold transition-colors",
                   published
@@ -149,7 +148,7 @@ export function ProgramBuilder({
               >
                 <Upload className="size-3.5" strokeWidth={2.5} />
                 {published ? "Published — revert to draft" : "Publish week"}
-              </button>
+              </ActionButton>
             </form>
           </div>
 

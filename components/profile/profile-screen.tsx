@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { MyCoaches } from "@/components/coach/my-coaches";
 import type { MyCoach } from "@/lib/coach/queries";
 import { Field, Message, Segmented, Slider, Toggle } from "./controls";
+import { ActionButton } from "@/components/kit/action-button";
+import { Saving } from "@/components/kit/skeleton";
 
 const TABS = ["Account", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
 type Tab = (typeof TABS)[number];
@@ -230,12 +232,12 @@ function AccountTab({ profile, system }: { profile: Profile; system: UnitSystem 
         </div>
 
         <Message error={state.error} notice={state.notice} />
-        <button
-          type="submit"
+        <ActionButton
+            pendingLabel="Saving…"
           className="w-fit rounded-[11px] bg-accent px-[22px] py-3 text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
         >
           Save account
-        </button>
+        </ActionButton>
       </form>
     </Card>
   );
@@ -364,12 +366,12 @@ function TargetsTab({
         />
 
         <Message error={state.error} notice={state.notice} />
-        <button
-          type="submit"
+        <ActionButton
+            pendingLabel="Saving…"
           className="w-fit rounded-[11px] bg-accent px-[22px] py-3 text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
         >
           Save targets
-        </button>
+        </ActionButton>
       </form>
     </Card>
   );
@@ -382,7 +384,7 @@ function FoodTab({
   excludes: { kind: string; value: string }[];
   settings: UserSettings;
 }) {
-  const [, startTransition] = useTransition();
+  const [saving, startTransition] = useTransition();
   const [local, setLocal] = useState(excludes);
 
   const has = (kind: string, value: string) =>
@@ -401,6 +403,7 @@ function FoodTab({
   return (
     <Card className="max-w-[720px]">
       <h2 className="text-[15px] font-bold">Allergies</h2>
+          <Saving busy={saving} className="ml-3" />
       <p className="mt-1 mb-3 text-[12.5px] leading-[1.5] text-fg-soft">
         Hard filters. A recipe containing one of these never appears in your plan,
         a swap or a search.
@@ -528,12 +531,11 @@ function CrewTab({
                   {member.friend_id !== meId ? (
                     <form action={remove}>
                       <input type="hidden" name="friendId" value={member.friend_id} />
-                      <button
-                        type="submit"
+                      <ActionButton
                         className="font-mono text-[10px] text-fg-dim uppercase hover:text-danger"
                       >
                         Remove
-                      </button>
+                      </ActionButton>
                     </form>
                   ) : null}
                 </div>
@@ -589,12 +591,11 @@ function CrewTab({
           <form action={redeem} className="mt-3 flex flex-col gap-2.5">
             <Field label="Invite code" name="code" placeholder="CREW-7K2P" required />
             <Message error={redeemState.error} notice={redeemState.notice} />
-            <button
-              type="submit"
+            <ActionButton
               className="rounded-[11px] border border-stroke bg-ghost px-4 py-3 text-[13px] font-semibold text-fg-2 hover:bg-hover"
             >
               Join
-            </button>
+            </ActionButton>
           </form>
         </Card>
 
@@ -723,12 +724,12 @@ function DataTab({ settings }: { settings: UserSettings }) {
             autoComplete="off"
           />
           <Message error={deleteState.error} notice={deleteState.notice} />
-          <button
-            type="submit"
+          <ActionButton
+            pendingLabel="Deleting…"
             className="w-fit rounded-[11px] border border-danger-border bg-danger-soft px-4 py-3 text-[13px] font-bold text-danger hover:bg-[#3a1616]"
           >
             Delete my account
-          </button>
+          </ActionButton>
         </form>
       </Card>
     </div>

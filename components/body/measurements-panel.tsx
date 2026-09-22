@@ -14,6 +14,7 @@ import {
 import { toDateString } from "@/lib/dates";
 import { Card } from "@/components/kit/card";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/kit/action-button";
 
 const FIELD_INPUTS = [
   { name: "weightKg", label: "Weight", kind: "weight" as const },
@@ -139,12 +140,12 @@ export function MeasurementsPanel({
               {state.notice}
             </p>
           ) : null}
-          <button
-            type="submit"
+          <ActionButton
+            pendingLabel="Saving…"
             className="rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
             Save today&apos;s numbers
-          </button>
+          </ActionButton>
           <p className="text-[11px] text-fg-dim">
             Values are stored in {weightUnit(system) === "kg" ? "kg and cm" : "kg and cm after converting from lb and in"}.
             Logging twice in a day corrects the entry rather than adding another.
