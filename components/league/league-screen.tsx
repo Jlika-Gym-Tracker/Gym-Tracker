@@ -26,6 +26,8 @@ import { HeroBackdrop } from "@/components/kit/hero-backdrop";
 import { Message } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
 import { ActionButton } from "@/components/kit/action-button";
+import type { CrewMember } from "@/lib/database.types";
+import { InviteCrew } from "./invite-crew";
 
 const TABS: { key: StandingsTab; label: string }[] = [
   { key: "overall", label: "Overall" },
@@ -35,7 +37,15 @@ const TABS: { key: StandingsTab; label: string }[] = [
 
 const SERIES_COLORS = ["#c9f24d", "#e7ebe8", "#7d9440", "#4a5560", "#c98d4d"];
 
-export function LeagueScreen({ view, meId }: { view: SeasonView; meId: string }) {
+export function LeagueScreen({
+  view,
+  meId,
+  crew,
+}: {
+  view: SeasonView;
+  meId: string;
+  crew: CrewMember[];
+}) {
   const [tab, setTab] = useState<StandingsTab>("overall");
   const [joinState, join] = useActionState(joinSeason, {} as ActionState);
 
@@ -203,6 +213,15 @@ export function LeagueScreen({ view, meId }: { view: SeasonView; meId: string })
         </div>
 
         <div className="flex flex-col gap-[18px]">
+          <InviteCrew
+            crew={crew}
+            memberIds={view.standings.map((s) => s.userId)}
+            isOwner={view.season.crew_owner_id === meId}
+            ownerName={
+              view.standings.find((s) => s.userId === view.season.crew_owner_id)?.displayName ??
+              null
+            }
+          />
           <ChallengesPanel view={view} meId={meId} />
           <BadgesPanel view={view} meId={meId} />
         </div>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSeasonView, getSeasons } from "@/lib/league-data/queries";
 import { LeagueScreen } from "@/components/league/league-screen";
+import type { CrewMember } from "@/lib/database.types";
 import { NewSeasonPrompt } from "@/components/league/new-season-prompt";
 
 export default async function LeaguePage({
@@ -16,6 +17,8 @@ export default async function LeaguePage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // The crew is who can be invited: a season belongs to its owner's crew.
+  const { data: crew } = await supabase.rpc("crew_overview");
   const seasons = await getSeasons();
   if (seasons.length === 0) return <NewSeasonPrompt />;
 
@@ -23,5 +26,5 @@ export default async function LeaguePage({
   const view = await getSeasonView(season);
   if (!view) return <NewSeasonPrompt />;
 
-  return <LeagueScreen view={view} meId={user.id} />;
+  return <LeagueScreen view={view} meId={user.id} crew={(crew ?? []) as CrewMember[]} />;
 }
