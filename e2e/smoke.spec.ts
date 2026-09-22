@@ -123,3 +123,24 @@ test.describe("pwa", () => {
     }
   });
 });
+
+test.describe("phone", () => {
+  // The whole app used to render a 216px sidebar beside a 114px column on a
+  // phone, and every field zoomed the page on focus. Signed-out pages are the
+  // ones this suite can reach, and they share the same field component and
+  // global touch rules as the rest of the app.
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("sign-in fits the screen and its fields will not zoom on focus", async ({ page }) => {
+    await page.goto("/login");
+    const { overflow, fontSize } = await page.evaluate(() => ({
+      // Mobile Chrome widens the layout viewport to fit overflowing content,
+      // so compare against the device width, not innerWidth.
+      overflow: Math.max(document.documentElement.scrollWidth, innerWidth) - screen.width,
+      fontSize: parseFloat(getComputedStyle(document.querySelector('input[name="email"]')!).fontSize),
+    }));
+    expect(overflow).toBeLessThanOrEqual(0);
+    // iOS Safari zooms into any focused field under 16px.
+    expect(fontSize).toBeGreaterThanOrEqual(16);
+  });
+});

@@ -163,7 +163,7 @@ function AddExtra({
       <button
         type="button"
         onClick={onOpen}
-        className="flex w-full items-center justify-between text-left"
+        className="-my-3 flex min-h-11 w-full items-center justify-between py-3 text-left"
       >
         <span className="text-[13px] font-bold">Add something extra</span>
         <span className="font-mono text-[11px] text-fg-dim">{open ? "CLOSE" : "OPEN"}</span>

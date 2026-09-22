@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { GripVertical, Plus, X } from "lucide-react";
+import { ChevronUp, GripVertical, Plus, X } from "lucide-react";
 import { removeProgramExercise, reorderDayExercises } from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
 import { DAY_NAMES } from "@/lib/dates";
@@ -43,6 +43,11 @@ export function DayCard({
 
   const sets = day.exercises.reduce((total, e) => total + e.target_sets, 0);
 
+  function commitOrder(next: typeof order) {
+    setOrder(next);
+    startTransition(() => reorderDayExercises(day.id, next.map((e) => e.id)));
+  }
+
   function handleDrop(targetId: string) {
     if (!dragId || dragId === targetId) return;
     const next = [...order];
@@ -50,8 +55,16 @@ export function DayCard({
     const to = next.findIndex((e) => e.id === targetId);
     if (from === -1 || to === -1) return;
     next.splice(to, 0, next.splice(from, 1)[0]!);
-    setOrder(next);
-    startTransition(() => reorderDayExercises(day.id, next.map((e) => e.id)));
+    commitOrder(next);
+  }
+
+  /** Touch screens cannot drag HTML5 rows, so they reorder one step at a time. */
+  function moveUp(id: string) {
+    const from = order.findIndex((e) => e.id === id);
+    if (from <= 0) return;
+    const next = [...order];
+    next.splice(from - 1, 0, next.splice(from, 1)[0]!);
+    commitOrder(next);
   }
 
   return (
@@ -93,7 +106,7 @@ export function DayCard({
       </header>
 
       <div className="px-2.5 pt-2 pb-3">
-        {order.map((item) => (
+        {order.map((item, index) => (
           <div
             key={item.id}
             draggable
@@ -110,10 +123,22 @@ export function DayCard({
             )}
           >
             <GripVertical
-              className="size-3.5 flex-none text-stroke"
+              className="size-3.5 flex-none text-stroke pointer-coarse:hidden"
               strokeWidth={1.5}
               aria-hidden
             />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                moveUp(item.id);
+              }}
+              disabled={index === 0}
+              aria-label={`Move ${item.exercise.name} up`}
+              className="hit hidden flex-none rounded p-0.5 text-fg-dim disabled:opacity-25 pointer-coarse:block"
+            >
+              <ChevronUp className="size-4" strokeWidth={2} />
+            </button>
             <ExerciseThumb
               src={item.exercise.image_start_url}
               muscle={item.exercise.primary_muscle}
@@ -135,7 +160,8 @@ export function DayCard({
               <button
                 type="submit"
                 aria-label={`Remove ${item.exercise.name}`}
-                className="rounded p-0.5 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger focus-visible:opacity-100"
+                // Hover-revealed with a mouse; always there on touch, which has no hover.
+                className="hit rounded p-0.5 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger focus-visible:opacity-100 pointer-coarse:opacity-100"
               >
                 <X className="size-3.5" strokeWidth={2} />
               </button>
@@ -147,7 +173,7 @@ export function DayCard({
           type="button"
           onClick={onActivate}
           className={cn(
-            "mx-2 mt-1.5 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[10px] border border-dashed px-2 py-[9px] text-xs font-semibold transition-colors",
+            "mx-2 mt-1.5 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[10px] border border-dashed px-2 py-[9px] text-xs font-semibold transition-colors pointer-coarse:min-h-11",
             active
               ? "border-accent text-accent"
               : "border-stroke text-fg-dim hover:border-accent hover:text-accent",

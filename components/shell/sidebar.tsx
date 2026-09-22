@@ -34,7 +34,9 @@ export function Sidebar({
   const groups = coaching ? [...NAV_GROUPS, COACH_GROUP] : NAV_GROUPS;
 
   return (
-    <aside className="sticky top-0 flex h-svh w-[216px] flex-none flex-col gap-[26px] border-r border-rule bg-sidebar-bg px-4 py-[22px]">
+    // Desktop only — a 216px column leaves a phone 114px of content. Phones get
+    // MobileNav along the bottom instead.
+    <aside className="sticky top-0 hidden h-svh w-[216px] flex-none flex-col gap-[26px] border-r border-rule bg-sidebar-bg px-4 py-[22px] lg:flex">
       <Link href="/" className="px-1.5">
         <Logo />
       </Link>

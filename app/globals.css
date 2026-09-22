@@ -202,6 +202,45 @@
   input[type="number"] { @apply font-mono; }
 }
 
+/*
+  Touch screens: iOS Safari zooms the whole page into any text field set under
+  16px the moment it is focused, and leaves it zoomed. Every field in this app
+  is 11.5–15px, which on a phone meant pinching back out after typing a single
+  number.
+
+  Deliberately unlayered: unlayered rules outrank everything inside @layer,
+  so this beats the text-[13px] utilities without !important. Desktop keeps its
+  sizes. It only ever raises a field to 16px — a field meant to be bigger
+  (the 56px weight in onboarding) opts out with data-display.
+*/
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [data-display]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/*
+  hit: grows an element's touch area to at least 44×44 without changing how it
+  looks — an invisible box centred on it. For the small chips, tabs and text
+  links this design uses, where making the visible element 44px would change
+  the design rather than fix it. Not for elements that are themselves
+  absolutely positioned, since this sets position: relative.
+*/
+@utility hit {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
 @utility eyebrow {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;

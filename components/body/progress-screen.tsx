@@ -66,7 +66,7 @@ export function ProgressScreen({
                   type="button"
                   onClick={() => setPose(p)}
                   className={cn(
-                    "rounded-md px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase transition-colors",
+                    "hit rounded-md px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase transition-colors",
                     pose === p ? "bg-accent text-[#0a0c0d]" : "text-fg-soft hover:text-fg",
                   )}
                 >

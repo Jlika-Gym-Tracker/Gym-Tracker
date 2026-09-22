@@ -111,7 +111,7 @@ export function NutritionScreen({
               <input type="hidden" name="weekStart" value={weekStart} />
               <button
                 type="submit"
-                className="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-accent hover:text-accent-hi"
+                className="hit flex items-center gap-1.5 font-mono text-[11px] font-semibold text-accent hover:text-accent-hi"
               >
                 <RefreshCw className="size-3" strokeWidth={2.5} />
                 {plan ? "REPLAN WEEK" : "PLAN THIS WEEK"}

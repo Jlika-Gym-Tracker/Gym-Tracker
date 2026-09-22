@@ -75,7 +75,7 @@ export function ProfileScreen({
             {email} · {GOAL_LABELS[profile.goal]}
           </p>
         </div>
-        <div className="ml-auto flex gap-6">
+        <div className="flex w-full justify-between gap-6 sm:ml-auto sm:w-auto sm:justify-start">
           {[
             ["Sessions", stats.sessions],
             ["Weeks written", stats.weeks],
@@ -89,7 +89,7 @@ export function ProfileScreen({
         </div>
       </Card>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5 pointer-coarse:gap-y-3">
         {TABS.map((name) => (
           <button
             key={name}
@@ -97,7 +97,7 @@ export function ProfileScreen({
             onClick={() => setTab(name)}
             aria-current={tab === name ? "page" : undefined}
             className={cn(
-              "rounded-full px-4 py-2 font-mono text-[11px] font-semibold tracking-[0.08em] uppercase transition-colors",
+              "hit rounded-full px-4 py-2 font-mono text-[11px] font-semibold tracking-[0.08em] uppercase transition-colors",
               tab === name ? "bg-accent text-[#0a0c0d]" : "text-fg-soft hover:text-fg",
             )}
           >

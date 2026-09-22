@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { LogOut, Search, Settings } from "lucide-react";
+import { ChevronLeft, LogOut, Search, Settings, Trophy, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { titleForPath } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { AvatarBubble } from "./avatar-bubble";
+import { isFocusedSession } from "./mobile-nav";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,11 +29,13 @@ export function Topbar({
   avatarUrl,
   goalLabel,
   streakDays,
+  coaching = false,
 }: {
   displayName: string;
   avatarUrl: string | null;
   goalLabel: string;
   streakDays: number;
+  coaching?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -62,36 +65,46 @@ export function Topbar({
   }
 
   return (
-    <header className="flex h-[70px] flex-none items-center gap-[18px] border-b border-rule bg-topbar px-[30px]">
+    <header className="flex h-14 flex-none items-center gap-3 border-b border-rule bg-topbar px-4 lg:h-[70px] lg:gap-[18px] lg:px-[30px]">
+      {/* A live session hides the tab bar, so it needs its own way out. */}
+      {isFocusedSession(pathname) ? (
+        <Link
+          href="/"
+          aria-label="Back to Today"
+          className="-ml-2 flex size-11 flex-none items-center justify-center rounded-[11px] text-fg-muted hover:bg-hover lg:hidden"
+        >
+          <ChevronLeft className="size-5" strokeWidth={2} />
+        </Link>
+      ) : null}
       <div className="min-w-0">
-        <h1 className="truncate text-[17px] font-bold tracking-[-0.02em]">
+        <h1 className="truncate text-[16px] font-bold tracking-[-0.02em] lg:text-[17px]">
           {title}
         </h1>
         {sub ? (
-          <p className="mt-[3px] truncate font-mono text-[11px] text-fg-dim uppercase">
+          <p className="mt-[3px] truncate font-mono text-[10px] text-fg-dim uppercase lg:text-[11px]">
             {sub}
           </p>
         ) : null}
       </div>
 
-      <div className="ml-auto flex items-center gap-2.5">
+      <div className="ml-auto flex flex-none items-center gap-2.5">
         <button
           type="button"
           disabled
           title="Search arrives with the exercise library"
-          className="flex w-[260px] items-center gap-[9px] rounded-[10px] border border-line bg-surface px-[13px] py-[9px] text-left text-[13px] text-fg-dim disabled:cursor-not-allowed"
+          className="hidden w-[260px] items-center gap-[9px] rounded-[10px] border border-line bg-surface px-[13px] py-[9px] text-left text-[13px] text-fg-dim disabled:cursor-not-allowed lg:flex"
         >
           <Search className="size-[13px]" strokeWidth={1.5} />
           Search exercises, meals…
         </button>
 
         {streakDays > 0 ? (
-          <div className="flex items-center gap-[7px] rounded-[10px] border border-line-hi bg-accent-soft px-[13px] py-[9px] font-mono text-xs font-bold text-accent">
+          <div className="hidden items-center gap-[7px] rounded-[10px] border border-line-hi bg-accent-soft px-[13px] py-[9px] font-mono text-xs font-bold text-accent sm:flex">
             <span className="size-[6px] animate-pulse-dot rounded-full bg-accent" />
             {streakDays} DAY STREAK
           </div>
         ) : (
-          <div className="rounded-[10px] border border-line bg-surface px-[13px] py-[9px] font-mono text-xs font-medium text-fg-dim">
+          <div className="hidden rounded-[10px] border border-line bg-surface px-[13px] py-[9px] font-mono text-xs font-medium text-fg-dim sm:block">
             NO STREAK YET
           </div>
         )}
@@ -99,20 +112,33 @@ export function Topbar({
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(
-              "rounded-full outline-none",
+              // p-1 around the 36px avatar makes a 44px target without growing it.
+              "-mr-1 rounded-full p-1 outline-none",
               "focus-visible:ring-2 focus-visible:ring-ring",
             )}
             aria-label="Account menu"
           >
             <AvatarBubble name={displayName} src={avatarUrl} size={36} />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem render={<Link href="/profile" />}>
+          <DropdownMenuContent align="end" className="w-56">
+            {/* On a phone these are not in the tab bar, so they live here. */}
+            <DropdownMenuItem render={<Link href="/league" />} className="py-2.5 lg:hidden">
+              <Trophy className="size-4" />
+              Crew league
+            </DropdownMenuItem>
+            {coaching ? (
+              <DropdownMenuItem render={<Link href="/coach" />} className="py-2.5 lg:hidden">
+                <Users className="size-4" />
+                My athletes
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuSeparator className="lg:hidden" />
+            <DropdownMenuItem render={<Link href="/profile" />} className="py-2.5 lg:py-1">
               <Settings className="size-4" />
               Profile &amp; settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut}>
+            <DropdownMenuItem onClick={signOut} className="py-2.5 lg:py-1">
               <LogOut className="size-4" />
               Sign out
             </DropdownMenuItem>

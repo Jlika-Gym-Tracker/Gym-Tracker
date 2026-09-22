@@ -24,6 +24,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#08090a",
   colorScheme: "dark",
+  // Lets the page draw under the iPhone home indicator; the tab bar pads
+  // itself back out with env(safe-area-inset-bottom).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

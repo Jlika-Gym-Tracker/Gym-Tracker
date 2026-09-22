@@ -37,6 +37,10 @@ export default async function TodayPage() {
     .filter((e) => e.planned_on === today && e.eaten && e.recipe)
     .reduce((sum, e) => sum + recipeMacros(e.recipe!, Number(e.servings)).kcal, 0);
 
+  const plannedDeficit = targets.ok
+    ? targets.targets.maintenance - targets.targets.calories
+    : null;
+
   const system = (profile?.unit_system ?? "metric") as UnitSystem;
   const unit = weightUnit(system);
   const currentWeight = latest(metrics, "weight_kg");
@@ -74,7 +78,7 @@ export default async function TodayPage() {
       <div className="flex min-w-0 flex-col gap-[18px]">
         <SessionHero overview={overview} />
 
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4">
           <StatCard
             label="Sessions"
             value={String(overview.sessionsThisWeek)}
@@ -107,11 +111,17 @@ export default async function TodayPage() {
             }
             tone={volumeDelta != null && volumeDelta >= 0 ? "accent" : "warn"}
           />
+          {/* Planned, not measured: meals can be ticked as eaten, but a day
+              with two of four ticked would read as a huge deficit. */}
           <StatCard
-            label="Avg deficit"
-            value="—"
+            label={plannedDeficit != null && plannedDeficit < 0 ? "Planned surplus" : "Planned deficit"}
+            value={plannedDeficit == null ? "—" : Math.abs(plannedDeficit).toLocaleString("en-US")}
             unit="kcal / day"
-            delta="Nutrition lands in phase 5"
+            delta={
+              targets.ok
+                ? `${targets.targets.calories.toLocaleString("en-US")} of ${targets.targets.maintenance.toLocaleString("en-US")} maintenance`
+                : "Add your body details first"
+            }
           />
           <StatCard
             label="Weight"
@@ -135,7 +145,7 @@ export default async function TodayPage() {
             <Eyebrow>This week</Eyebrow>
             <Link
               href="/program"
-              className="ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
+              className="hit ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
             >
               Edit week →
             </Link>
@@ -169,7 +179,9 @@ function WeightTrendCard({ metrics, system }: { metrics: Metric[]; system: UnitS
         <Eyebrow>Weight trend</Eyebrow>
         <Link
           href="/progress"
-          className="ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
+          // z-10: the chart below is positioned and would otherwise paint over
+          // the lower half of this link's hit area.
+          className="hit z-10 ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
         >
           Body progress →
         </Link>
@@ -207,7 +219,7 @@ function SidePanels({
           <Eyebrow>Fuel today</Eyebrow>
           <Link
             href="/nutrition"
-            className="ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
+            className="hit ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
           >
             Nutrition →
           </Link>
@@ -232,7 +244,7 @@ function SidePanels({
           <Eyebrow>Progress photos</Eyebrow>
           <Link
             href="/progress"
-            className="ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
+            className="hit ml-auto font-mono text-[10px] font-semibold text-accent uppercase hover:text-accent-hi"
           >
             Compare →
           </Link>

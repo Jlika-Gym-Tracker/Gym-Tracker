@@ -36,6 +36,13 @@ export function draftToPayload(draft: SetDraft, system: UnitSystem) {
   };
 }
 
+/**
+ * Phone: set · kg · reps · RPE · tick. From `sm` up the row-remove column comes
+ * back, revealed on hover. Shared with the header row so the two line up.
+ */
+export const SET_GRID =
+  "grid grid-cols-[26px_1fr_1fr_56px_48px] items-center gap-2 sm:grid-cols-[36px_1fr_1fr_84px_40px_28px] sm:gap-2.5";
+
 export function SetRow({
   index,
   draft,
@@ -57,8 +64,11 @@ export function SetRow({
   useEffect(() => setLocal(draft), [draft]);
 
   const done = draft.isComplete;
+  // 16px on a phone: iOS Safari zooms the whole page into any input set
+  // smaller, which on a set grid means pinching back out after every rep.
   const field = cn(
-    "w-full rounded-[9px] border px-3 py-2.5 font-mono text-[13px] font-semibold outline-none transition-colors",
+    "w-full min-w-0 rounded-[9px] border px-2 py-3 text-center font-mono text-base font-semibold outline-none transition-colors",
+    "sm:px-3 sm:py-2.5 sm:text-left sm:text-[13px]",
     done
       ? "border-line-hi bg-done text-accent"
       : "border-line bg-surface-2 text-fg-2 focus:border-line-hi",
@@ -71,8 +81,9 @@ export function SetRow({
   }
 
   return (
-    <div className="group grid grid-cols-[36px_1fr_1fr_84px_40px_28px] items-center gap-2.5 py-[5px]">
-      <div className="flex items-center gap-[5px]">
+    <div className={cn(SET_GRID, "group py-1 sm:py-[5px]")}>
+      {/* The phone's set column is 26px, so a PR badge stacks under the number. */}
+      <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-[5px]">
         <span className="font-mono text-xs font-bold text-fg-soft">{index + 1}</span>
         {isPr ? (
           <span className="rounded-[3px] bg-accent px-1 py-0.5 font-mono text-[8.5px] font-extrabold tracking-[0.05em] text-[#0a0c0d]">
@@ -115,7 +126,9 @@ export function SetRow({
         aria-pressed={done}
         aria-label={`Mark set ${index + 1} ${done ? "incomplete" : "complete"}`}
         className={cn(
-          "flex size-[34px] items-center justify-center rounded-[9px] border transition-colors hover:border-accent",
+          // 48px on a phone — this is the button pressed most, often with
+          // chalk on the hand and the bar still in the other.
+          "flex size-12 items-center justify-center rounded-[11px] border transition-colors hover:border-accent sm:size-[34px] sm:rounded-[9px]",
           done ? "border-accent bg-accent" : "border-stroke bg-surface-2",
         )}
       >
@@ -130,7 +143,7 @@ export function SetRow({
         type="button"
         onClick={onRemove}
         aria-label={`Remove set ${index + 1}`}
-        className="rounded p-1 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger focus-visible:opacity-100"
+        className="hidden rounded p-1 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger focus-visible:opacity-100 pointer-coarse:opacity-100 sm:block"
       >
         <X className="size-3.5" strokeWidth={2} />
       </button>

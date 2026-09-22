@@ -52,7 +52,7 @@ export function ProgramBuilder({
   const published = week.status === "published";
 
   return (
-    <div className="grid items-start gap-[18px] xl:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 items-start gap-[18px] xl:grid-cols-[1fr_320px]">
       <div className="flex min-w-0 flex-col gap-4">
         <header className="relative flex flex-wrap items-center gap-3.5 overflow-hidden rounded-[18px] border border-line bg-surface p-5">
           <HeroBackdrop
@@ -183,7 +183,7 @@ export function ProgramBuilder({
           />
         ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {week.days
             .filter((d) => !d.is_rest || d.exercises.length > 0)
             .map((day) => (
@@ -207,7 +207,7 @@ export function ProgramBuilder({
                   type="button"
                   onClick={() => setActiveDayId(day.id)}
                   className={cn(
-                    "rounded-full border px-3 py-1 font-mono text-[10.5px] font-semibold transition-colors",
+                    "hit rounded-full border px-3 py-1 font-mono text-[10.5px] font-semibold transition-colors",
                     day.id === activeDayId
                       ? "border-line-sel bg-accent-soft text-accent"
                       : "border-line text-fg-dim hover:border-stroke",

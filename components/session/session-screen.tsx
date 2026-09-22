@@ -17,8 +17,9 @@ import { bestSet, setOneRepMax, totalVolume } from "@/lib/training/e1rm";
 import { formatVolume, weightUnit } from "@/lib/units";
 import { ExerciseThumb } from "@/components/program/exercise-thumb";
 import { cn } from "@/lib/utils";
+import { Portal } from "@/components/kit/portal";
 import { ElapsedClock, RestTimer, useRestTimer } from "./timers";
-import { SetRow, draftToPayload, toDraft, type SetDraft } from "./set-row";
+import { SET_GRID, SetRow, draftToPayload, toDraft, type SetDraft } from "./set-row";
 import { ExerciseDrawer, type DrawerData } from "./exercise-drawer";
 import { SidePanel, type SidePanelData } from "./side-panel";
 
@@ -156,67 +157,53 @@ export function SessionScreen({
 
   const message = error ?? finishState.error ?? discardState.error;
   const focus = session.exercises.find((e) => e.exercise.id === focusId) ?? session.exercises[0];
+  const actions = {
+    sessionId: session.id,
+    canFinish: totals.done > 0,
+    restSeconds,
+    rest,
+    finish,
+    discard,
+  };
 
   return (
     <>
       <div className="grid items-start gap-[18px] xl:grid-cols-[1fr_372px]">
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-4 rounded-[18px] border border-line bg-surface px-5 py-[18px]">
-            <Stat label="Elapsed">
-              <ElapsedClock startedAt={session.started_at} />
-            </Stat>
-            <Divider />
-            <Stat label="Sets done">
-              <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
-                {totals.done}
-                <span className="text-fg-dim">/{totals.planned}</span>
-              </span>
-            </Stat>
-            <Divider />
-            <Stat label={`Volume (${unit})`}>
-              <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
-                {totals.volume > 0 ? formatVolume(totals.volume, "metric") : "0"}
-              </span>
-            </Stat>
+          <div className="flex flex-wrap items-center gap-4 rounded-[18px] border border-line bg-surface px-4 py-3.5 lg:px-5 lg:py-[18px]">
+            <div className="grid w-full grid-cols-3 gap-3 lg:flex lg:w-auto lg:items-center lg:gap-4">
+              <Stat label="Elapsed">
+                <ElapsedClock startedAt={session.started_at} />
+              </Stat>
+              <Divider />
+              <Stat label="Sets done">
+                <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
+                  {totals.done}
+                  <span className="text-fg-dim">/{totals.planned}</span>
+                </span>
+              </Stat>
+              <Divider />
+              <Stat label={`Volume (${unit})`}>
+                <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
+                  {totals.volume > 0 ? formatVolume(totals.volume, "metric") : "0"}
+                </span>
+              </Stat>
+            </div>
 
-            <div className="ml-auto flex items-center gap-2.5">
-              <RestTimer
-                seconds={restSeconds}
-                running={rest.running}
-                remaining={rest.remaining}
-                onToggle={rest.toggle}
-              />
-              {totals.done === 0 ? (
-                <form action={discard}>
-                  <input type="hidden" name="sessionId" value={session.id} />
-                  <button
-                    type="submit"
-                    className="rounded-[11px] border border-stroke bg-ghost px-[18px] py-3 text-[13.5px] font-semibold text-fg-2 hover:bg-hover"
-                  >
-                    Discard
-                  </button>
-                </form>
-              ) : (
-                <form action={finish}>
-                  <input type="hidden" name="sessionId" value={session.id} />
-                  <button
-                    type="submit"
-                    className="rounded-[11px] bg-accent px-[18px] py-3 text-[13.5px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
-                  >
-                    Finish
-                  </button>
-                </form>
-              )}
+            {/* On a phone these move to the bar at the bottom of the screen. */}
+            <div className="ml-auto hidden items-center gap-2.5 lg:flex">
+              <SessionActions {...actions} />
             </div>
 
             {message ? (
-              <p className="w-full rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-xs text-danger">
+              <p className="hidden w-full rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-xs text-danger lg:block">
                 {message}
               </p>
             ) : null}
 
+            {/* Keyboard shortcuts mean nothing on a touchscreen. */}
             {shortcutsEnabled ? (
-              <p className="w-full font-mono text-[10px] text-fg-dim uppercase">
+              <p className="hidden w-full font-mono text-[10px] text-fg-dim uppercase pointer-fine:block">
                 Space completes the next set · R restarts rest
               </p>
             ) : null}
@@ -276,7 +263,85 @@ export function SessionScreen({
         ) : null}
       </div>
 
+      {/* Phones: the tab bar is hidden during a live session and this takes
+          its place, so resting and finishing are always under a thumb. */}
+      <Portal>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-sidebar-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+        {message ? (
+          <p className="mx-4 mt-2.5 rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-xs text-danger">
+            {message}
+          </p>
+        ) : null}
+        <div className="mx-auto flex h-16 max-w-[560px] items-center gap-2.5 px-4">
+          <SessionActions {...actions} fill />
+        </div>
+      </div>
+      </Portal>
+
       <ExerciseDrawer data={drawer} system={system} onClose={() => setDrawer(null)} />
+    </>
+  );
+}
+
+/**
+ * Rest, and Finish or Discard. Rendered twice — in the header on desktop and
+ * in the bottom bar on a phone — so both share one definition.
+ */
+function SessionActions({
+  sessionId,
+  canFinish,
+  restSeconds,
+  rest,
+  finish,
+  discard,
+  fill = false,
+}: {
+  sessionId: string;
+  canFinish: boolean;
+  restSeconds: number;
+  rest: ReturnType<typeof useRestTimer>;
+  finish: (formData: FormData) => void;
+  discard: (formData: FormData) => void;
+  /** Phone layout: the rest timer takes the spare width and both are 48px tall. */
+  fill?: boolean;
+}) {
+  const size = fill ? "h-12 px-6 text-sm" : "px-[18px] py-3 text-[13.5px]";
+  return (
+    <>
+      <RestTimer
+        seconds={restSeconds}
+        running={rest.running}
+        remaining={rest.remaining}
+        onToggle={rest.toggle}
+        className={fill ? "h-12 flex-1 text-sm" : undefined}
+      />
+      {canFinish ? (
+        <form action={finish}>
+          <input type="hidden" name="sessionId" value={sessionId} />
+          <button
+            type="submit"
+            className={cn(
+              "rounded-[11px] bg-accent font-bold text-[#0a0c0d] hover:bg-accent-hi",
+              size,
+            )}
+          >
+            Finish
+          </button>
+        </form>
+      ) : (
+        <form action={discard}>
+          <input type="hidden" name="sessionId" value={sessionId} />
+          <button
+            type="submit"
+            className={cn(
+              "rounded-[11px] border border-stroke bg-ghost font-semibold text-fg-2 hover:bg-hover",
+              size,
+            )}
+          >
+            Discard
+          </button>
+        </form>
+      )}
     </>
   );
 }
@@ -291,7 +356,7 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 }
 
 function Divider() {
-  return <div className="h-[38px] w-px bg-line" />;
+  return <div className="hidden h-[38px] w-px bg-line lg:block" />;
 }
 
 function ExerciseCard({
@@ -344,6 +409,7 @@ function ExerciseCard({
       id: s.id,
     })),
   );
+  const lastSet = ex.sets.at(-1);
   const isPrSet = (setId: string, complete: boolean) =>
     complete &&
     todayBest?.id === setId &&
@@ -362,11 +428,16 @@ function ExerciseCard({
     >
       <header
         className={cn(
-          "flex items-center gap-3.5 px-5 py-4",
+          "flex items-center gap-3 px-4 py-3.5 sm:gap-3.5 sm:px-5 sm:py-4",
           focused ? "bg-done" : "bg-transparent",
         )}
       >
-        <button type="button" onClick={onOpenDrawer} aria-label={`How to do ${ex.exercise.name}`}>
+        <button
+          type="button"
+          onClick={onOpenDrawer}
+          aria-label={`How to do ${ex.exercise.name}`}
+          className="flex-none"
+        >
           <ExerciseThumb
             src={ex.exercise.image_start_url}
             muscle={ex.exercise.primary_muscle}
@@ -375,8 +446,10 @@ function ExerciseCard({
           />
         </button>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="truncate text-[15px] font-bold tracking-[-0.01em]">
+          {/* On a phone the name gets its own line rather than an ellipsis —
+              "Barbell Romanian Deadlift" is the whole point of the card. */}
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <h2 className="text-[15px] leading-tight font-bold tracking-[-0.01em] sm:truncate">
               {ex.exercise.name}
             </h2>
             <span className="flex-none font-mono text-[10px] font-medium text-fg-dim">
@@ -390,20 +463,20 @@ function ExerciseCard({
         <button
           type="button"
           onClick={onOpenDrawer}
-          className="ml-auto flex-none font-mono text-[11px] font-semibold text-accent hover:text-accent-hi"
+          className="-mr-2 ml-auto flex-none self-center rounded-[10px] px-2 py-3.5 font-mono text-[11px] font-semibold text-accent hover:text-accent-hi"
         >
           HOW TO →
         </button>
       </header>
 
-      <div className="px-5 pt-1.5 pb-4">
-        <div className="grid grid-cols-[36px_1fr_1fr_84px_40px_28px] gap-2.5 py-2.5 font-mono text-[10px] font-medium tracking-[0.1em] text-fg-dim uppercase">
+      <div className="px-3.5 pt-1.5 pb-3.5 sm:px-5 sm:pb-4">
+        <div className={cn(SET_GRID, "py-2.5 font-mono text-[10px] font-medium tracking-[0.1em] text-fg-dim uppercase")}>
           <div>Set</div>
-          <div>{unit}</div>
-          <div>Reps</div>
-          <div>RPE</div>
+          <div className="text-center sm:text-left">{unit}</div>
+          <div className="text-center sm:text-left">Reps</div>
+          <div className="text-center sm:text-left">RPE</div>
           <div />
-          <div />
+          <div className="hidden sm:block" />
         </div>
 
         {ex.sets.map((set, i) => {
@@ -423,14 +496,29 @@ function ExerciseCard({
           );
         })}
 
-        <button
-          type="button"
-          onClick={onAddSet}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-stroke py-2 text-xs font-semibold text-fg-dim transition-colors hover:border-accent hover:text-accent"
-        >
-          <Plus className="size-3.5" strokeWidth={2} />
-          Add a set
-        </button>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={onAddSet}
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-stroke py-3 text-xs font-semibold text-fg-dim transition-colors hover:border-accent hover:text-accent sm:py-2"
+          >
+            <Plus className="size-3.5" strokeWidth={2} />
+            Add a set
+          </button>
+          {/* Phones have no hover to reveal each row's remove button, and a
+              hidden one beside the tick is one mis-tap from deleting a logged
+              set. So a phone removes only the last set, and only while it is
+              still unticked. */}
+          {lastSet && !draftFor(lastSet.id, toDraft(lastSet, system)).isComplete ? (
+            <button
+              type="button"
+              onClick={() => onRemove(lastSet.id)}
+              className="min-h-11 rounded-[10px] border border-stroke px-4 py-3 text-xs font-semibold text-fg-dim transition-colors hover:border-danger-border hover:text-danger sm:hidden"
+            >
+              Remove last
+            </button>
+          ) : null}
+        </div>
       </div>
     </section>
   );

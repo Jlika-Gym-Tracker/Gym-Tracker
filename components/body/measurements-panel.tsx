@@ -101,7 +101,7 @@ export function MeasurementsPanel({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="mt-3.5 w-full rounded-[11px] border border-dashed border-stroke px-3 py-[11px] text-center text-[12.5px] font-semibold text-fg-muted transition-colors hover:border-accent hover:text-accent"
+        className="mt-3.5 min-h-11 w-full rounded-[11px] border border-dashed border-stroke px-3 py-[11px] text-center text-[12.5px] font-semibold text-fg-muted transition-colors hover:border-accent hover:text-accent"
       >
         {open ? "Close" : "+ Log measurements"}
       </button>

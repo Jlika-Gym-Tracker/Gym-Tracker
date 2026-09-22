@@ -46,7 +46,7 @@ export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
             onClick={() => toggle("allergen", name)}
             aria-pressed={has("allergen", name)}
             className={cn(
-              "rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
+              "hit rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
               has("allergen", name)
                 ? "border-line-sel bg-accent-soft text-accent"
                 : "border-line bg-surface-2 text-fg-soft hover:border-stroke",
@@ -66,7 +66,7 @@ export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
             onClick={() => toggle("preference", name)}
             aria-pressed={has("preference", name)}
             className={cn(
-              "rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
+              "hit rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
               has("preference", name)
                 ? "border-line-sel bg-accent-soft text-accent"
                 : "border-line bg-surface-2 text-fg-soft hover:border-stroke",

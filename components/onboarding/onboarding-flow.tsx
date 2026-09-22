@@ -188,6 +188,8 @@ export function OnboardingFlow({ defaultName }: { defaultName: string }) {
                   onChange={(e) => setWeight(Number(e.target.value) || 0)}
                   inputMode="decimal"
                   aria-label="Current weight"
+                  // Bigger than 16px on purpose; see the touch rule in globals.css.
+                  data-display
                   className="w-[160px] bg-transparent font-mono text-[56px] leading-none font-extrabold tracking-[-0.05em] outline-none"
                 />
                 <span className="text-base font-semibold text-fg-soft">

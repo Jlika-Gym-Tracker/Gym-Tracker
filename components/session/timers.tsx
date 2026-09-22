@@ -34,11 +34,13 @@ export function RestTimer({
   running,
   remaining,
   onToggle,
+  className,
 }: {
   seconds: number;
   running: boolean;
   remaining: number;
   onToggle: () => void;
+  className?: string;
 }) {
   const done = running && remaining <= 0;
   return (
@@ -47,6 +49,7 @@ export function RestTimer({
       onClick={onToggle}
       className={cn(
         "rounded-[11px] border px-[18px] py-3 font-mono text-[13px] font-bold transition-colors",
+        className,
         done
           ? "border-accent bg-accent text-[#0a0c0d]"
           : running
