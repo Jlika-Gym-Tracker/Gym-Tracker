@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { sendMagicLink } from "@/app/actions/auth";
+import { sendResetLink } from "@/app/actions/auth";
 import { Field, FormMessage } from "./field";
 import { SubmitButton } from "./submit-button";
 
 /**
- * Password reset piggybacks on the magic link: signing in from the emailed link
- * lands you in the app, where Profile → Account can set a new password.
+ * The only email link the app still sends to sign someone in: opening it lands
+ * you in the app, where Profile → Account can set a new password. There is no
+ * magic-link button on the sign-in page.
  */
 export function ForgotPasswordForm() {
-  const [state, action] = useActionState(sendMagicLink, {});
+  const [state, action] = useActionState(sendResetLink, {});
 
   return (
     <>

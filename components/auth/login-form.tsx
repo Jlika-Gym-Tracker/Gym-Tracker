@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
-import { sendMagicLink, signIn, signInWithGoogle } from "@/app/actions/auth";
-import { Divider, Field, FormMessage } from "./field";
+import { useActionState } from "react";
+import { signIn } from "@/app/actions/auth";
+import { Field, FormMessage } from "./field";
 import { SubmitButton } from "./submit-button";
 
 export function LoginForm({
@@ -14,9 +14,6 @@ export function LoginForm({
   initialError?: string;
 }) {
   const [state, action] = useActionState(signIn, { error: initialError });
-  const [magicState, magicAction] = useActionState(sendMagicLink, {});
-  // One email field feeds both the password form and the magic-link form.
-  const [email, setEmail] = useState("");
 
   return (
     <>
@@ -34,8 +31,6 @@ export function LoginForm({
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <Field
@@ -48,7 +43,7 @@ export function LoginForm({
           hint={
             <Link
               href="/forgot-password"
-              className="font-mono text-[10px] font-medium tracking-[0.1em] text-accent uppercase"
+              className="hit font-mono text-[10px] font-medium tracking-[0.1em] text-accent uppercase"
             >
               Forgot?
             </Link>
@@ -59,29 +54,6 @@ export function LoginForm({
           Sign in
         </SubmitButton>
       </form>
-
-      <Divider />
-
-      <div className="flex gap-2.5">
-        <form action={signInWithGoogle} className="flex-1">
-          <input type="hidden" name="next" value={next} />
-          <SubmitButton variant="ghost" pendingLabel="Redirecting…">
-            Google
-          </SubmitButton>
-        </form>
-        <form action={magicAction} className="flex-1">
-          <input type="hidden" name="email" value={email} />
-          <SubmitButton variant="ghost" pendingLabel="Sending…">
-            Magic link
-          </SubmitButton>
-        </form>
-      </div>
-
-      {magicState?.error || magicState?.notice ? (
-        <div className="mt-3">
-          <FormMessage error={magicState.error} notice={magicState.notice} />
-        </div>
-      ) : null}
 
       <p className="mt-6 text-center text-[12.5px] text-fg-soft">
         New here?{" "}

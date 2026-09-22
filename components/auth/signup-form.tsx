@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { signInWithGoogle, signUp } from "@/app/actions/auth";
-import { Divider, Field, FormMessage } from "./field";
+import { signUp } from "@/app/actions/auth";
+import { Field, FormMessage } from "./field";
 import { SubmitButton } from "./submit-button";
 
 export type SignupMode = "athlete" | "coach";
@@ -98,17 +98,6 @@ export function SignupForm({
         <FormMessage error={state?.error} notice={state?.notice} />
         <SubmitButton pendingLabel="Creating account…" className="mt-1">
           {isCoach ? "Create coach account" : "Create account"}
-        </SubmitButton>
-      </form>
-
-      <Divider />
-
-      <form action={signInWithGoogle}>
-        {/* Google carries no signup metadata, so a coach arriving this way is
-            sent straight to /coach, which offers the switch. */}
-        {isCoach ? <input type="hidden" name="next" value="/coach" /> : null}
-        <SubmitButton variant="ghost" pendingLabel="Redirecting…">
-          Continue with Google
         </SubmitButton>
       </form>
 

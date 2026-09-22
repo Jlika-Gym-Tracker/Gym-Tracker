@@ -66,8 +66,8 @@ export function AuthErrorPanel({
 }) {
   const [state, resend] = useActionState(resendLink, {} as AuthState);
   const explanation = EXPLANATIONS[code] ?? EXPLANATIONS.unknown!;
-  // A signup link that expired should resend a signup link, not a magic link.
-  const kind = type === "signup" ? "signup" : "magiclink";
+  // A signup link that expired should resend a signup link, not a reset link.
+  const kind = type === "signup" ? "signup" : "reset";
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-bg p-[30px]">

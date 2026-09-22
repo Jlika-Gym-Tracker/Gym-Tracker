@@ -42,7 +42,7 @@ const signUpSchema = z
     message: "The two passwords do not match.",
   });
 
-const magicLinkSchema = z.object({ email: emailSchema });
+const resetSchema = z.object({ email: emailSchema });
 
 /** Only allow same-origin, absolute-path redirects — never an open redirect. */
 function safeNext(next: FormDataEntryValue | null) {
@@ -150,13 +150,20 @@ export async function signUp(
   redirect("/");
 }
 
-export async function sendMagicLink(
+/**
+ * The one-time link behind Forgot password.
+ *
+ * Signing in is email and password only — there is deliberately no magic-link
+ * button — so this exists solely to get someone locked out back in, where
+ * Profile → Account sets a new password.
+ */
+export async function sendResetLink(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const parsed = magicLinkSchema.safeParse({ email: formData.get("email") });
+  const parsed = resetSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) {
-    return { error: "Enter your email first, then ask for a magic link." };
+    return { error: "Enter the email address on your account." };
   }
 
   const supabase = await createClient();
@@ -166,11 +173,11 @@ export async function sendMagicLink(
   });
 
   if (error) return { error: error.message };
-  return { notice: `Magic link sent to ${parsed.data.email}.` };
+  return { notice: `Sign-in link sent to ${parsed.data.email}. Open it, then set a new password from Profile.` };
 }
 
 /**
- * Sends a fresh confirmation or magic link.
+ * Sends a fresh confirmation or password-reset link.
  *
  * Deliberately reports success either way: telling an anonymous caller whether
  * an address has an account, or whether it is already confirmed, turns this
@@ -183,7 +190,7 @@ export async function resendLink(
   const parsed = emailSchema.safeParse(formData.get("email"));
   if (!parsed.success) return { error: "Enter a valid email address." };
 
-  const kind = formData.get("kind") === "signup" ? "signup" : "magiclink";
+  const kind = formData.get("kind") === "signup" ? "signup" : "reset";
   const supabase = await createClient();
   const redirect = `${await siteUrl()}/auth/confirm`;
 
@@ -205,6 +212,13 @@ export async function resendLink(
   };
 }
 
+/**
+ * Google OAuth. No button points here at the moment — the provider is not
+ * enabled on the Supabase project, so the sign-in and signup pages offer email
+ * and password only. Re-add the button once it is turned on; note that OAuth
+ * carries no signup metadata, so a coach arriving this way needs `next` set to
+ * /coach (and gets coaching switched on there) rather than ?as=coach.
+ */
 export async function signInWithGoogle(formData: FormData) {
   const supabase = await createClient();
   const next = safeNext(formData.get("next"));
