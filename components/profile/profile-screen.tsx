@@ -33,6 +33,7 @@ import type { MyCoach } from "@/lib/coach/queries";
 import { Field, Message, Segmented, Slider, Toggle } from "./controls";
 import { ActionButton } from "@/components/kit/action-button";
 import { Saving } from "@/components/kit/skeleton";
+import { useAction } from "@/lib/use-action";
 
 const TABS = ["Account", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
 type Tab = (typeof TABS)[number];
@@ -475,7 +476,7 @@ function CrewTab({
   const [redeemState, redeem] = useActionState(redeemInvite, {} as ActionState);
   const [removeState, remove] = useActionState(removeCrewLink, {} as ActionState);
   const [inviteState, setInviteState] = useState<ActionState & { code?: string }>({});
-  const [, startTransition] = useTransition();
+  const { pending: minting, run: mint } = useAction();
 
   return (
     <div className="grid gap-[18px] lg:grid-cols-[1fr_320px]">
@@ -556,9 +557,8 @@ function CrewTab({
           </p>
           <button
             type="button"
-            onClick={() =>
-              startTransition(async () => setInviteState(await createInvite()))
-            }
+            disabled={minting}
+            onClick={() => mint(async () => setInviteState(await createInvite()))}
             className="w-full rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
             Create an invite code

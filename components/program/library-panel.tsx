@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { addExerciseToDay } from "@/app/actions/program";
 import type { LibraryExercise } from "@/lib/program/match";
@@ -8,6 +8,7 @@ import { findCandidates } from "@/lib/program/match";
 import { Card } from "@/components/kit/card";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
+import { useAction } from "@/lib/use-action";
 
 const FILTERS = [
   { key: "all", label: "ALL", muscles: [] as string[] },
@@ -45,7 +46,7 @@ export function LibraryPanel({
 }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
   const results = useMemo(() => {
@@ -69,7 +70,7 @@ export function LibraryPanel({
     fd.set("repMin", "8");
     fd.set("repMax", "12");
     setJustAdded(exerciseId);
-    startTransition(async () => {
+    run(async () => {
       await addExerciseToDay({}, fd);
       setTimeout(() => setJustAdded(null), 900);
     });

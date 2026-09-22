@@ -1,16 +1,17 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useOptimistic } from "react";
 import { toggleExclude } from "@/app/actions/nutrition";
 import { COMMON_ALLERGENS, COMMON_PREFERENCES } from "@/lib/nutrition/excludes";
 import { Card } from "@/components/kit/card";
 import { cn } from "@/lib/utils";
 import { Saving } from "@/components/kit/skeleton";
+import { useAction } from "@/lib/use-action";
 
 type Exclude = { kind: string; value: string };
 
 export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
-  const [saving, startTransition] = useTransition();
+  const { pending: saving, run } = useAction();
   const [state, apply] = useOptimistic(
     excludes,
     (current, change: { kind: string; value: string; on: boolean }) =>
@@ -24,7 +25,7 @@ export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
 
   function toggle(kind: "allergen" | "preference", value: string) {
     const on = !has(kind, value);
-    startTransition(async () => {
+    run(async () => {
       apply({ kind, value, on });
       await toggleExclude(kind, value, on);
     });
@@ -48,6 +49,7 @@ export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
             key={name}
             type="button"
             onClick={() => toggle("allergen", name)}
+            disabled={saving}
             aria-pressed={has("allergen", name)}
             className={cn(
               "hit rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
@@ -68,6 +70,7 @@ export function AllergiesPanel({ excludes }: { excludes: Exclude[] }) {
             key={name}
             type="button"
             onClick={() => toggle("preference", name)}
+            disabled={saving}
             aria-pressed={has("preference", name)}
             className={cn(
               "hit rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition-colors",

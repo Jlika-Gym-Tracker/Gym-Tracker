@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useOptimistic, useState, useTransition } from "react";
+import { useActionState, useOptimistic, useState, } from "react";
 import { format, parseISO } from "date-fns";
 import { Check, ChevronDown, RefreshCw, Shuffle } from "lucide-react";
 import {
@@ -27,6 +27,7 @@ import { MealDetail } from "./meal-detail";
 import { GroceryList } from "./grocery-list";
 import { AllergiesPanel } from "./allergies-panel";
 import { ActionButton } from "@/components/kit/action-button";
+import { useAction } from "@/lib/use-action";
 
 export function NutritionScreen({
   plan,
@@ -46,7 +47,7 @@ export function NutritionScreen({
   excludes: { kind: string; value: string }[];
 }) {
   const [genState, generate] = useActionState(generateWeekPlan, {} as ActionState);
-  const [, startTransition] = useTransition();
+  const { pending: busy, run } = useAction();
   const [swapping, setSwapping] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   // Servings echo locally while the write lands, so portions and macros move
@@ -238,11 +239,12 @@ export function NutritionScreen({
                       <button
                         type="button"
                         onClick={() =>
-                          startTransition(async () => {
+                          run(async () => {
                             markEaten({ id: entry.id, eaten: !entry.eaten });
                             await toggleMealEaten(entry.id, !entry.eaten);
                           })
                         }
+                        disabled={busy}
                         aria-pressed={entry.eaten}
                         aria-label={`Mark ${entry.recipe?.name ?? "meal"} as eaten`}
                         className={cn(
@@ -279,8 +281,9 @@ export function NutritionScreen({
                             <button
                               key={r.id}
                               type="button"
+                              disabled={busy}
                               onClick={() =>
-                                startTransition(async () => {
+                                run(async () => {
                                   setSwapping(null);
                                   await swapMeal(entry.id, r.id);
                                 })

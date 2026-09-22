@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useOptimistic, useState } from "react";
 import { Check, ClipboardCheck, Copy } from "lucide-react";
 import { toggleGroceryItem } from "@/app/actions/nutrition";
 import { CATEGORY_LABELS, formatQuantity } from "@/lib/nutrition/plan";
@@ -10,6 +10,7 @@ import { weekRangeLabel } from "@/lib/dates";
 import { FoodThumb } from "./food-thumb";
 import { cn } from "@/lib/utils";
 import { Saving } from "@/components/kit/skeleton";
+import { useAction } from "@/lib/use-action";
 
 export function GroceryList({
   groceries,
@@ -20,7 +21,7 @@ export function GroceryList({
   weekStart: string;
   mealCount: number;
 }) {
-  const [saving, startTransition] = useTransition();
+  const { pending: saving, run } = useAction();
   const [copied, setCopied] = useState(false);
   const [items, setChecked] = useOptimistic(
     groceries,
@@ -89,8 +90,9 @@ export function GroceryList({
                   <button
                     key={item.id}
                     type="button"
+                    disabled={saving}
                     onClick={() =>
-                      startTransition(async () => {
+                      run(async () => {
                         setChecked({ id: item.id, checked: !item.checked });
                         await toggleGroceryItem(item.id, !item.checked);
                       })

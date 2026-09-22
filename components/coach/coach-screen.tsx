@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { Plus, Trash2, X } from "lucide-react";
 import {
@@ -25,6 +25,7 @@ import { Message } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
 import { ActionButton } from "@/components/kit/action-button";
 import { Saving } from "@/components/kit/skeleton";
+import { useAction } from "@/lib/use-action";
 
 export function CoachScreen({
   roster,
@@ -393,7 +394,7 @@ function CoachDayCard({
   day: CoachProgramDetail["days"][number];
   library: LibraryExercise[];
 }) {
-  const [saving, startTransition] = useTransition();
+  const { pending: busy, run } = useAction();
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -408,7 +409,7 @@ function CoachDayCard({
           {DAY_NAMES[day.day_index]?.toUpperCase()}
         </span>
         <span className="text-[13.5px] font-bold">{day.name}</span>
-        <Saving busy={saving} className="ml-auto" />
+        <Saving busy={busy} className="ml-auto" />
         <span className="font-mono text-[10px] text-fg-dim">
           {day.exercises.length} EX
         </span>
@@ -432,7 +433,8 @@ function CoachDayCard({
             <button
               type="button"
               aria-label={`Remove ${item.exercise.name}`}
-              onClick={() => startTransition(() => void removeCoachProgramExercise(item.id))}
+              disabled={busy}
+              onClick={() => run(() => removeCoachProgramExercise(item.id))}
               className="rounded p-0.5 text-fg-faint opacity-0 group-hover:opacity-100 hover:text-danger"
             >
               <X className="size-3" strokeWidth={2} />
@@ -455,8 +457,9 @@ function CoachDayCard({
                 <button
                   key={exercise.id}
                   type="button"
+                  disabled={busy}
                   onClick={() =>
-                    startTransition(async () => {
+                    run(async () => {
                       await addCoachProgramExercise(day.id, exercise.id);
                       setQuery("");
                       setAdding(false);

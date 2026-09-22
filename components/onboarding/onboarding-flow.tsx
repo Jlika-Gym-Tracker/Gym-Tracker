@@ -13,6 +13,7 @@ import { Logo } from "@/components/shell/logo";
 import { Message, Segmented } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
 import { ActionButton } from "@/components/kit/action-button";
+import { useAction } from "@/lib/use-action";
 
 const STEPS = ["Account", "Body", "Goal", "Food", "Program"] as const;
 
@@ -46,6 +47,7 @@ const SIDE_COPY = [
 
 export function OnboardingFlow({ defaultName }: { defaultName: string }) {
   const [state, submit] = useActionState(completeOnboarding, {} as ActionState);
+  const { pending: skipping, run: skip } = useAction();
   const [step, setStep] = useState(0);
 
   const [displayName, setDisplayName] = useState(defaultName);
@@ -387,10 +389,11 @@ DAY 2 — LOWER A
 
           <button
             type="button"
-            onClick={() => void skipOnboarding()}
-            className="text-xs text-fg-dim hover:text-fg-soft"
+            disabled={skipping}
+            onClick={() => skip(() => skipOnboarding())}
+            className="text-xs text-fg-dim hover:text-fg-soft disabled:opacity-50"
           >
-            Skip for now
+            {skipping ? "Skipping…" : "Skip for now"}
           </button>
         </div>
 

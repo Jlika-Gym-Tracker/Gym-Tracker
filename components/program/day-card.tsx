@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { ChevronUp, GripVertical, Plus, X } from "lucide-react";
 import { removeProgramExercise, reorderDayExercises } from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
@@ -9,6 +9,7 @@ import { trimNumber } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
 import { ActionButton } from "@/components/kit/action-button";
+import { useAction } from "@/lib/use-action";
 
 function loadLabel(item: DayWithExercises["exercises"][number], unit: string) {
   if (item.target_weight_kg == null) return null;
@@ -35,7 +36,7 @@ export function DayCard({
   active: boolean;
   onActivate: () => void;
 }) {
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = useAction();
   // Local copy so a drag reads smoothly; re-synced whenever the server data changes.
   const [order, setOrder] = useState(day.exercises);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export function DayCard({
 
   function commitOrder(next: typeof order) {
     setOrder(next);
-    startTransition(() => reorderDayExercises(day.id, next.map((e) => e.id)));
+    run(() => reorderDayExercises(day.id, next.map((e) => e.id)));
   }
 
   function handleDrop(targetId: string) {
@@ -134,7 +135,7 @@ export function DayCard({
                 e.stopPropagation();
                 moveUp(item.id);
               }}
-              disabled={index === 0}
+              disabled={index === 0 || pending}
               aria-label={`Move ${item.exercise.name} up`}
               className="hit hidden flex-none rounded p-0.5 text-fg-dim disabled:opacity-25 pointer-coarse:block"
             >
@@ -154,7 +155,7 @@ export function DayCard({
               <span className="text-fg-soft">{repLabel(item)}</span>
             </span>
             <form
-              action={(fd) => startTransition(() => void removeProgramExercise({}, fd))}
+              action={(fd) => run(() => removeProgramExercise({}, fd))}
               className="flex-none"
             >
               <input type="hidden" name="id" value={item.id} />

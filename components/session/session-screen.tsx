@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   addSet,
   addExerciseToSession,
@@ -18,6 +18,7 @@ import { formatVolume, weightUnit } from "@/lib/units";
 import { ExerciseThumb } from "@/components/program/exercise-thumb";
 import { cn } from "@/lib/utils";
 import { Portal } from "@/components/kit/portal";
+import { useAction } from "@/lib/use-action";
 import { ElapsedClock, RestTimer, useRestTimer } from "./timers";
 import { SET_GRID, SetRow, draftToPayload, toDraft, type SetDraft } from "./set-row";
 import { ExerciseDrawer, type DrawerData } from "./exercise-drawer";
@@ -40,6 +41,10 @@ export function SessionScreen({
 }) {
   const unit = weightUnit(system);
   const [pending, startTransition] = useTransition();
+  // Adding and removing sets changes the list, so a repeated tap must not
+  // repeat the write. Ticking a set is left alone: it is optimistic, per-set,
+  // and toggling twice is a real intent.
+  const listEdit = useAction();
   const [drawer, setDrawer] = useState<DrawerData | null>(null);
   const [focusId, setFocusId] = useState<string | null>(
     session.exercises[0]?.exercise.id ?? null,
@@ -231,8 +236,9 @@ export function SessionScreen({
               onChange={(id, d) => setDrafts((prev) => ({ ...prev, [id]: d }))}
               onCommit={commit}
               onToggle={toggle}
-              onRemove={(id) => startTransition(() => void removeSet(id))}
-              onAddSet={() => startTransition(() => void addSet(session.id, ex.exercise.id))}
+              onRemove={(id) => listEdit.run(() => removeSet(id))}
+              onAddSet={() => listEdit.run(() => addSet(session.id, ex.exercise.id))}
+              listBusy={listEdit.pending}
               bestEver={panels[ex.exercise.id]?.bestEver ?? null}
               onOpenDrawer={() =>
                 setDrawer({
@@ -258,7 +264,7 @@ export function SessionScreen({
               })
             }
             onAddExercise={(exerciseId) =>
-              startTransition(() => void addExerciseToSession(session.id, exerciseId))
+              listEdit.run(() => addExerciseToSession(session.id, exerciseId))
             }
           />
         ) : null}
@@ -374,6 +380,7 @@ function ExerciseCard({
   onToggle,
   onRemove,
   onAddSet,
+  listBusy,
   onOpenDrawer,
 }: {
   ex: SessionExercise;
@@ -389,6 +396,7 @@ function ExerciseCard({
   onToggle: (id: string, draft: SetDraft) => void;
   onRemove: (id: string) => void;
   onAddSet: () => void;
+  listBusy: boolean;
   onOpenDrawer: () => void;
 }) {
   const target = ex.plan
@@ -501,9 +509,15 @@ function ExerciseCard({
           <button
             type="button"
             onClick={onAddSet}
-            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-stroke py-3 text-xs font-semibold text-fg-dim transition-colors hover:border-accent hover:text-accent sm:py-2"
+            disabled={listBusy}
+            aria-busy={listBusy || undefined}
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-stroke py-3 text-xs font-semibold text-fg-dim transition-colors hover:border-accent hover:text-accent disabled:opacity-50 sm:py-2"
           >
-            <Plus className="size-3.5" strokeWidth={2} />
+            {listBusy ? (
+              <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
+            ) : (
+              <Plus className="size-3.5" strokeWidth={2} />
+            )}
             Add a set
           </button>
           {/* Phones have no hover to reveal each row's remove button, and a
@@ -514,7 +528,8 @@ function ExerciseCard({
             <button
               type="button"
               onClick={() => onRemove(lastSet.id)}
-              className="min-h-11 rounded-[10px] border border-stroke px-4 py-3 text-xs font-semibold text-fg-dim transition-colors hover:border-danger-border hover:text-danger sm:hidden"
+              disabled={listBusy}
+              className="min-h-11 rounded-[10px] border border-stroke px-4 py-3 text-xs font-semibold text-fg-dim disabled:opacity-50 transition-colors hover:border-danger-border hover:text-danger sm:hidden"
             >
               Remove last
             </button>
