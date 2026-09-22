@@ -216,8 +216,10 @@ export function CoachScreen({
         <Card className="rounded-[18px]">
           <h2 className="text-[15px] font-bold">Invite athletes</h2>
           <p className="mt-1 mb-3 text-[12.5px] leading-[1.5] text-fg-soft">
-            Each code works ten times and lasts thirty days. Joining shares their
-            training with you and nothing else.
+            Send the link — it names you, explains what you will see, and applies
+            the code even if they have no account yet. Each code works ten times
+            and lasts thirty days, and joining shares their training and nothing
+            else.
           </p>
           <form action={invite} className="flex flex-col gap-2.5">
             <input
@@ -236,22 +238,61 @@ export function CoachScreen({
           {invites.length > 0 ? (
             <div className="mt-3 flex flex-col gap-2">
               {invites.map((code) => (
-                <div
-                  key={code.code}
-                  className="flex items-center gap-2 rounded-[10px] border border-line bg-surface-2 px-3 py-2.5"
-                >
-                  <span className="font-mono text-[13px] font-bold text-accent">
-                    {code.code}
-                  </span>
-                  <span className="ml-auto font-mono text-[10px] text-fg-dim">
-                    {code.uses_left} LEFT · {format(parseISO(code.expires_at), "MMM dd")}
-                  </span>
-                </div>
+                <InviteRow key={code.code} invite={code} />
               ))}
             </div>
           ) : null}
         </Card>
       </div>
+    </div>
+  );
+}
+
+/**
+ * One code, with the link that actually gets sent.
+ *
+ * The origin is read on the client because a coach may be on localhost, a
+ * preview deploy or the real domain, and the link has to work where they are.
+ */
+function InviteRow({ invite }: { invite: CoachInvite }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    const link = `${window.location.origin}/join/${invite.code}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard access can be refused; the code is on screen to type.
+    }
+  }
+
+  return (
+    <div className="rounded-[10px] border border-line bg-surface-2 px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[13px] font-bold text-accent">
+          {invite.code}
+        </span>
+        <span className="ml-auto font-mono text-[10px] text-fg-dim">
+          {invite.uses_left} LEFT · {format(parseISO(invite.expires_at), "MMM dd")}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <code className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-fg-dim">
+          /join/{invite.code}
+        </code>
+        <button
+          type="button"
+          onClick={() => void copy()}
+          className="flex-none rounded-[8px] border border-stroke bg-ghost px-2.5 py-1.5 font-mono text-[10px] font-bold tracking-[0.08em] text-fg-muted uppercase hover:bg-hover"
+        >
+          {copied ? "Copied" : "Copy link"}
+        </button>
+      </div>
+      {invite.label ? (
+        <div className="mt-1.5 text-[11px] text-fg-dim">{invite.label}</div>
+      ) : null}
     </div>
   );
 }

@@ -111,7 +111,14 @@ export function ProfileScreen({
         <TargetsTab profile={profile} settings={settings} targets={targets} />
       ) : null}
       {tab === "Food" ? <FoodTab excludes={excludes} settings={settings} /> : null}
-      {tab === "Coach" ? <MyCoaches coaches={coaches} meId={profile.id} /> : null}
+      {tab === "Coach" ? (
+        <MyCoaches
+          coaches={coaches}
+          meId={profile.id}
+          coachingEnabled={profile.coaching_enabled}
+          needsBodySetup={profile.height_cm === null}
+        />
+      ) : null}
       {tab === "Crew" ? (
         <CrewTab crew={crew} invites={invites} sharing={sharing} meId={profile.id} />
       ) : null}

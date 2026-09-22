@@ -6,23 +6,53 @@ import { signInWithGoogle, signUp } from "@/app/actions/auth";
 import { Divider, Field, FormMessage } from "./field";
 import { SubmitButton } from "./submit-button";
 
-export function SignupForm() {
+export type SignupMode = "athlete" | "coach";
+
+/**
+ * One signup form, two doors.
+ *
+ * There is no separate coach account — the same email is often both a coach and
+ * someone who trains. `mode` only changes what is asked for and where they land:
+ * a coach skips the crew code and gets coaching switched on before their first
+ * render, so the Coach nav is there waiting.
+ */
+export function SignupForm({
+  mode = "athlete",
+  presetCode,
+}: {
+  mode?: SignupMode;
+  presetCode?: string;
+}) {
   const [state, action] = useActionState(signUp, {});
+  const isCoach = mode === "coach";
+  const fromCoachLink = Boolean(presetCode?.startsWith("COACH-"));
 
   return (
     <>
-      <h1 className="display text-[30px]">Create your account.</h1>
+      <h1 className="display text-[30px]">
+        {isCoach ? "Create your coach account." : "Create your account."}
+      </h1>
       <p className="mt-2.5 text-[13.5px] leading-[1.5] text-fg-soft">
-        One account per person. Invite friends later — each gets their own
-        private space, nobody sees anyone else&apos;s photos or numbers.
+        {isCoach
+          ? "Write programs once and assign them to athletes who join with your code. You can train here yourself too — it is the same account, not a second login."
+          : "One account per person. Invite friends later — each gets their own private space, nobody sees anyone else's photos or numbers."}
       </p>
 
+      {fromCoachLink ? (
+        <div className="mt-4 rounded-[11px] border border-line-hi bg-accent-soft px-[15px] py-3 text-[12.5px] leading-[1.5] text-accent">
+          You were invited with <strong className="font-mono">{presetCode}</strong>.
+          It is applied the moment your account is ready, and it shares your
+          training only.
+        </div>
+      ) : null}
+
       <form action={action} className="mt-[26px] flex flex-col gap-[11px]">
+        {isCoach ? <input type="hidden" name="as" value="coach" /> : null}
         <Field
           label="Display name"
           name="displayName"
           autoComplete="name"
-          placeholder="Yassir"
+          placeholder={isCoach ? "Coach Yassir" : "Yassir"}
           required
           minLength={2}
           maxLength={60}
@@ -55,21 +85,28 @@ export function SignupForm() {
             minLength={8}
           />
         </div>
-        <Field
-          label="Invite code"
-          name="inviteCode"
-          placeholder="CREW-7K2P (optional)"
-          autoComplete="off"
-        />
+        {/* A coach joins nobody, so the code field would only be noise. */}
+        {isCoach ? null : (
+          <Field
+            label={fromCoachLink ? "Coach code" : "Invite code"}
+            name="inviteCode"
+            defaultValue={presetCode}
+            placeholder="CREW-7K2P (optional)"
+            autoComplete="off"
+          />
+        )}
         <FormMessage error={state?.error} notice={state?.notice} />
         <SubmitButton pendingLabel="Creating account…" className="mt-1">
-          Create account
+          {isCoach ? "Create coach account" : "Create account"}
         </SubmitButton>
       </form>
 
       <Divider />
 
       <form action={signInWithGoogle}>
+        {/* Google carries no signup metadata, so a coach arriving this way is
+            sent straight to /coach, which offers the switch. */}
+        {isCoach ? <input type="hidden" name="next" value="/coach" /> : null}
         <SubmitButton variant="ghost" pendingLabel="Redirecting…">
           Continue with Google
         </SubmitButton>
@@ -80,6 +117,23 @@ export function SignupForm() {
         <Link href="/login" className="text-accent hover:text-accent-hi">
           Sign in
         </Link>
+      </p>
+      <p className="mt-2 text-center text-[12.5px] text-fg-dim">
+        {isCoach ? (
+          <>
+            Here to train, not to coach?{" "}
+            <Link href="/signup" className="text-fg-soft hover:text-fg">
+              Create a normal account
+            </Link>
+          </>
+        ) : (
+          <>
+            Coaching a team?{" "}
+            <Link href="/signup?as=coach" className="text-fg-soft hover:text-fg">
+              Create a coach account
+            </Link>
+          </>
+        )}
       </p>
     </>
   );

@@ -37,6 +37,31 @@ test.describe("public routes render", () => {
     expect(family.toLowerCase()).toContain("archivo");
   });
 
+  test("/signup?as=coach offers the coach door instead", async ({ page }) => {
+    const response = await page.goto("/signup?as=coach");
+    expect(response?.status()).toBe(200);
+    await expect(
+      page.getByRole("heading", { name: "Create your coach account." }),
+    ).toBeVisible();
+    // A coach joins nobody, so the crew code field must not be there.
+    await expect(page.locator('input[name="inviteCode"]')).toHaveCount(0);
+  });
+
+  test("a coach's invite link opens for someone with no account", async ({ page }) => {
+    // The code is deliberately fake: an anonymous visitor is never told whether
+    // it is real, so the page must render the same either way.
+    const response = await page.goto("/join/COACH-ZZZZZZ");
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/join\/COACH-ZZZZZZ/);
+    await expect(
+      page.getByRole("heading", { name: "You have been invited by a coach." }),
+    ).toBeVisible();
+    // The code must survive into signup, or the link was pointless.
+    await page.getByRole("link", { name: "Create my account" }).click();
+    await expect(page).toHaveURL(/\/signup\?code=COACH-ZZZZZZ/);
+    await expect(page.locator('input[name="inviteCode"]')).toHaveValue("COACH-ZZZZZZ");
+  });
+
   test("an unknown route under a public prefix shows the themed 404", async ({ page }) => {
     // Unknown routes elsewhere redirect to sign-in rather than confirming what
     // does and does not exist, so this checks the 404 where it is reachable.

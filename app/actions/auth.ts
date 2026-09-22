@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { applyPendingSignup } from "@/lib/auth/pending-signup";
 
 export type AuthState = { error?: string; notice?: string };
 
@@ -30,8 +31,11 @@ const signUpSchema = z
       .max(72, "Passwords are capped at 72 characters."),
     confirm: z.string(),
     inviteCode: z
-      .union([z.literal(""), z.string().trim().min(4).max(20)])
+      .union([z.literal(""), z.string().trim().min(4).max(24)])
       .transform((v) => (v ? v.toUpperCase() : null)),
+    // "coach" comes from /signup?as=coach — the same account type, entered
+    // through a different door.
+    asCoach: z.boolean(),
   })
   .refine((v) => v.password === v.confirm, {
     path: ["confirm"],
@@ -99,6 +103,7 @@ export async function signUp(
     password: formData.get("password"),
     confirm: formData.get("confirm"),
     inviteCode: (formData.get("inviteCode") as string)?.trim() ?? "",
+    asCoach: formData.get("as") === "coach",
   });
   if (!parsed.success) return { error: firstError(parsed.error) };
 
@@ -114,6 +119,7 @@ export async function signUp(
       data: {
         display_name: parsed.data.displayName,
         ...(parsed.data.inviteCode ? { invite_code: parsed.data.inviteCode } : {}),
+        ...(parsed.data.asCoach ? { wants_coaching: true } : {}),
       },
       emailRedirectTo: `${await siteUrl()}/auth/confirm`,
     },
@@ -128,12 +134,17 @@ export async function signUp(
     };
   }
 
-  // With email confirmation on, Supabase returns a user but no session.
+  // With email confirmation on, Supabase returns a user but no session. The
+  // metadata above is applied by the auth route handler instead.
   if (!data.session) {
     return {
       notice: `Check ${parsed.data.email} for a confirmation link to finish signing up.`,
     };
   }
+
+  // Confirmation is off, so there is a session right here and no route handler
+  // will run. Apply the same metadata now rather than leaving it stranded.
+  await applyPendingSignup(supabase);
 
   revalidatePath("/", "layout");
   redirect("/");

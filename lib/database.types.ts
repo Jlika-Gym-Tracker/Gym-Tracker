@@ -46,6 +46,7 @@ export type Database = {
           onboarded_at: string | null;
           avatar_url: string | null;
           coaching_enabled: boolean;
+          gym_name: string | null;
           created_at: string;
         };
         Insert: {
@@ -65,6 +66,7 @@ export type Database = {
           onboarded_at?: string | null;
           avatar_url?: string | null;
           coaching_enabled?: boolean;
+          gym_name?: string | null;
           created_at?: string;
         };
         Update: {
@@ -84,6 +86,7 @@ export type Database = {
           onboarded_at?: string | null;
           avatar_url?: string | null;
           coaching_enabled?: boolean;
+          gym_name?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -554,6 +557,16 @@ export type Database = {
         Args: { invite_code: string };
         Returns: { coach_id: string; coach_name: string }[];
       };
+      coach_invite_preview: {
+        Args: { invite_code: string };
+        Returns: {
+          coach_id: string | null;
+          coach_name: string | null;
+          avatar_url: string | null;
+          gym_name: string | null;
+          reason: string;
+        }[];
+      };
       coach_names: {
         Args: { coach_ids: string[] };
         Returns: { coach_id: string; display_name: string; avatar_url: string | null }[];
@@ -622,6 +635,8 @@ export type LeagueScore = Tables<"league_scores">;
 export type Challenge = Tables<"challenges">;
 export type Badge = Tables<"badges">;
 export type CoachInvite = Tables<"coach_invites">;
+export type CoachInvitePreview =
+  Database["public"]["Functions"]["coach_invite_preview"]["Returns"][number];
 export type CoachLink = Tables<"coach_links">;
 export type CoachProgram = Tables<"coach_programs">;
 export type ShareScope = "training" | "body" | "photos" | "nutrition";

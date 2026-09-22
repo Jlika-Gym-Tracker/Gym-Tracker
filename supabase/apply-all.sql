@@ -2306,3 +2306,343 @@ grant execute on function public.coach_names(uuid[]) to authenticated;
 --   recompute_league_scores — rewrites every score in every season; only the
 --     nightly pg_cron job, which runs as the table owner, should call it.
 --   handle_new_user — a trigger function; nothing should invoke it directly.
+
+
+-- ========================================================================
+-- 20260910000020_coach_signup.sql
+-- ========================================================================
+
+-- JLIKA Gym — the coach's front door.
+--
+-- Two things are needed for a coach to sign up as a coach rather than as an
+-- athlete who later finds a switch:
+--   1. somewhere to put the gym or team they coach under, and
+--   2. a way for an invited athlete to see who is inviting them before they
+--      hand over any training data.
+
+alter table public.profiles
+  add column if not exists gym_name text;
+
+comment on column public.profiles.gym_name is
+  'Optional gym or team a coach works under. Shown to athletes on the join screen.';
+
+/**
+ * What an athlete is shown before joining a coach.
+ *
+ * SECURITY DEFINER because coach_invites is deliberately unreadable — the code
+ * is the credential. Granted to `authenticated` only, never `anon`: an
+ * anonymous caller who could test codes would have an oracle for enumerating
+ * valid ones, and the reply names a real person.
+ *
+ * `reason` is 'ok' when the code can be redeemed. Every other value returns no
+ * coach identity at all, so an unusable code reveals nothing about who wrote it.
+ */
+create or replace function public.coach_invite_preview(invite_code text)
+returns table (
+  coach_id uuid,
+  coach_name text,
+  avatar_url text,
+  gym_name text,
+  reason text
+)
+language plpgsql
+security definer
+stable
+set search_path = ''
+as $$
+declare
+  caller uuid := auth.uid();
+  invite public.coach_invites%rowtype;
+  verdict text;
+begin
+  if caller is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select * into invite
+  from public.coach_invites
+  where code = upper(trim(invite_code));
+
+  if not found then
+    return query select null::uuid, null::text, null::text, null::text, 'unknown'::text;
+    return;
+  end if;
+
+  verdict := case
+    when invite.expires_at < now() then 'expired'
+    when invite.uses_left <= 0 then 'used_up'
+    when invite.coach_id = caller then 'self'
+    when exists (
+      select 1 from public.coach_links cl
+      where cl.coach_id = invite.coach_id
+        and cl.athlete_id = caller
+        and cl.status = 'active'
+    ) then 'already'
+    else 'ok'
+  end;
+
+  -- Identity is only disclosed for a code that would actually work.
+  if verdict not in ('ok', 'already') then
+    return query select null::uuid, null::text, null::text, null::text, verdict;
+    return;
+  end if;
+
+  return query
+  select p.id, p.display_name, p.avatar_url, p.gym_name, verdict
+  from public.profiles p
+  where p.id = invite.coach_id;
+end;
+$$;
+
+revoke all on function public.coach_invite_preview(text) from public;
+revoke all on function public.coach_invite_preview(text) from anon;
+grant execute on function public.coach_invite_preview(text) to authenticated;
+
+
+-- ========================================================================
+-- 20260910000021_fix_redeem_ambiguity.sql
+-- ========================================================================
+
+-- JLIKA Gym — redeem_coach_invite could never actually run.
+--
+-- The function declares OUT parameters (coach_id, coach_name) via RETURNS
+-- TABLE, and plpgsql substitutes those names anywhere they appear bare. In
+--
+--     on conflict (coach_id, athlete_id) do update ...
+--
+-- `coach_id` therefore resolved to the OUT parameter as readily as to the
+-- column, and Postgres refused the whole call with 42702, "column reference
+-- coach_id is ambiguous". Every athlete trying to join a coach hit it.
+--
+-- Naming the constraint instead of inferring from columns removes the bare
+-- reference, and keeps the returned column names the app already reads.
+
+create or replace function public.redeem_coach_invite(invite_code text)
+returns table (coach_id uuid, coach_name text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := auth.uid();
+  invite public.coach_invites%rowtype;
+begin
+  if caller is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select * into invite
+  from public.coach_invites
+  where code = upper(trim(invite_code))
+  for update;
+
+  if not found then
+    raise exception 'That coach code does not exist';
+  end if;
+  if invite.expires_at < now() then
+    raise exception 'That coach code has expired';
+  end if;
+  if invite.uses_left <= 0 then
+    raise exception 'That coach code has been used up';
+  end if;
+  if invite.coach_id = caller then
+    raise exception 'You cannot coach yourself';
+  end if;
+
+  -- Re-joining an existing link must not silently re-widen what is shared, so
+  -- an existing row is only reactivated, never reset to defaults.
+  insert into public.coach_links (coach_id, athlete_id)
+  values (invite.coach_id, caller)
+  on conflict on constraint coach_links_pkey do update set status = 'active';
+
+  update public.coach_invites
+  set uses_left = uses_left - 1
+  where code = invite.code;
+
+  return query
+  select p.id, p.display_name
+  from public.profiles p
+  where p.id = invite.coach_id;
+end;
+$$;
+
+revoke all on function public.redeem_coach_invite(text) from public;
+revoke all on function public.redeem_coach_invite(text) from anon;
+grant execute on function public.redeem_coach_invite(text) to authenticated;
+
+
+-- ========================================================================
+-- 20260910000022_rejoin_resets_shares.sql
+-- ========================================================================
+
+-- JLIKA Gym — rejoining a coach you removed starts from the defaults.
+--
+-- Reactivating an ended link used to keep whatever was shared when it ended.
+-- So an athlete who had opened up progress photos, then ended the coaching,
+-- handed the photos straight back the moment they used a code again — without
+-- being told. Joining is joining: an ended link returns at training-only.
+--
+-- A link that is merely active or paused keeps its settings, which is the
+-- original point: redeeming a code twice must not turn share_training back on
+-- for someone who deliberately switched it off.
+
+create or replace function public.redeem_coach_invite(invite_code text)
+returns table (coach_id uuid, coach_name text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := auth.uid();
+  invite public.coach_invites%rowtype;
+begin
+  if caller is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select * into invite
+  from public.coach_invites
+  where code = upper(trim(invite_code))
+  for update;
+
+  if not found then
+    raise exception 'That coach code does not exist';
+  end if;
+  if invite.expires_at < now() then
+    raise exception 'That coach code has expired';
+  end if;
+  if invite.uses_left <= 0 then
+    raise exception 'That coach code has been used up';
+  end if;
+  if invite.coach_id = caller then
+    raise exception 'You cannot coach yourself';
+  end if;
+
+  -- The constraint is named rather than inferred from columns: a bare
+  -- `coach_id` in an inference list collides with this function's OUT
+  -- parameter of the same name and Postgres refuses the call (42702).
+  insert into public.coach_links (coach_id, athlete_id)
+  values (invite.coach_id, caller)
+  on conflict on constraint coach_links_pkey do update
+  set status = 'active',
+      share_training = case
+        when public.coach_links.status = 'ended' then true
+        else public.coach_links.share_training end,
+      share_body_metrics = case
+        when public.coach_links.status = 'ended' then false
+        else public.coach_links.share_body_metrics end,
+      share_photos = case
+        when public.coach_links.status = 'ended' then false
+        else public.coach_links.share_photos end,
+      share_nutrition = case
+        when public.coach_links.status = 'ended' then false
+        else public.coach_links.share_nutrition end;
+
+  update public.coach_invites
+  set uses_left = uses_left - 1
+  where code = invite.code;
+
+  return query
+  select p.id, p.display_name
+  from public.profiles p
+  where p.id = invite.coach_id;
+end;
+$$;
+
+revoke all on function public.redeem_coach_invite(text) from public;
+revoke all on function public.redeem_coach_invite(text) from anon;
+grant execute on function public.redeem_coach_invite(text) to authenticated;
+
+
+-- ========================================================================
+-- 20260910000023_fix_roster_ambiguity.sql
+-- ========================================================================
+
+-- JLIKA Gym — the coach dashboard could not load.
+--
+-- coach_roster declared a local variable `week_start`, and the query it builds
+-- joins program_weeks, which has a column of that name. plpgsql substitutes
+-- bare identifiers, so `w.week_start = week_start` was ambiguous and Postgres
+-- refused the call with 42702 — for every coach, roster or no roster. The
+-- dashboard rendered its error card instead.
+--
+-- Renaming the variable to something no table has fixes it. Nothing about the
+-- returned shape changes.
+
+create or replace function public.coach_roster()
+returns table (
+  athlete_id uuid,
+  display_name text,
+  avatar_url text,
+  goal text,
+  sessions_this_week int,
+  planned_this_week int,
+  sets_this_week int,
+  last_session_at timestamptz,
+  week_dots int[],
+  shares_body boolean,
+  shares_photos boolean,
+  shares_nutrition boolean
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := auth.uid();
+  -- Deliberately not `week_start`: that is a program_weeks column, and a bare
+  -- reference to it inside the query below cannot be resolved.
+  monday date := (date_trunc('week', now() at time zone 'utc'))::date;
+begin
+  if caller is null then
+    raise exception 'Not signed in';
+  end if;
+
+  return query
+  select
+    a.id,
+    p.display_name,
+    p.avatar_url,
+    p.goal,
+    coalesce(s.done, 0)::int,
+    coalesce(pl.planned, 0)::int,
+    coalesce(s.sets, 0)::int,
+    s.last_at,
+    coalesce(s.dots, '{}'::int[]),
+    cl.share_body_metrics,
+    cl.share_photos,
+    cl.share_nutrition
+  from public.coach_links cl
+  join auth.users a on a.id = cl.athlete_id
+  join public.profiles p on p.id = cl.athlete_id
+  left join lateral (
+    select
+      count(distinct ws.id)::int as done,
+      count(sl.id) filter (where sl.is_complete)::int as sets,
+      max(ws.started_at) as last_at,
+      array_agg(distinct extract(isodow from ws.started_at)::int - 1) as dots
+    from public.workout_sessions ws
+    left join public.set_logs sl on sl.session_id = ws.id
+    where ws.user_id = cl.athlete_id
+      and ws.ended_at is not null
+      and ws.started_at >= monday
+  ) s on true
+  left join lateral (
+    select count(*)::int as planned
+    from public.program_days d
+    join public.program_weeks w on w.id = d.week_id
+    where w.user_id = cl.athlete_id
+      and w.week_start = monday
+      and not d.is_rest
+      and exists (select 1 from public.program_exercises pe where pe.day_id = d.id)
+  ) pl on true
+  where cl.coach_id = caller
+    and cl.status = 'active'
+    and cl.share_training
+  order by p.display_name;
+end;
+$$;
+
+revoke all on function public.coach_roster() from public;
+revoke all on function public.coach_roster() from anon;
+grant execute on function public.coach_roster() to authenticated;

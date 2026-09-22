@@ -45,10 +45,17 @@ export async function setCoaching(enabled: boolean): Promise<ActionState> {
   }
 }
 
+// No I, O, 0 or 1 — these get read aloud and typed in a noisy gym.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+/**
+ * Six characters from a 32-letter alphabet: ~1.07 billion codes.
+ *
+ * Four would be a million, which is guessable by a script — and a valid code is
+ * enough to attach yourself to a coach's roster.
+ */
 function generateCode() {
-  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
   return `COACH-${[...bytes].map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("")}`;
 }
 

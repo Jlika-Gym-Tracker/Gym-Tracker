@@ -139,3 +139,50 @@ export async function skipOnboarding(): Promise<void> {
   revalidatePath("/", "layout");
   redirect("/");
 }
+
+const coachSchema = z.object({
+  displayName: z.string().trim().min(2, "Your name needs at least 2 characters.").max(60),
+  gymName: z
+    .union([z.literal(""), z.string().trim().max(80)])
+    .transform((v) => v || null),
+});
+
+/**
+ * The short first run for someone who came in to coach.
+ *
+ * A coach who does not train here has no reason to give their own height, sex
+ * or goal — those exist only to compute their calories. They can add all of it
+ * later from Profile → "I train here too", which reopens the full flow.
+ */
+export async function completeCoachOnboarding(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const input = coachSchema.parse({
+      displayName: formData.get("displayName"),
+      gymName: formData.get("gymName") ?? "",
+    });
+
+    // One UPDATE, so unlike completeOnboarding there is no ordering hazard —
+    // nothing else has to exist for onboarded_at to be honest here.
+    // coaching_enabled is set again because someone can reach this screen
+    // through a magic link that never carried the signup metadata.
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: input.displayName,
+        gym_name: input.gymName,
+        coaching_enabled: true,
+        onboarded_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    if (error) throw error;
+
+    revalidatePath("/", "layout");
+  } catch (error) {
+    return fail(error);
+  }
+  redirect("/coach");
+}

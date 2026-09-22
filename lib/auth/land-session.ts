@@ -2,7 +2,7 @@ import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { redeemPendingInvite } from "@/lib/crew/redeem-pending";
+import { applyPendingSignup } from "@/lib/auth/pending-signup";
 
 /**
  * The single landing point for every way Supabase hands a session back.
@@ -55,7 +55,7 @@ export async function landSession(request: NextRequest) {
 
   if (error) return fail(error.code ?? "verification_failed", error.message);
 
-  await redeemPendingInvite(supabase);
+  await applyPendingSignup(supabase);
 
   // Behind a proxy the load balancer sets x-forwarded-host; trust it in prod only.
   const forwardedHost = request.headers.get("x-forwarded-host");

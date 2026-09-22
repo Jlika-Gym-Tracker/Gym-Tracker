@@ -13,6 +13,9 @@ const PUBLIC_PATHS = [
   "/signup",
   "/auth",
   "/forgot-password",
+  // A coach's invite link has to open for someone with no account yet; the
+  // page itself reveals nothing until there is a session.
+  "/join",
   "/api/cron",
   // The PWA manifest and its icons are fetched by the browser before there is
   // any session, and by installers that never have one.
