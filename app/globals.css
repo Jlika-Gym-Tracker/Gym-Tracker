@@ -163,7 +163,11 @@
   --radius-2xl: calc(var(--radius) * 1.64); /* 18px */
   --radius-3xl: calc(var(--radius) * 1.82); /* 20px — cards */
 
-  --animate-rise-in: riseIn 0.3s ease both;
+  /* `backwards`, not `both`: the end keyframe interpolates to translateY(0),
+     which is a transform, not `none`. Held there by a forwards fill it makes
+     every element using this the containing block for its fixed descendants,
+     for as long as the page is open. */
+  --animate-rise-in: riseIn 0.3s ease backwards;
   --animate-pulse-dot: pulseDot 2s infinite;
 
   @keyframes riseIn {

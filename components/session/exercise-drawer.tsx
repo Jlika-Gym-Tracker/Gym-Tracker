@@ -6,6 +6,7 @@ import type { SessionExercise } from "@/lib/training/queries";
 import type { UnitSystem } from "@/lib/database.types";
 import { formatWeight } from "@/lib/units";
 import { estimateOneRepMax } from "@/lib/training/e1rm";
+import { Portal } from "@/components/kit/portal";
 
 export type DrawerData = {
   exercise: SessionExercise["exercise"];
@@ -63,16 +64,19 @@ export function ExerciseDrawer({
     .join(" · ");
 
   return (
+    <Portal>
     <div
       role="dialog"
       aria-modal="true"
       aria-label={exercise.name}
       onClick={onClose}
-      className="fixed inset-0 z-40 flex justify-end bg-[#04050699]"
+      className="fixed inset-0 z-50 flex justify-end bg-[#04050699]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="h-full w-full max-w-[520px] animate-rise-in overflow-y-auto border-l border-line bg-sidebar-bg"
+        // overscroll-contain: reaching the end of the steps must not start
+        // scrolling the session underneath.
+        className="h-full w-full max-w-[520px] animate-rise-in overflow-y-auto overscroll-contain border-l border-line bg-sidebar-bg pb-[env(safe-area-inset-bottom)]"
       >
         <div className="relative aspect-[16/10] bg-surface-2">
           {exercise.image_start_url ? (
@@ -91,13 +95,13 @@ export function ExerciseDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-3.5 right-3.5 flex size-8 items-center justify-center rounded-[9px] border border-stroke bg-[#0a0c0dcc] text-fg-muted hover:text-fg"
+            className="absolute top-3 right-3 flex size-11 items-center justify-center rounded-[11px] border border-stroke bg-[#0a0c0dcc] text-fg-muted hover:text-fg lg:top-3.5 lg:right-3.5 lg:size-8 lg:rounded-[9px]"
           >
             <X className="size-4" strokeWidth={2} />
           </button>
         </div>
 
-        <div className="px-[26px] pt-6 pb-10">
+        <div className="px-5 pt-6 pb-10 sm:px-[26px]">
           <div className="font-mono text-[10.5px] font-bold tracking-[0.12em] text-accent uppercase">
             How to do it
           </div>
@@ -180,6 +184,7 @@ export function ExerciseDrawer({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
 
