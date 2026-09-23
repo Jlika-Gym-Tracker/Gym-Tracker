@@ -7,6 +7,7 @@ import { currentWeekStart } from "@/lib/dates";
 import { getWeek } from "@/lib/program/queries";
 import { StartSessionButton } from "@/components/session/start-session-button";
 import { Card, Eyebrow } from "@/components/kit/card";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 /** No id in the URL: resume what is open, or offer today's planned day. */
 export default async function SessionIndexPage() {
@@ -39,8 +40,9 @@ export default async function SessionIndexPage() {
             </p>
             <Link
               href="/program"
-              className="mt-6 inline-block rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
+              className="inline-flex items-center gap-1.5 mt-6 inline-block rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
             >
+              <NavSpinner />
               Open program builder
             </Link>
           </>

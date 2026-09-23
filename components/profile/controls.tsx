@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** 40×22 toggle, lime when on — the design's switch. */
@@ -27,6 +28,7 @@ export function Toggle({
         role="switch"
         aria-checked={checked}
         aria-label={label}
+        aria-busy={pending || undefined}
         disabled={disabled || pending}
         onClick={() => startTransition(() => void onChange(!checked))}
         className={cn(
@@ -34,12 +36,23 @@ export function Toggle({
           checked ? "border-accent bg-accent" : "border-stroke bg-surface-2",
         )}
       >
-        <span
-          className={cn(
-            "size-4 rounded-full transition-transform",
-            checked ? "translate-x-[18px] bg-[#0a0c0d]" : "translate-x-0 bg-[#3a4247]",
-          )}
-        />
+        {pending ? (
+          <Loader2
+            aria-label="Saving"
+            className={cn(
+              "mx-auto size-3.5 animate-spin",
+              checked ? "text-[#0a0c0d]" : "text-fg-muted",
+            )}
+            strokeWidth={2.5}
+          />
+        ) : (
+          <span
+            className={cn(
+              "size-4 rounded-full transition-transform",
+              checked ? "translate-x-[18px] bg-[#0a0c0d]" : "translate-x-0 bg-[#3a4247]",
+            )}
+          />
+        )}
       </button>
       <span className="min-w-0">
         <span className="block text-[13px] font-semibold text-fg-2">{label}</span>

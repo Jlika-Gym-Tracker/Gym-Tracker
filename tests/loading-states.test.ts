@@ -61,3 +61,42 @@ describe("submit buttons report their progress", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * Buttons outside a form get no useFormStatus, so nothing disables them while
+ * their write is in flight and a second tap sends a second write. They must
+ * either carry their own guard or go through AsyncButton, which owns one.
+ */
+describe("action buttons outside forms guard themselves", () => {
+  it("every button that runs an action also disables", () => {
+    const offenders: string[] = [];
+    for (const file of files("components", /\.tsx$/)) {
+      const src = fs.readFileSync(file, "utf8");
+      for (const match of src.matchAll(/<button\b/g)) {
+        // Walk to the tag's closing ">", ignoring braces and strings.
+        let i = match.index! + 7;
+        let depth = 0;
+        let quote: string | null = null;
+        while (i < src.length) {
+          const c = src[i]!;
+          if (quote) {
+            if (c === quote) quote = null;
+          } else if (`"'\``.includes(c)) quote = c;
+          else if (c === "{") depth++;
+          else if (c === "}") depth--;
+          else if (c === ">" && depth === 0) break;
+          i++;
+        }
+        const tag = src.slice(match.index!, i);
+        const onClick = /onClick=\{([\s\S]*?)\}\s*(?=\n\s*[a-zA-Z-]+=|\n\s*>|$)/.exec(tag);
+        const handler = onClick?.[1] ?? "";
+        const runsAction = /\brun\(|startTransition\(/.test(handler);
+        if (runsAction && !/\bdisabled[=}]/.test(tag)) {
+          offenders.push(`${file}:${src.slice(0, match.index!).split("\n").length}`);
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+});

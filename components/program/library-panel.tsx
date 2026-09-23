@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
 import { addExerciseToDay } from "@/app/actions/program";
 import type { LibraryExercise } from "@/lib/program/match";
 import { findCandidates } from "@/lib/program/match";
@@ -48,6 +48,8 @@ export function LibraryPanel({
   const [query, setQuery] = useState("");
   const { pending, run } = useAction();
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  // Which row is being written, so the spinner lands on the one pressed.
+  const [addingId, setAddingId] = useState<string | null>(null);
 
   const results = useMemo(() => {
     const group = FILTERS.find((f) => f.key === filter);
@@ -70,8 +72,13 @@ export function LibraryPanel({
     fd.set("repMin", "8");
     fd.set("repMax", "12");
     setJustAdded(exerciseId);
+    setAddingId(exerciseId);
     run(async () => {
-      await addExerciseToDay({}, fd);
+      try {
+        await addExerciseToDay({}, fd);
+      } finally {
+        setAddingId(null);
+      }
       setTimeout(() => setJustAdded(null), 900);
     });
   }
@@ -124,6 +131,7 @@ export function LibraryPanel({
               key={exercise.id}
               type="button"
               disabled={!activeDayId || pending}
+              aria-busy={addingId === exercise.id || undefined}
               onClick={() => add(exercise.id)}
               title={activeDayId ? `Add to ${activeDayName}` : "Pick a day first"}
               className={cn(
@@ -149,13 +157,17 @@ export function LibraryPanel({
                   {EQUIPMENT_LABEL[exercise.equipment] ?? exercise.equipment}
                 </span>
               </span>
-              <Plus
-                className={cn(
-                  "ml-auto size-4 flex-none",
-                  justAdded === exercise.id ? "text-accent" : "text-[#3a4247]",
-                )}
-                strokeWidth={2}
-              />
+              {addingId === exercise.id ? (
+                <Loader2 className="ml-auto size-4 flex-none animate-spin text-accent" strokeWidth={2} />
+              ) : (
+                <Plus
+                  className={cn(
+                    "ml-auto size-4 flex-none",
+                    justAdded === exercise.id ? "text-accent" : "text-[#3a4247]",
+                  )}
+                  strokeWidth={2}
+                />
+              )}
             </button>
           ))
         )}

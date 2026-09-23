@@ -71,7 +71,7 @@ export function Sidebar({
                 >
                   {item.label}
                 </span>
-                <NavSpinner className="ml-auto" />
+                <NavSpinner className="ml-auto text-accent" />
                 {item.meta ? (
                   <span className="ml-auto font-mono text-[10px] font-medium text-fg-dim">
                     {item.meta}

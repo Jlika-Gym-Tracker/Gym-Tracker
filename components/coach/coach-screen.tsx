@@ -24,8 +24,7 @@ import { ExerciseThumb } from "@/components/program/exercise-thumb";
 import { Message } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
 import { ActionButton } from "@/components/kit/action-button";
-import { Saving } from "@/components/kit/skeleton";
-import { useAction } from "@/lib/use-action";
+import { AsyncButton } from "@/components/kit/async-button";
 
 export function CoachScreen({
   roster,
@@ -394,7 +393,6 @@ function CoachDayCard({
   day: CoachProgramDetail["days"][number];
   library: LibraryExercise[];
 }) {
-  const { pending: busy, run } = useAction();
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -409,8 +407,7 @@ function CoachDayCard({
           {DAY_NAMES[day.day_index]?.toUpperCase()}
         </span>
         <span className="text-[13.5px] font-bold">{day.name}</span>
-        <Saving busy={busy} className="ml-auto" />
-        <span className="font-mono text-[10px] text-fg-dim">
+        <span className="ml-auto font-mono text-[10px] text-fg-dim">
           {day.exercises.length} EX
         </span>
       </header>
@@ -430,15 +427,14 @@ function CoachDayCard({
               {item.target_sets} × {item.rep_min}
               {item.rep_max && item.rep_max !== item.rep_min ? `-${item.rep_max}` : ""}
             </span>
-            <button
-              type="button"
+            <AsyncButton
               aria-label={`Remove ${item.exercise.name}`}
-              disabled={busy}
-              onClick={() => run(() => removeCoachProgramExercise(item.id))}
-              className="rounded p-0.5 text-fg-faint opacity-0 group-hover:opacity-100 hover:text-danger"
+              action={() => removeCoachProgramExercise(item.id)}
+              spinner="replace"
+              className="rounded p-0.5 text-fg-faint opacity-0 group-hover:opacity-100 hover:text-danger pointer-coarse:opacity-100"
             >
               <X className="size-3" strokeWidth={2} />
-            </button>
+            </AsyncButton>
           </div>
         ))}
 
@@ -454,17 +450,13 @@ function CoachDayCard({
             />
             <div className="mt-1.5 flex flex-col gap-1">
               {results.map((exercise) => (
-                <button
+                <AsyncButton
                   key={exercise.id}
-                  type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    run(async () => {
-                      await addCoachProgramExercise(day.id, exercise.id);
-                      setQuery("");
-                      setAdding(false);
-                    })
-                  }
+                  action={async () => {
+                    await addCoachProgramExercise(day.id, exercise.id);
+                    setQuery("");
+                    setAdding(false);
+                  }}
                   className="flex items-center gap-2 rounded-lg border border-[#171b1d] p-1.5 text-left hover:border-line-hi"
                 >
                   <ExerciseThumb
@@ -473,7 +465,7 @@ function CoachDayCard({
                     size={22}
                   />
                   <span className="truncate text-[12px]">{exercise.name}</span>
-                </button>
+                </AsyncButton>
               ))}
             </div>
           </div>

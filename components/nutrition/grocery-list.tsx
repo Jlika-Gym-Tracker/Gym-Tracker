@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useState } from "react";
-import { Check, ClipboardCheck, Copy } from "lucide-react";
+import { Check, ClipboardCheck, Copy, Loader2 } from "lucide-react";
 import { toggleGroceryItem } from "@/app/actions/nutrition";
 import { CATEGORY_LABELS, formatQuantity } from "@/lib/nutrition/plan";
 import type { WeekPlan } from "@/lib/nutrition/queries";
@@ -9,7 +9,6 @@ import { Card } from "@/components/kit/card";
 import { weekRangeLabel } from "@/lib/dates";
 import { FoodThumb } from "./food-thumb";
 import { cn } from "@/lib/utils";
-import { Saving } from "@/components/kit/skeleton";
 import { useAction } from "@/lib/use-action";
 
 export function GroceryList({
@@ -22,6 +21,8 @@ export function GroceryList({
   mealCount: number;
 }) {
   const { pending: saving, run } = useAction();
+  // Which item is being written, so only that row spins.
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [items, setChecked] = useOptimistic(
     groceries,
@@ -66,7 +67,6 @@ export function GroceryList({
     <Card className="rounded-[18px]">
       <div className="mb-1.5 flex items-center gap-2">
         <h2 className="text-[15px] font-bold">Grocery list</h2>
-        <Saving busy={saving} />
         <span className="ml-auto font-mono text-[10.5px] text-fg-dim uppercase">
           {weekRangeLabel(weekStart)}
         </span>
@@ -91,12 +91,18 @@ export function GroceryList({
                     key={item.id}
                     type="button"
                     disabled={saving}
-                    onClick={() =>
+                    aria-busy={busyId === item.id || undefined}
+                    onClick={() => {
+                      setBusyId(item.id);
                       run(async () => {
                         setChecked({ id: item.id, checked: !item.checked });
-                        await toggleGroceryItem(item.id, !item.checked);
-                      })
-                    }
+                        try {
+                          await toggleGroceryItem(item.id, !item.checked);
+                        } finally {
+                          setBusyId(null);
+                        }
+                      });
+                    }}
                     className="flex items-center gap-2.5 rounded-[10px] border border-[#171b1d] bg-surface-2 px-2.5 py-2.5 text-left transition-colors hover:border-line-hi"
                   >
                     <span
@@ -105,7 +111,15 @@ export function GroceryList({
                         item.checked ? "border-accent bg-accent" : "border-stroke",
                       )}
                     >
-                      {item.checked ? (
+                      {busyId === item.id ? (
+                        <Loader2
+                          className={cn(
+                            "size-3 animate-spin",
+                            item.checked ? "text-[#0a0c0d]" : "text-fg-muted",
+                          )}
+                          strokeWidth={2.5}
+                        />
+                      ) : item.checked ? (
                         <Check className="size-3 text-[#0a0c0d]" strokeWidth={3} />
                       ) : null}
                     </span>

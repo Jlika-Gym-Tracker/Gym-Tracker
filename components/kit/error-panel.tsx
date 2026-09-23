@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Logo } from "@/components/shell/logo";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 /** PostgREST's code for "that table is not in the schema cache". */
 const MISSING_TABLE = "PGRST205";
@@ -95,8 +96,9 @@ export function ErrorPanel({
         </button>
         <Link
           href="/"
-          className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
+          className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
         >
+          <NavSpinner />
           Back to Today
         </Link>
       </div>

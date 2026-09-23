@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 /**
  * The screen-level empty state: eyebrow, display headline, one line of copy and
@@ -61,15 +62,17 @@ export function EmptyState({
           <div className="mt-auto flex items-center gap-2.5 pt-6">
             <Link
               href={action.href}
-              className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
+              className="inline-flex items-center gap-1.5 rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
             >
+              <NavSpinner />
               {action.label}
             </Link>
             {secondaryAction ? (
               <Link
                 href={secondaryAction.href}
-                className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
+                className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
               >
+                <NavSpinner />
                 {secondaryAction.label}
               </Link>
             ) : null}

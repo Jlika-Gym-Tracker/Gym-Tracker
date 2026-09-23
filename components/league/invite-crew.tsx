@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { createInvite } from "@/app/actions/profile";
 import type { CrewMember } from "@/lib/database.types";
 import { useAction } from "@/lib/use-action";
@@ -66,9 +67,13 @@ export function InviteCrew({
       <button
         type="button"
         disabled={pending}
+        aria-busy={pending || undefined}
         onClick={() => run(async () => setState(await createInvite()))}
-        className="w-full rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-1.5 rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi disabled:opacity-60"
       >
+        {pending ? (
+          <Loader2 className="size-3.5 flex-none animate-spin" strokeWidth={2.5} />
+        ) : null}
         {pending ? "Creating…" : "Create an invite code"}
       </button>
 

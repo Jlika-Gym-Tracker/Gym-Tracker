@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { createSeason, type ActionState } from "@/app/actions/league";
 import { Message } from "@/components/profile/controls";
 import { ActionButton } from "@/components/kit/action-button";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 export function NewSeasonPrompt() {
   const [state, create] = useActionState(createSeason, {} as ActionState);
@@ -52,8 +53,9 @@ export function NewSeasonPrompt() {
           </ActionButton>
           <Link
             href="/profile"
-            className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 hover:bg-hover"
+            className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 hover:bg-hover"
           >
+            <NavSpinner />
             Invite your crew first
           </Link>
         </form>

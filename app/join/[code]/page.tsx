@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Logo } from "@/components/shell/logo";
 import { JoinCoachCard } from "@/components/coach/join-coach-card";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 export const metadata: Metadata = {
   title: "Join your coach · JLIKA Gym",
@@ -52,14 +53,16 @@ export default async function JoinPage({
         <div className="mt-7 flex flex-wrap gap-3">
           <Link
             href={`/signup?code=${encodeURIComponent(code)}`}
-            className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
+            className="inline-flex items-center gap-1.5 rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
+            <NavSpinner />
             Create my account
           </Link>
           <Link
             href={`/login?next=${encodeURIComponent(`/join/${code}`)}`}
-            className="rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
+            className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
           >
+            <NavSpinner />
             I already have one
           </Link>
         </div>

@@ -8,6 +8,7 @@ import { Card } from "@/components/kit/card";
 import { AvatarBubble } from "@/components/shell/avatar-bubble";
 import { Field, Message, Toggle } from "@/components/profile/controls";
 import { ActionButton } from "@/components/kit/action-button";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 const SCOPES = [
   {
@@ -180,8 +181,9 @@ function BecomeCoach({
       </div>
       <Link
         href="/coach"
-        className="rounded-[11px] bg-accent px-[18px] py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
+        className="inline-flex items-center gap-1.5 rounded-[11px] bg-accent px-[18px] py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
       >
+        <NavSpinner />
         {enabled ? "Open coach dashboard" : "Turn on coaching"}
       </Link>
     </Card>

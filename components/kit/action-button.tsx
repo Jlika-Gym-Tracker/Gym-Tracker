@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,9 @@ import { cn } from "@/lib/utils";
  * "Finish session" or "Create a code" means doing the thing twice.
  *
  * Only the button that was actually pressed spins. Its siblings disable
- * instead, so a form with Accept and Decline does not appear to do both.
+ * instead, so a form with Accept and Decline does not appear to do both. When
+ * a form has just one submit button, it spins however the form was submitted —
+ * including Enter from a text field, where no button is pressed at all.
  */
 export function ActionButton({
   children,
@@ -29,16 +31,31 @@ export function ActionButton({
 }) {
   const { pending } = useFormStatus();
   const [pressed, setPressed] = useState(false);
+  const [sole, setSole] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!pending) setPressed(false);
   }, [pending]);
 
-  const busy = pending && pressed;
+  // Read once from the DOM: is this the form's only way to submit? If so it
+  // spins however the form was submitted, Enter from a text field included.
+  useEffect(() => {
+    const form = ref.current?.form;
+    setSole(
+      !!form &&
+        form.querySelectorAll(
+          "button:not([type=button]):not([type=reset]), input[type=submit]",
+        ).length === 1,
+    );
+  }, []);
+
+  const busy = pending && (pressed || sole);
 
   return (
     <button
       type="submit"
+      ref={ref}
       {...props}
       onClick={(event) => {
         setPressed(true);

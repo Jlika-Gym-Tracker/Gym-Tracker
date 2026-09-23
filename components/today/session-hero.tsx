@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { TodayOverview } from "@/lib/dashboard/queries";
 import { StartSessionButton } from "@/components/session/start-session-button";
 import { HeroBackdrop } from "@/components/kit/hero-backdrop";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 const MUSCLE_LABEL: Record<string, string> = {
   chest: "CHEST", lats: "LATS", middle_back: "BACK", lower_back: "LOWER BACK",
@@ -66,8 +67,9 @@ export function SessionHero({ overview }: { overview: TodayOverview }) {
           {activeSessionId ? (
             <Link
               href={`/session/${activeSessionId}`}
-              className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
+              className="inline-flex items-center gap-1.5 rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
             >
+              <NavSpinner />
               Resume session
             </Link>
           ) : today ? (
@@ -82,8 +84,9 @@ export function SessionHero({ overview }: { overview: TodayOverview }) {
           ) : null}
           <Link
             href="/program"
-            className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
+            className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
           >
+            <NavSpinner />
             View week
           </Link>
         </div>

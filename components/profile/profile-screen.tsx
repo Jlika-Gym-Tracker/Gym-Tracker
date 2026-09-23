@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import {
@@ -32,8 +32,8 @@ import { MyCoaches } from "@/components/coach/my-coaches";
 import type { MyCoach } from "@/lib/coach/queries";
 import { Field, Message, Segmented, Slider, Toggle } from "./controls";
 import { ActionButton } from "@/components/kit/action-button";
-import { Saving } from "@/components/kit/skeleton";
 import { useAction } from "@/lib/use-action";
+import { Loader2 } from "lucide-react";
 
 const TABS = ["Account", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
 type Tab = (typeof TABS)[number];
@@ -385,33 +385,31 @@ function FoodTab({
   excludes: { kind: string; value: string }[];
   settings: UserSettings;
 }) {
-  const [saving, startTransition] = useTransition();
   const [local, setLocal] = useState(excludes);
 
   const has = (kind: string, value: string) =>
     local.some((e) => e.kind === kind && e.value === value);
 
-  function toggle(kind: "allergen" | "preference", value: string) {
+  async function toggle(kind: "allergen" | "preference", value: string) {
     const on = !has(kind, value);
     setLocal((current) =>
       on
         ? [...current, { kind, value }]
         : current.filter((e) => !(e.kind === kind && e.value === value)),
     );
-    startTransition(() => void toggleExclude(kind, value, on));
+    await toggleExclude(kind, value, on);
   }
 
   return (
     <Card className="max-w-[720px]">
       <h2 className="text-[15px] font-bold">Allergies</h2>
-          <Saving busy={saving} className="ml-3" />
       <p className="mt-1 mb-3 text-[12.5px] leading-[1.5] text-fg-soft">
         Hard filters. A recipe containing one of these never appears in your plan,
         a swap or a search.
       </p>
       <div className="flex flex-wrap gap-2">
         {COMMON_ALLERGENS.map((name) => (
-          <Chip key={name} on={has("allergen", name)} onClick={() => toggle("allergen", name)}>
+          <Chip key={name} on={has("allergen", name)} action={() => toggle("allergen", name)}>
             {name}
           </Chip>
         ))}
@@ -423,7 +421,7 @@ function FoodTab({
       </p>
       <div className="flex flex-wrap gap-2">
         {COMMON_PREFERENCES.map((name) => (
-          <Chip key={name} on={has("preference", name)} onClick={() => toggle("preference", name)}>
+          <Chip key={name} on={has("preference", name)} action={() => toggle("preference", name)}>
             {name}
           </Chip>
         ))}
@@ -438,25 +436,30 @@ function FoodTab({
 
 function Chip({
   on,
-  onClick,
+  action,
   children,
 }: {
   on: boolean;
-  onClick: () => void;
+  action: () => Promise<void> | void;
   children: React.ReactNode;
 }) {
+  // Its own progress: one chip saving must not disable the rest.
+  const { pending, run } = useAction();
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => run(action)}
+      disabled={pending}
+      aria-busy={pending || undefined}
       aria-pressed={on}
       className={cn(
-        "rounded-full border px-4 py-2.5 text-[13px] font-semibold transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-[13px] font-semibold transition-colors disabled:opacity-60",
         on
           ? "border-line-sel bg-accent-soft text-accent"
           : "border-line bg-surface-2 text-fg-soft hover:border-stroke",
       )}
     >
+      {pending ? <Loader2 className="size-3 animate-spin" strokeWidth={2.5} /> : null}
       {children}
     </button>
   );
@@ -558,9 +561,13 @@ function CrewTab({
           <button
             type="button"
             disabled={minting}
+            aria-busy={minting || undefined}
             onClick={() => mint(async () => setInviteState(await createInvite()))}
-            className="w-full rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
+            className="flex w-full items-center justify-center gap-1.5 rounded-[11px] bg-accent px-4 py-3 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi disabled:opacity-60"
           >
+            {minting ? (
+              <Loader2 className="size-3.5 flex-none animate-spin" strokeWidth={2.5} />
+            ) : null}
             Create an invite code
           </button>
           <div className="mt-3">

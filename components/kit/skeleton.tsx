@@ -1,4 +1,3 @@
-import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** A shimmering block. Sized by the caller to match the real content's shape. */
@@ -43,28 +42,5 @@ export function ScreenSkeleton({
       <span className="sr-only">Loading {label}…</span>
       {children}
     </div>
-  );
-}
-
-/**
- * A quiet "still writing" marker for optimistic updates.
- *
- * Toggling an allergen or ticking a grocery item changes the screen at once and
- * saves in the background. Without this the save is invisible, so leaving the
- * page early looks safe when it is not.
- */
-export function Saving({ busy, className }: { busy: boolean; className?: string }) {
-  if (!busy) return null;
-  return (
-    <span
-      role="status"
-      className={cn(
-        "inline-flex items-center gap-1.5 font-mono text-[10px] font-medium tracking-[0.1em] text-fg-dim uppercase",
-        className,
-      )}
-    >
-      <Loader2 className="size-3 animate-spin" aria-hidden />
-      Saving
-    </span>
   );
 }

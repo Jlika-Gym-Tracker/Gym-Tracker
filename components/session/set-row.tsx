@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import type { SetLog } from "@/lib/database.types";
 import type { UnitSystem } from "@/lib/database.types";
 import { displayToKg, kgToDisplay, trimNumber } from "@/lib/units";
 import { cn } from "@/lib/utils";
+import { useAction } from "@/lib/use-action";
 
 export type SetDraft = {
   weight: string;
@@ -56,10 +57,13 @@ export function SetRow({
   draft: SetDraft;
   isPr: boolean;
   onChange: (next: SetDraft) => void;
-  onCommit: () => void;
-  onToggle: () => void;
-  onRemove: () => void;
+  onCommit: () => Promise<void> | void;
+  onToggle: () => Promise<void> | void;
+  onRemove: () => Promise<void> | void;
 }) {
+  // Per row, so saving one set never freezes the others.
+  const tick = useAction();
+  const drop = useAction();
   const [local, setLocal] = useState(draft);
   useEffect(() => setLocal(draft), [draft]);
 
@@ -122,7 +126,9 @@ export function SetRow({
 
       <button
         type="button"
-        onClick={onToggle}
+        onClick={() => tick.run(() => onToggle())}
+        disabled={tick.pending}
+        aria-busy={tick.pending || undefined}
         aria-pressed={done}
         aria-label={`Mark set ${index + 1} ${done ? "incomplete" : "complete"}`}
         className={cn(
@@ -132,7 +138,12 @@ export function SetRow({
           done ? "border-accent bg-accent" : "border-stroke bg-surface-2",
         )}
       >
-        {done ? (
+        {tick.pending ? (
+          <Loader2
+            className={cn("size-4 animate-spin", done ? "text-[#0a0c0d]" : "text-fg-muted")}
+            strokeWidth={2.5}
+          />
+        ) : done ? (
           <Check className="size-4 text-[#0a0c0d]" strokeWidth={3} />
         ) : (
           <span className="size-[9px] rounded-[2px] bg-[#2f3639]" />
@@ -141,11 +152,17 @@ export function SetRow({
 
       <button
         type="button"
-        onClick={onRemove}
+        onClick={() => drop.run(() => onRemove())}
+        disabled={drop.pending}
+        aria-busy={drop.pending || undefined}
         aria-label={`Remove set ${index + 1}`}
         className="hidden rounded p-1 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger focus-visible:opacity-100 pointer-coarse:opacity-100 sm:block"
       >
-        <X className="size-3.5" strokeWidth={2} />
+        {drop.pending ? (
+          <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
+        ) : (
+          <X className="size-3.5" strokeWidth={2} />
+        )}
       </button>
     </div>
   );

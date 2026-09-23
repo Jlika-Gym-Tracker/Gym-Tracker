@@ -10,6 +10,7 @@ import { toDateString } from "@/lib/dates";
 import { weightUnit } from "@/lib/units";
 import { Card } from "@/components/kit/card";
 import { ActionButton } from "@/components/kit/action-button";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 const LABELS: Record<MissingTargetInput, string> = {
   sex: "sex",
@@ -80,8 +81,9 @@ export function TargetsMissing({
           </ActionButton>
           <Link
             href="/progress"
-            className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
+            className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 transition-colors hover:bg-hover"
           >
+            <NavSpinner />
             Log measurements too
           </Link>
         </form>
@@ -89,15 +91,17 @@ export function TargetsMissing({
         <div className="mt-6 flex flex-wrap gap-2.5">
           <Link
             href="/profile"
-            className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
+            className="inline-flex items-center gap-1.5 rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
+            <NavSpinner />
             Fill in your profile
           </Link>
           {missing.includes("weight") ? (
             <Link
               href="/progress"
-              className="rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 hover:bg-hover"
+              className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-5 py-[13px] text-sm font-semibold text-fg-2 hover:bg-hover"
             >
+              <NavSpinner />
               Log a weigh-in
             </Link>
           ) : null}

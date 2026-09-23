@@ -2,7 +2,7 @@
 
 import { useActionState, useOptimistic, useState, } from "react";
 import { format, parseISO } from "date-fns";
-import { Check, ChevronDown, RefreshCw, Shuffle } from "lucide-react";
+import { Check, ChevronDown, Loader2, RefreshCw, Shuffle } from "lucide-react";
 import {
   generateWeekPlan,
   swapMeal,
@@ -48,6 +48,8 @@ export function NutritionScreen({
 }) {
   const [genState, generate] = useActionState(generateWeekPlan, {} as ActionState);
   const { pending: busy, run } = useAction();
+  // The entry currently being written, so only its control spins.
+  const [busyEntry, setBusyEntry] = useState<string | null>(null);
   const [swapping, setSwapping] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   // Servings echo locally while the write lands, so portions and macros move
@@ -238,12 +240,17 @@ export function NutritionScreen({
 
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
+                          setBusyEntry(entry.id);
                           run(async () => {
                             markEaten({ id: entry.id, eaten: !entry.eaten });
-                            await toggleMealEaten(entry.id, !entry.eaten);
-                          })
-                        }
+                            try {
+                              await toggleMealEaten(entry.id, !entry.eaten);
+                            } finally {
+                              setBusyEntry(null);
+                            }
+                          });
+                        }}
                         disabled={busy}
                         aria-pressed={entry.eaten}
                         aria-label={`Mark ${entry.recipe?.name ?? "meal"} as eaten`}
@@ -252,7 +259,15 @@ export function NutritionScreen({
                           entry.eaten ? "border-accent bg-accent" : "border-stroke",
                         )}
                       >
-                        {entry.eaten ? (
+                        {busyEntry === entry.id ? (
+                          <Loader2
+                            className={cn(
+                              "size-3.5 animate-spin",
+                              entry.eaten ? "text-[#0a0c0d]" : "text-fg-muted",
+                            )}
+                            strokeWidth={2.5}
+                          />
+                        ) : entry.eaten ? (
                           <Check className="size-3.5 text-[#0a0c0d]" strokeWidth={3} />
                         ) : null}
                       </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronUp, GripVertical, Plus, X } from "lucide-react";
+import { ChevronUp, GripVertical, Loader2, Plus, X } from "lucide-react";
 import { removeProgramExercise, reorderDayExercises } from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
 import { DAY_NAMES } from "@/lib/dates";
@@ -139,7 +139,11 @@ export function DayCard({
               aria-label={`Move ${item.exercise.name} up`}
               className="hit hidden flex-none rounded p-0.5 text-fg-dim disabled:opacity-25 pointer-coarse:block"
             >
-              <ChevronUp className="size-4" strokeWidth={2} />
+              {pending ? (
+                <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+              ) : (
+                <ChevronUp className="size-4" strokeWidth={2} />
+              )}
             </button>
             <ExerciseThumb
               src={item.exercise.image_start_url}

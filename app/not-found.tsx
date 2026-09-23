@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/shell/logo";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 export default function NotFound() {
   return (
@@ -14,8 +15,9 @@ export default function NotFound() {
         </p>
         <Link
           href="/"
-          className="mt-7 block rounded-[11px] bg-accent px-4 py-[15px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
+          className="inline-flex items-center gap-1.5 mt-7 block rounded-[11px] bg-accent px-4 py-[15px] text-sm font-bold text-[#0a0c0d] transition-colors hover:bg-accent-hi"
         >
+          <NavSpinner />
           Back to Today
         </Link>
       </div>

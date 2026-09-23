@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import {
   addSet,
@@ -40,10 +40,8 @@ export function SessionScreen({
   shortcutsEnabled?: boolean;
 }) {
   const unit = weightUnit(system);
-  const [pending, startTransition] = useTransition();
-  // Adding and removing sets changes the list, so a repeated tap must not
-  // repeat the write. Ticking a set is left alone: it is optimistic, per-set,
-  // and toggling twice is a real intent.
+  // Adding a set changes the list, so a repeated tap must not repeat the
+  // write. Each set row guards its own tick and remove.
   const listEdit = useAction();
   const [drawer, setDrawer] = useState<DrawerData | null>(null);
   const [focusId, setFocusId] = useState<string | null>(
@@ -70,18 +68,18 @@ export function SessionScreen({
     [drafts],
   );
 
+  // Awaited rather than fired into a transition, so the row that started the
+  // write is the one that shows a spinner — and only that row.
   const commit = useCallback(
-    (id: string, draft: SetDraft) => {
+    async (id: string, draft: SetDraft) => {
       setError(null);
-      startTransition(async () => {
-        const result = await saveSet({ id, ...draftToPayload(draft, system) });
-        if (result.error) setError(result.error);
-      });
+      const result = await saveSet({ id, ...draftToPayload(draft, system) });
+      if (result.error) setError(result.error);
     },
     [system],
   );
 
-  function toggle(id: string, draft: SetDraft) {
+  async function toggle(id: string, draft: SetDraft) {
     const next = { ...draft, isComplete: !draft.isComplete };
     if (next.isComplete && !next.reps.trim()) {
       setError("Add reps before ticking the set off.");
@@ -89,7 +87,7 @@ export function SessionScreen({
     }
     setDrafts((prev) => ({ ...prev, [id]: next }));
     if (next.isComplete) rest.start();
-    commit(id, next);
+    await commit(id, next);
   }
 
   // Running totals read from the optimistic drafts so they move as you tick.
@@ -230,15 +228,14 @@ export function SessionScreen({
               unit={unit}
               system={system}
               focused={ex.exercise.id === focusId}
-              pending={pending}
               draftFor={draftFor}
               onFocus={() => setFocusId(ex.exercise.id)}
               onChange={(id, d) => setDrafts((prev) => ({ ...prev, [id]: d }))}
               onCommit={commit}
               onToggle={toggle}
-              onRemove={(id) => listEdit.run(() => removeSet(id))}
+              onRemove={async (id) => void (await removeSet(id))}
               onAddSet={() => listEdit.run(() => addSet(session.id, ex.exercise.id))}
-              listBusy={listEdit.pending}
+              addBusy={listEdit.pending}
               bestEver={panels[ex.exercise.id]?.bestEver ?? null}
               onOpenDrawer={() =>
                 setDrawer({
@@ -371,7 +368,6 @@ function ExerciseCard({
   unit,
   system,
   focused,
-  pending,
   bestEver,
   draftFor,
   onFocus,
@@ -380,23 +376,22 @@ function ExerciseCard({
   onToggle,
   onRemove,
   onAddSet,
-  listBusy,
+  addBusy,
   onOpenDrawer,
 }: {
   ex: SessionExercise;
   unit: string;
   system: UnitSystem;
   focused: boolean;
-  pending: boolean;
   bestEver: { weight_kg: number | null; reps: number | null } | null;
   draftFor: (id: string, fallback: SetDraft) => SetDraft;
   onFocus: () => void;
   onChange: (id: string, draft: SetDraft) => void;
-  onCommit: (id: string, draft: SetDraft) => void;
-  onToggle: (id: string, draft: SetDraft) => void;
-  onRemove: (id: string) => void;
+  onCommit: (id: string, draft: SetDraft) => Promise<void>;
+  onToggle: (id: string, draft: SetDraft) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
   onAddSet: () => void;
-  listBusy: boolean;
+  addBusy: boolean;
   onOpenDrawer: () => void;
 }) {
   const target = ex.plan
@@ -419,6 +414,7 @@ function ExerciseCard({
     })),
   );
   const lastSet = ex.sets.at(-1);
+  const removeLast = useAction();
   const isPrSet = (setId: string, complete: boolean) =>
     complete &&
     todayBest?.id === setId &&
@@ -432,7 +428,6 @@ function ExerciseCard({
       className={cn(
         "overflow-hidden rounded-[18px] border bg-surface transition-colors",
         focused ? "border-line-hi" : "border-line",
-        pending && "opacity-95",
       )}
     >
       <header
@@ -509,11 +504,11 @@ function ExerciseCard({
           <button
             type="button"
             onClick={onAddSet}
-            disabled={listBusy}
-            aria-busy={listBusy || undefined}
+            disabled={addBusy}
+            aria-busy={addBusy || undefined}
             className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-stroke py-3 text-xs font-semibold text-fg-dim transition-colors hover:border-accent hover:text-accent disabled:opacity-50 sm:py-2"
           >
-            {listBusy ? (
+            {addBusy ? (
               <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
             ) : (
               <Plus className="size-3.5" strokeWidth={2} />
@@ -527,10 +522,14 @@ function ExerciseCard({
           {lastSet && !draftFor(lastSet.id, toDraft(lastSet, system)).isComplete ? (
             <button
               type="button"
-              onClick={() => onRemove(lastSet.id)}
-              disabled={listBusy}
-              className="min-h-11 rounded-[10px] border border-stroke px-4 py-3 text-xs font-semibold text-fg-dim disabled:opacity-50 transition-colors hover:border-danger-border hover:text-danger sm:hidden"
+              onClick={() => removeLast.run(() => onRemove(lastSet.id))}
+              disabled={removeLast.pending}
+              aria-busy={removeLast.pending || undefined}
+              className="flex min-h-11 items-center gap-1.5 rounded-[10px] border border-stroke px-4 py-3 text-xs font-semibold text-fg-dim transition-colors hover:border-danger-border hover:text-danger disabled:opacity-50 sm:hidden"
             >
+              {removeLast.pending ? (
+                <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
+              ) : null}
               Remove last
             </button>
           ) : null}

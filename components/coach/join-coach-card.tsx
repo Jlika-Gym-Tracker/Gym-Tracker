@@ -6,6 +6,7 @@ import { joinCoach, type ActionState } from "@/app/actions/coach";
 import { AvatarBubble } from "@/components/shell/avatar-bubble";
 import { Message } from "@/components/profile/controls";
 import { ActionButton } from "@/components/kit/action-button";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 /**
  * The signed-in half of an invite link.
@@ -37,14 +38,16 @@ export function JoinCoachCard({
         <div className="mt-7 flex flex-wrap gap-3">
           <Link
             href="/program"
-            className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
+            className="inline-flex items-center gap-1.5 rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
+            <NavSpinner />
             See my program
           </Link>
           <Link
             href="/profile"
-            className="rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
+            className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
           >
+            <NavSpinner />
             Choose what they can see
           </Link>
         </div>
@@ -72,14 +75,16 @@ export function JoinCoachCard({
         <div className="mt-7 flex flex-wrap gap-3">
           <Link
             href="/profile"
-            className="rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
+            className="inline-flex items-center gap-1.5 rounded-[11px] bg-accent px-[22px] py-[13px] text-sm font-bold text-[#0a0c0d] hover:bg-accent-hi"
           >
+            <NavSpinner />
             {reason === "already" ? "Manage what they see" : "Enter a code by hand"}
           </Link>
           <Link
             href="/"
-            className="rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
+            className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
           >
+            <NavSpinner />
             Back to training
           </Link>
         </div>
@@ -129,8 +134,9 @@ export function JoinCoachCard({
         </ActionButton>
         <Link
           href="/"
-          className="rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
+          className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-[22px] py-[13px] text-sm font-semibold text-fg-muted hover:bg-hover"
         >
+          <NavSpinner />
           Not now
         </Link>
       </form>

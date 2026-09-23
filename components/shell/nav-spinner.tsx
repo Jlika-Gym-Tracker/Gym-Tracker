@@ -19,7 +19,7 @@ export function NavSpinner({ className }: { className?: string }) {
     <Loader2
       aria-label="Loading"
       role="status"
-      className={cn("size-3.5 animate-spin text-accent", className)}
+      className={cn("size-3.5 flex-none animate-spin text-current", className)}
     />
   );
 }
