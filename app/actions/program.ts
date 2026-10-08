@@ -372,6 +372,9 @@ const updateSchema = z.object({
   repMax: z.coerce.number().int().min(1).max(100).nullable(),
   perSide: z.boolean(),
   note: z.string().trim().max(200).nullable(),
+  // The planned load. Null means "you decide on the day", which is how most
+  // accessory work is written.
+  targetWeightKg: z.coerce.number().min(0).max(1000).nullable(),
 });
 
 export async function updateProgramExercise(
@@ -387,6 +390,7 @@ export async function updateProgramExercise(
       repMax: formData.get("repMax") || null,
       perSide: formData.get("perSide") === "on",
       note: (formData.get("note") as string)?.trim() || null,
+      targetWeightKg: formData.get("targetWeightKg") || null,
     };
     const input = updateSchema.parse(raw);
 
@@ -402,6 +406,7 @@ export async function updateProgramExercise(
         rep_max: input.repMax,
         per_side: input.perSide,
         note: input.note,
+        target_weight_kg: input.targetWeightKg,
       })
       .eq("id", input.id);
     if (error) throw error;
@@ -469,6 +474,43 @@ export async function updateDay(
     if (error) throw error;
     refresh();
     return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Renames a week and, if asked, moves it to a different start date.
+ *
+ * Moving a week is just a new `week_start`: days hang off the week by position
+ * and sessions hang off the days, so nothing logged is disturbed — the same
+ * seven days simply sit on different dates. A week may begin on any weekday,
+ * which is how a Saturday→Friday split is expressed without waiting for the
+ * per-user default to be set.
+ */
+export async function updateWeek(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const weekId = uuid.parse(formData.get("weekId"));
+    const label = z.string().trim().min(1, "A week needs a name.").max(80).parse(formData.get("label"));
+    const weekStart = weekStartSchema.parse(formData.get("weekStart"));
+
+    const { error } = await supabase
+      .from("program_weeks")
+      .update({ label, week_start: weekStart })
+      .eq("id", weekId);
+
+    // unique (user_id, week_start): two weeks cannot share a start date.
+    if (error?.code === "23505") {
+      return { error: "You already have a week starting that day. Pick another date." };
+    }
+    if (error) throw error;
+
+    refresh();
+    return { notice: "Week updated." };
   } catch (error) {
     return fail(error);
   }

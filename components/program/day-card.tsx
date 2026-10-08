@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { ChevronUp, GripVertical, Loader2, Pencil, Plus, X } from "lucide-react";
-import { removeProgramExercise, reorderDayExercises, updateDay } from "@/app/actions/program";
+import {
+  removeProgramExercise,
+  reorderDayExercises,
+  updateDay,
+  updateProgramExercise,
+} from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
 import { dayLabel } from "@/lib/dates";
 import { trimNumber } from "@/lib/units";
@@ -42,6 +47,9 @@ export function DayCard({
   const { pending, run } = useAction();
   const save = useAction();
   const [editing, setEditing] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<string | null>(null);
+  const [exerciseError, setExerciseError] = useState<string | null>(null);
+  const exerciseSave = useAction();
   const [error, setError] = useState<string | null>(null);
   // Local copy so a drag reads smoothly; re-synced whenever the server data changes.
   const [order, setOrder] = useState(day.exercises);
@@ -208,8 +216,8 @@ export function DayCard({
 
       <div className="px-2.5 pt-2 pb-3">
         {order.map((item, index) => (
+          <div key={item.id}>
           <div
-            key={item.id}
             draggable
             onDragStart={() => setDragId(item.id)}
             onDragEnd={() => setDragId(null)}
@@ -251,12 +259,21 @@ export function DayCard({
             <span className="min-w-0 truncate text-[12.5px] leading-[1.3] font-semibold">
               {item.exercise.name}
             </span>
-            <span className="ml-auto flex flex-none items-baseline gap-2 font-mono text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingExercise((current) => (current === item.id ? null : item.id));
+              }}
+              aria-label={`Edit sets and reps for ${item.exercise.name}`}
+              aria-expanded={editingExercise === item.id}
+              className="hit ml-auto flex flex-none items-baseline gap-2 rounded px-1 font-mono text-[11px] font-semibold hover:text-accent"
+            >
               {loadLabel(item, "kg") ? (
                 <span className="text-accent">{loadLabel(item, "kg")}</span>
               ) : null}
               <span className="text-fg-soft">{repLabel(item)}</span>
-            </span>
+            </button>
             <form
               action={(fd) => run(() => removeProgramExercise({}, fd))}
               className="flex-none"
@@ -271,6 +288,87 @@ export function DayCard({
                 <X className="size-3.5" strokeWidth={2} />
               </ActionButton>
             </form>
+          </div>
+
+          {editingExercise === item.id ? (
+            <form
+              onClick={(e) => e.stopPropagation()}
+              action={(fd) =>
+                exerciseSave.run(async () => {
+                  const result = await updateProgramExercise({}, fd);
+                  setExerciseError(result.error ?? null);
+                  if (!result.error) setEditingExercise(null);
+                })
+              }
+              className="mx-2 mb-2 flex flex-col gap-2 rounded-[10px] border border-line bg-surface-2 p-2.5"
+            >
+              <input type="hidden" name="id" value={item.id} />
+              <div className="grid grid-cols-4 gap-2">
+                <label className="block">
+                  <span className="eyebrow mb-1 block">Sets</span>
+                  <input
+                    name="targetSets" type="number" min={1} max={20} required
+                    defaultValue={item.target_sets}
+                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
+                  />
+                </label>
+                <label className="block">
+                  <span className="eyebrow mb-1 block">Reps</span>
+                  <input
+                    name="repMin" type="number" min={1} max={100} placeholder="—"
+                    defaultValue={item.rep_min ?? ""}
+                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
+                  />
+                </label>
+                <label className="block">
+                  <span className="eyebrow mb-1 block">To</span>
+                  <input
+                    name="repMax" type="number" min={1} max={100} placeholder="—"
+                    defaultValue={item.rep_max ?? ""}
+                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
+                  />
+                </label>
+                <label className="block">
+                  <span className="eyebrow mb-1 block">kg</span>
+                  <input
+                    name="targetWeightKg" type="number" min={0} max={1000} step="0.5" placeholder="—"
+                    defaultValue={item.target_weight_kg ?? ""}
+                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
+                  />
+                </label>
+              </div>
+              <input
+                name="note" defaultValue={item.note ?? ""} maxLength={200}
+                placeholder="Note — pause 1s, last set to failure…"
+                className="w-full rounded-[8px] border border-line bg-surface px-2.5 py-2 text-[12.5px] outline-none focus:border-line-hi"
+              />
+              <label className="flex min-h-11 items-center gap-2 text-[12px] text-fg-muted">
+                <input type="checkbox" name="perSide" defaultChecked={item.per_side} className="size-4 accent-[#c9f24d]" />
+                Per side
+              </label>
+              <div className="flex items-center gap-2">
+                <ActionButton
+                  pendingLabel="Saving…"
+                  className="rounded-[8px] bg-accent px-3 py-2 text-[12px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
+                >
+                  Save
+                </ActionButton>
+                <button
+                  type="button"
+                  onClick={() => { setExerciseError(null); setEditingExercise(null); }}
+                  className="rounded-[8px] border border-stroke px-3 py-2 text-[12px] font-semibold text-fg-muted hover:bg-hover"
+                >
+                  Cancel
+                </button>
+                <span className="text-[11px] text-fg-dim">Leave kg empty to decide on the day.</span>
+              </div>
+              {exerciseError ? (
+                <p className="rounded-[8px] border border-danger-border bg-danger-soft px-2.5 py-1.5 text-[11.5px] text-danger">
+                  {exerciseError}
+                </p>
+              ) : null}
+            </form>
+          ) : null}
           </div>
         ))}
 

@@ -1,11 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ClipboardPaste, Copy, LayoutTemplate, Upload } from "lucide-react";
+import { ClipboardPaste, Copy, LayoutTemplate, Pencil, Upload } from "lucide-react";
 import {
   copyLastWeek,
   publishWeek,
   unpublishWeek,
+  updateWeek,
   type ActionState,
 } from "@/app/actions/program";
 import type { WeekDetail } from "@/lib/program/queries";
@@ -33,6 +34,8 @@ export function ProgramBuilder({
   hasEarlierWeek: boolean;
 }) {
   const [showPaste, setShowPaste] = useState(false);
+  const [editingWeek, setEditingWeek] = useState(false);
+  const [weekState, saveWeek] = useActionState(updateWeek, {} as ActionState);
   const [showTemplates, setShowTemplates] = useState(false);
   // Default on: the whole point of copying is to carry progress, not repeat a week.
   const [progressLoads, setProgressLoads] = useState(true);
@@ -62,9 +65,20 @@ export function ProgramBuilder({
             )}
           />
           <div className="relative min-w-0">
-            <h1 className="truncate text-base font-bold tracking-[-0.01em]">
-              {week.label}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-base font-bold tracking-[-0.01em]">
+                {week.label}
+              </h1>
+              <button
+                type="button"
+                aria-label="Edit this week"
+                aria-expanded={editingWeek}
+                onClick={() => setEditingWeek((v) => !v)}
+                className="hit flex-none rounded p-1 text-fg-dim transition-colors hover:text-accent"
+              >
+                <Pencil className="size-3.5" strokeWidth={2} />
+              </button>
+            </div>
             <p className="mt-1 font-mono text-[11px] text-fg-dim uppercase">
               {weekRangeLabel(week.week_start)} · {week.status}
               {week.assigned_by_coach_id ? " · from your coach" : ""}
@@ -195,6 +209,58 @@ export function ProgramBuilder({
               />
             ))}
         </div>
+
+        {editingWeek ? (
+          <form
+            action={saveWeek}
+            className="flex flex-wrap items-end gap-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3.5"
+          >
+            <input type="hidden" name="weekId" value={week.id} />
+            <label className="min-w-[200px] flex-1">
+              <span className="eyebrow mb-1.5 block">Week name</span>
+              <input
+                name="label"
+                defaultValue={week.label}
+                required
+                maxLength={80}
+                className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[13px] outline-none focus:border-line-hi"
+              />
+            </label>
+            <label className="flex-none">
+              <span className="eyebrow mb-1.5 block">Starts on</span>
+              <input
+                type="date"
+                name="weekStart"
+                defaultValue={week.week_start}
+                required
+                className="rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[13px] outline-none focus:border-line-hi"
+              />
+            </label>
+            <ActionButton
+              pendingLabel="Saving…"
+              className="rounded-[10px] bg-accent px-4 py-2.5 text-[13px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
+            >
+              Save week
+            </ActionButton>
+            <button
+              type="button"
+              onClick={() => setEditingWeek(false)}
+              className="rounded-[10px] border border-stroke px-3 py-2.5 text-[13px] font-semibold text-fg-muted hover:bg-hover"
+            >
+              Cancel
+            </button>
+            <p className="w-full text-[11.5px] leading-[1.5] text-fg-dim">
+              Any date works — a week does not have to begin on a Monday. The days
+              keep their order and everything you have logged stays with them; the
+              labels follow the new dates.
+            </p>
+            {weekState.error ? (
+              <p className="w-full rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-[12px] text-danger">
+                {weekState.error}
+              </p>
+            ) : null}
+          </form>
+        ) : null}
 
         {week.days.some((d) => d.is_rest && d.exercises.length === 0) ? (
           <div className="flex flex-wrap items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-4 py-3">
