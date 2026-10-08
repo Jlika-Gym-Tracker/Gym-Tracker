@@ -19,6 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "JLIKA Gym",
   description: "Training, body and nutrition — tracked in one private place.",
+  icons: { icon: { url: "/favicon.svg", type: "image/svg+xml" } },
 };
 
 export const viewport: Viewport = {
