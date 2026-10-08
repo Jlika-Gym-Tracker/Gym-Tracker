@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronUp, GripVertical, Loader2, Plus, X } from "lucide-react";
-import { removeProgramExercise, reorderDayExercises } from "@/app/actions/program";
+import { ChevronUp, GripVertical, Loader2, Pencil, Plus, X } from "lucide-react";
+import { removeProgramExercise, reorderDayExercises, updateDay } from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
 import { dayLabel } from "@/lib/dates";
 import { trimNumber } from "@/lib/units";
@@ -40,6 +40,9 @@ export function DayCard({
   onActivate: () => void;
 }) {
   const { pending, run } = useAction();
+  const save = useAction();
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Local copy so a drag reads smoothly; re-synced whenever the server data changes.
   const [order, setOrder] = useState(day.exercises);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -95,20 +98,113 @@ export function DayCard({
         >
           {dayLabel(weekStart, day.day_index).toUpperCase()}
         </span>
-        <h3
-          className={cn(
-            "text-[14.5px] font-bold tracking-[-0.01em]",
-            day.is_rest && "text-fg-dim",
-          )}
-        >
-          {day.name}
-        </h3>
+        <div className="min-w-0">
+          <h3
+            className={cn(
+              "truncate text-[14.5px] font-bold tracking-[-0.01em]",
+              day.is_rest && "text-fg-dim",
+            )}
+          >
+            {day.name}
+          </h3>
+          {day.focus_note ? (
+            <p className="truncate text-[11px] text-fg-dim">{day.focus_note}</p>
+          ) : null}
+        </div>
         <span className="ml-auto font-mono text-[10px] font-medium text-fg-dim">
           {day.is_rest && day.exercises.length === 0
             ? "REST"
             : `${day.exercises.length} EX · ${sets} SETS`}
         </span>
+        <button
+          type="button"
+          aria-label={`Edit ${day.name}`}
+          aria-expanded={editing}
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditing((v) => !v);
+          }}
+          className="hit -mr-1 flex-none rounded p-1 text-fg-dim transition-colors hover:text-accent"
+        >
+          <Pencil className="size-3.5" strokeWidth={2} />
+        </button>
       </header>
+
+      {editing ? (
+        <form
+          onClick={(e) => e.stopPropagation()}
+          action={(fd) =>
+            save.run(async () => {
+              const result = await updateDay({}, fd);
+              setError(result.error ?? null);
+              if (!result.error) setEditing(false);
+            })
+          }
+          className="flex flex-col gap-2 border-b border-[#1a1e20] bg-surface-2 px-3.5 py-3"
+        >
+          <input type="hidden" name="id" value={day.id} />
+          <label className="block">
+            <span className="eyebrow mb-1.5 block">Day name</span>
+            <input
+              name="name"
+              defaultValue={day.name}
+              required
+              maxLength={40}
+              placeholder="Push, Legs, Upper A…"
+              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[13px] outline-none focus:border-line-hi"
+            />
+          </label>
+          <label className="block">
+            <span className="eyebrow mb-1.5 block">Focus note — optional</span>
+            <input
+              name="focusNote"
+              defaultValue={day.focus_note ?? ""}
+              maxLength={80}
+              placeholder="Chest-led, long rests"
+              className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[13px] outline-none focus:border-line-hi"
+            />
+          </label>
+          <label className="flex min-h-11 items-center gap-2.5 text-[12.5px] text-fg-muted">
+            <input
+              type="checkbox"
+              name="isRest"
+              defaultChecked={day.is_rest}
+              className="size-4 accent-[#c9f24d]"
+            />
+            Rest day
+            {day.exercises.length > 0 ? (
+              <span className="text-fg-dim">
+                — this day still has {day.exercises.length} exercise
+                {day.exercises.length === 1 ? "" : "s"}
+              </span>
+            ) : null}
+          </label>
+
+          <div className="flex items-center gap-2">
+            <ActionButton
+              pendingLabel="Saving…"
+              className="rounded-[10px] bg-accent px-4 py-2.5 text-[12.5px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
+            >
+              Save day
+            </ActionButton>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setEditing(false);
+              }}
+              className="rounded-[10px] border border-stroke px-3 py-2.5 text-[12.5px] font-semibold text-fg-muted hover:bg-hover"
+            >
+              Cancel
+            </button>
+          </div>
+          {error ? (
+            <p className="rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-[12px] text-danger">
+              {error}
+            </p>
+          ) : null}
+        </form>
+      ) : null}
 
       <div className="px-2.5 pt-2 pb-3">
         {order.map((item, index) => (
