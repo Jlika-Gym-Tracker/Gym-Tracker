@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronUp, GripVertical, Loader2, Pencil, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, GripVertical, Loader2, Pencil, Plus, X } from "lucide-react";
 import {
   removeProgramExercise,
   reorderDayExercises,
+  swapDays,
   updateDay,
   updateProgramExercise,
 } from "@/app/actions/program";
@@ -34,11 +35,14 @@ function repLabel(item: DayWithExercises["exercises"][number]) {
 
 export function DayCard({
   day,
+  days,
   weekStart,
   active,
   onActivate,
 }: {
   day: DayWithExercises;
+  /** Every day of the week, so this one can be swapped with another. */
+  days: DayWithExercises[];
   /** The week's own start date, which decides what weekday each position is. */
   weekStart: string;
   active: boolean;
@@ -50,6 +54,12 @@ export function DayCard({
   const [editingExercise, setEditingExercise] = useState<string | null>(null);
   const [exerciseError, setExerciseError] = useState<string | null>(null);
   const exerciseSave = useAction();
+  const move = useAction();
+
+  const ordered = [...days].sort((a, b) => a.day_index - b.day_index);
+  const at = ordered.findIndex((d) => d.id === day.id);
+  const previous = at > 0 ? ordered[at - 1] : undefined;
+  const next = at >= 0 && at < ordered.length - 1 ? ordered[at + 1] : undefined;
   const [error, setError] = useState<string | null>(null);
   // Local copy so a drag reads smoothly; re-synced whenever the server data changes.
   const [order, setOrder] = useState(day.exercises);
@@ -126,6 +136,42 @@ export function DayCard({
         </span>
         <button
           type="button"
+          disabled={!previous || move.pending}
+          aria-label={
+            previous
+              ? `Move ${day.name} to ${dayLabel(weekStart, previous.day_index)}`
+              : "Already the first day"
+          }
+          onClick={(e) => {
+            e.stopPropagation();
+            if (previous) move.run(() => swapDays(day.id, previous.id));
+          }}
+          className="hit flex-none rounded p-1 text-fg-dim transition-colors hover:text-accent disabled:opacity-25"
+        >
+          {move.pending ? (
+            <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
+          ) : (
+            <ChevronLeft className="size-3.5" strokeWidth={2} />
+          )}
+        </button>
+        <button
+          type="button"
+          disabled={!next || move.pending}
+          aria-label={
+            next
+              ? `Move ${day.name} to ${dayLabel(weekStart, next.day_index)}`
+              : "Already the last day"
+          }
+          onClick={(e) => {
+            e.stopPropagation();
+            if (next) move.run(() => swapDays(day.id, next.id));
+          }}
+          className="hit flex-none rounded p-1 text-fg-dim transition-colors hover:text-accent disabled:opacity-25"
+        >
+          <ChevronRight className="size-3.5" strokeWidth={2} />
+        </button>
+        <button
+          type="button"
           aria-label={`Edit ${day.name}`}
           aria-expanded={editing}
           onClick={(e) => {
@@ -187,6 +233,30 @@ export function DayCard({
               </span>
             ) : null}
           </label>
+
+          <div className="border-t border-[#1a1e20] pt-2.5">
+            <span className="eyebrow mb-1.5 block">Swap this day with</span>
+            <div className="flex flex-wrap gap-1.5">
+              {ordered
+                .filter((other) => other.id !== day.id)
+                .map((other) => (
+                  <button
+                    key={other.id}
+                    type="button"
+                    disabled={move.pending}
+                    onClick={() => move.run(() => swapDays(day.id, other.id))}
+                    className="hit rounded-full border border-line bg-surface px-2.5 py-1.5 font-mono text-[10.5px] font-semibold text-fg-soft transition-colors hover:border-line-sel hover:text-accent disabled:opacity-50"
+                  >
+                    {dayLabel(weekStart, other.day_index).toUpperCase()}
+                    <span className="ml-1 text-fg-dim">{other.name}</span>
+                  </button>
+                ))}
+            </div>
+            <p className="mt-1.5 text-[11px] leading-[1.5] text-fg-dim">
+              The exercises move with the day, and anything already logged against
+              it stays attached.
+            </p>
+          </div>
 
           <div className="flex items-center gap-2">
             <ActionButton

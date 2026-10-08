@@ -559,6 +559,10 @@ export type Database = {
         Args: { invite_code: string };
         Returns: { coach_id: string; coach_name: string }[];
       };
+      swap_program_days: {
+        Args: { day_a: string; day_b: string };
+        Returns: undefined;
+      };
       coach_invite_preview: {
         Args: { invite_code: string };
         Returns: {

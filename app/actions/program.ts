@@ -418,6 +418,35 @@ export async function updateProgramExercise(
 }
 
 /** Persists a drag-reorder. Takes the whole day so positions stay contiguous. */
+/**
+ * Moves a whole training day to another slot in the week, swapping with
+ * whatever is there.
+ *
+ * The two rows exchange `day_index`, so each day keeps its exercises and keeps
+ * any session already logged against it — the session points at the day's id,
+ * not at a weekday. Swapping the days' contents instead would quietly relabel
+ * last week's workout.
+ *
+ * It goes through a database function because a full week fills every index
+ * from 0 to 6 and the unique constraint leaves nowhere to park the first row
+ * mid-swap; the function defers that constraint so both updates are judged
+ * together.
+ */
+export async function swapDays(dayA: string, dayB: string): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const { error } = await supabase.rpc("swap_program_days", {
+      day_a: uuid.parse(dayA),
+      day_b: uuid.parse(dayB),
+    });
+    if (error) throw error;
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
 export async function reorderDayExercises(dayId: string, orderedIds: string[]) {
   const { supabase } = await requireUser();
   uuid.parse(dayId);
