@@ -64,6 +64,10 @@ function RouteSettled() {
  * entries with `__NA`, so that write is the signal it landed. Wrapped before
  * Next patches history itself (child effects run first), so Next's internal
  * calls still come through here.
+ *
+ * Next makes that write from a useInsertionEffect, where React forbids
+ * scheduling updates — and ending the navigation updates the loader — so the
+ * end waits for the commit to finish.
  */
 function useNavigationCommits() {
   useEffect(() => {
@@ -71,7 +75,7 @@ function useNavigationCommits() {
     const watch = (original: History["pushState"]): History["pushState"] =>
       function (this: History, data, unused, url) {
         original.call(this, data, unused, url);
-        if ((data as { __NA?: boolean } | null)?.__NA) endNavigation();
+        if ((data as { __NA?: boolean } | null)?.__NA) queueMicrotask(endNavigation);
       };
     window.history.pushState = watch(pushState);
     window.history.replaceState = watch(replaceState);
@@ -136,8 +140,8 @@ function Overlay() {
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const busy = activity !== null;
 
-  // `shown` is what the card displays. It outlives the work itself by the
-  // hold and the exit fade, so the card leaves still saying what it did.
+  // `shown` is what the loader displays. It outlives the work itself by the
+  // hold and the exit fade, so it leaves still saying what it did.
   const [shown, setShown] = useState<Activity | null>(null);
   const [visible, setVisible] = useState(false);
   const [stalled, setStalled] = useState(false);
@@ -290,17 +294,16 @@ function Overlay() {
         <div
           aria-hidden={!stuck || undefined}
           className={cn(
-            "relative flex max-w-[300px] flex-col items-center rounded-[22px] border border-line px-7 pt-4 pb-4 shadow-[0_24px_70px_-12px_rgba(0,0,0,0.8)]",
-            // The scrim already blurs; a second backdrop filter on top is
-            // what makes a low-end phone drop frames.
-            shown.block ? "bg-surface" : "bg-surface/90 backdrop-blur-md",
+            // No card, just the barbell. The status line above reads the label
+            // out; a shadow tinted to the page keeps the bar legible over
+            // content when nothing blurs it.
+            "relative flex max-w-[300px] flex-col items-center drop-shadow-[0_8px_24px_rgba(8,9,10,0.7)]",
             visible
               ? "animate-in fade-in zoom-in-95 duration-200"
               : "scale-95 opacity-0 transition duration-200",
           )}
         >
           <BarbellLoader width={116} />
-          <span className="mt-1.5 text-[13px] font-semibold text-fg-2">{label}</span>
           {stuck ? (
             <div className="pointer-events-auto mt-3 flex flex-col items-center text-center">
               <p className="text-[12.5px] leading-[1.45] text-fg-soft">{stuckMessage(offline)}</p>
