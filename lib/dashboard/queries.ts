@@ -1,7 +1,8 @@
 import "server-only";
 import { addDays, format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { currentWeekStart, DAY_NAMES, toDateString } from "@/lib/dates";
+import { currentWeekStart, dayLabel, toDateString, WEEK_STARTS_ON, type WeekStartDay } from "@/lib/dates";
+import { getWeekStartsOn } from "@/lib/settings/week";
 import { getWeek } from "@/lib/program/queries";
 
 export type WeekStripDay = {
@@ -37,14 +38,16 @@ export type TodayOverview = {
 };
 
 /** 0 = Monday, matching program_days.day_index. */
-export function mondayIndex(date = new Date()) {
-  return (date.getDay() + 6) % 7;
+/** Where a date falls inside a week that begins on `startsOn`. */
+export function dayIndexInWeek(date = new Date(), startsOn: WeekStartDay = WEEK_STARTS_ON) {
+  return (date.getDay() - startsOn + 7) % 7;
 }
 
 export async function getTodayOverview(today = new Date()): Promise<TodayOverview> {
   const supabase = await createClient();
-  const weekStart = currentWeekStart(today);
-  const todayIndex = mondayIndex(today);
+  const startsOn = await getWeekStartsOn();
+  const weekStart = currentWeekStart(today, startsOn);
+  const todayIndex = dayIndexInWeek(today, startsOn);
   const lastWeekStart = toDateString(addDays(parseISO(weekStart), -7));
 
   const [week, { data: sessions }, { data: active }] = await Promise.all([
@@ -86,7 +89,7 @@ export async function getTodayOverview(today = new Date()): Promise<TodayOvervie
   // Which day indexes already have a finished session.
   const doneIndexes = new Set<number>();
   for (const r of thisWeek) {
-    doneIndexes.add(mondayIndex(parseISO(r.started_at)));
+    doneIndexes.add(dayIndexInWeek(parseISO(r.started_at), startsOn));
   }
 
   const strip: WeekStripDay[] = Array.from({ length: 7 }, (_, i) => {
@@ -106,7 +109,7 @@ export async function getTodayOverview(today = new Date()): Promise<TodayOvervie
 
     return {
       dayIndex: i,
-      label: DAY_NAMES[i]!.toUpperCase(),
+      label: dayLabel(weekStart, i).toUpperCase(),
       name: day?.name ?? "Rest",
       meta: done
         ? "DONE"

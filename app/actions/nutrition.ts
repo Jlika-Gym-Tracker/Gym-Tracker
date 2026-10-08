@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { currentWeekStart } from "@/lib/dates";
+import { getWeekStartsOn } from "@/lib/settings/week";
 import { aggregateGroceries, buildWeekPlan } from "@/lib/nutrition/plan";
 import {
   getExcludes,
@@ -48,7 +49,7 @@ export async function generateWeekPlan(
   try {
     const { supabase, user } = await requireUser();
     const weekStart = weekStartSchema.parse(
-      formData.get("weekStart") ?? currentWeekStart(),
+      formData.get("weekStart") ?? currentWeekStart(new Date(), await getWeekStartsOn()),
     );
 
     const [recipes, excludes, settings] = await Promise.all([

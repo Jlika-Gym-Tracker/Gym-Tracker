@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveSessionId } from "@/lib/training/queries";
-import { currentWeekStart } from "@/lib/dates";
-import { getWeek } from "@/lib/program/queries";
+import { currentWeekStart, toDateString } from "@/lib/dates";
+import { getWeekStartsOn } from "@/lib/settings/week";
+import { getWeek, getWeekContaining } from "@/lib/program/queries";
 import { StartSessionButton } from "@/components/session/start-session-button";
 import { Card, Eyebrow } from "@/components/kit/card";
 import { NavSpinner } from "@/components/shell/nav-spinner";
@@ -16,7 +17,9 @@ export default async function SessionIndexPage() {
 
   const supabase = await createClient();
   const [week, { data: recent }] = await Promise.all([
-    getWeek(currentWeekStart()),
+    getWeek(currentWeekStart(new Date(), await getWeekStartsOn())).then(
+      async (w) => w ?? (await getWeekContaining(toDateString(new Date()))),
+    ),
     supabase
       .from("workout_sessions")
       .select("id, title, started_at, ended_at")

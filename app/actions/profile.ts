@@ -364,3 +364,28 @@ export async function deleteAccount(
   }
   redirect("/login?deleted=1");
 }
+
+/**
+ * Which weekday this user's training week begins on.
+ *
+ * Existing weeks keep the start date they were written with — changing this
+ * decides where the *next* week begins, and the screens resolve "this week" by
+ * the range a week covers rather than by an exact weekday, so nothing written
+ * under the old setting disappears.
+ */
+export async function setWeekStartsOn(day: number): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const value = z.number().int().min(0).max(6).parse(day);
+
+    const { error } = await supabase
+      .from("user_settings")
+      .upsert({ user_id: user.id, week_starts_on: value }, { onConflict: "user_id" });
+    if (error) throw error;
+
+    revalidatePath("/", "layout");
+    return { notice: "Saved. New weeks will start on that day." };
+  } catch (error) {
+    return fail(error);
+  }
+}

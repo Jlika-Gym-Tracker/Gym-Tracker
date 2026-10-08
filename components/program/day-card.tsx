@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronUp, GripVertical, Loader2, Plus, X } from "lucide-react";
 import { removeProgramExercise, reorderDayExercises } from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
-import { DAY_NAMES } from "@/lib/dates";
+import { dayLabel } from "@/lib/dates";
 import { trimNumber } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
@@ -29,10 +29,13 @@ function repLabel(item: DayWithExercises["exercises"][number]) {
 
 export function DayCard({
   day,
+  weekStart,
   active,
   onActivate,
 }: {
   day: DayWithExercises;
+  /** The week's own start date, which decides what weekday each position is. */
+  weekStart: string;
   active: boolean;
   onActivate: () => void;
 }) {
@@ -90,7 +93,7 @@ export function DayCard({
             day.is_rest ? "text-fg-dim" : "text-accent",
           )}
         >
-          {DAY_NAMES[day.day_index]?.toUpperCase()}
+          {dayLabel(weekStart, day.day_index).toUpperCase()}
         </span>
         <h3
           className={cn(

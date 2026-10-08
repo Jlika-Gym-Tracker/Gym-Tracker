@@ -383,6 +383,7 @@ export type Database = {
           refeed_day: number | null; auto_adjust: boolean; ask_before_adjust: boolean;
           blur_thumbnails: boolean; strip_exif: boolean; notify_weighin: boolean;
           notify_unpublished_week: boolean; meals_per_day: number;
+          week_starts_on: number;
         };
         Insert: {
           user_id: string; training_days?: number[]; default_rest_seconds?: number;
@@ -391,6 +392,7 @@ export type Database = {
           refeed_day?: number | null; auto_adjust?: boolean; ask_before_adjust?: boolean;
           blur_thumbnails?: boolean; strip_exif?: boolean; notify_weighin?: boolean;
           notify_unpublished_week?: boolean; meals_per_day?: number;
+          week_starts_on?: number;
         };
         Update: Partial<Database["public"]["Tables"]["user_settings"]["Insert"]>;
         Relationships: [];

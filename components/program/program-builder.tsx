@@ -189,6 +189,7 @@ export function ProgramBuilder({
               <DayCard
                 key={day.id}
                 day={day}
+                weekStart={week.week_start}
                 active={day.id === activeDayId}
                 onActivate={() => setActiveDayId(day.id)}
               />

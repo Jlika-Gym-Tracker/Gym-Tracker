@@ -11,6 +11,7 @@ import {
   saveAccount,
   saveTargets,
   setRestSeconds,
+  setWeekStartsOn,
   toggleSetting,
   toggleSharing,
   type ActionState,
@@ -23,7 +24,7 @@ import type {
   CrewInvite, CrewMember, Profile, SharingPrefs, UnitSystem, UserSettings,
 } from "@/lib/database.types";
 import { cmToDisplay, lengthUnit, trimNumber } from "@/lib/units";
-import { DAY_NAMES } from "@/lib/dates";
+import { DAY_NAMES, weekDayNames, WEEK_START_OPTIONS, type WeekStartDay } from "@/lib/dates";
 import { GOAL_LABELS } from "@/lib/profile";
 import { Card } from "@/components/kit/card";
 import { AvatarBubble } from "@/components/shell/avatar-bubble";
@@ -260,6 +261,10 @@ function TargetsTab({
   const [bonus, setBonus] = useState(profile.training_day_kcal_bonus);
   const [meals, setMeals] = useState(settings.meals_per_day);
   const [days, setDays] = useState<number[]>(settings.training_days ?? []);
+  const [startsOn, setStartsOn] = useState<WeekStartDay>(
+    ((settings.week_starts_on ?? 1) as WeekStartDay),
+  );
+  const weekStartSave = useAction();
 
   return (
     <Card>
@@ -314,9 +319,46 @@ function TargetsTab({
         />
 
         <div className="py-2.5">
+          <span className="eyebrow mb-2 block">Week starts on</span>
+          <div className="flex flex-wrap gap-2">
+            {WEEK_START_OPTIONS.map((option) => {
+              const on = option.value === startsOn;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  disabled={weekStartSave.pending}
+                  aria-pressed={on}
+                  onClick={() => {
+                    setStartsOn(option.value);
+                    weekStartSave.run(() => setWeekStartsOn(option.value));
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 font-mono text-[11px] font-bold transition-colors disabled:opacity-60",
+                    on
+                      ? "border-line-sel bg-accent-soft text-accent"
+                      : "border-line bg-surface-2 text-fg-dim hover:border-stroke",
+                  )}
+                >
+                  {weekStartSave.pending && on ? (
+                    <Loader2 className="size-3 animate-spin" strokeWidth={2.5} />
+                  ) : null}
+                  {option.label.slice(0, 3).toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11.5px] leading-[1.5] text-fg-dim">
+            Weeks you have already written keep their own dates. This decides where
+            the next one begins — and the day labels follow the real dates, so a
+            week starting Saturday reads SAT, SUN, MON.
+          </p>
+        </div>
+
+        <div className="py-2.5">
           <span className="eyebrow mb-2 block">Training days</span>
           <div className="flex flex-wrap gap-2">
-            {DAY_NAMES.map((name, index) => {
+            {weekDayNames(startsOn).map((name, index) => {
               const on = days.includes(index);
               return (
                 <button
@@ -515,6 +557,8 @@ function CrewTab({
                   </div>
                 </div>
                 <div className="ml-auto flex items-center gap-3">
+                  {/* Calendar Mon–Sun on purpose: the crew compares against one
+                      shared axis, and members may each start their week elsewhere. */}
                   <div className="flex gap-1">
                     {DAY_NAMES.map((_, index) => (
                       <span

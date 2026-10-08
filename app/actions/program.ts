@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, parseISO } from "date-fns";
 import { currentWeekStart, toDateString } from "@/lib/dates";
+import { getWeekStartsOn } from "@/lib/settings/week";
 import { findPreviousWeek, getLibrary, getWeek } from "@/lib/program/queries";
 import {
   EQUIPMENT_PROFILES,
@@ -40,15 +41,29 @@ function refresh() {
 }
 
 /** The four training days a new week starts with, matching the user's split. */
-const DEFAULT_DAYS = [
-  { day_index: 0, name: "Upper A", is_rest: false },
-  { day_index: 1, name: "Lower A", is_rest: false },
-  { day_index: 2, name: "Rest", is_rest: true },
-  { day_index: 3, name: "Upper B", is_rest: false },
-  { day_index: 4, name: "Lower B", is_rest: false },
-  { day_index: 5, name: "Rest", is_rest: true },
-  { day_index: 6, name: "Rest", is_rest: true },
-];
+const FALLBACK_TRAINING_DAYS = [0, 1, 3, 4];
+
+/**
+ * The seven days a new week starts with.
+ *
+ * Built from the training days chosen at onboarding rather than a fixed
+ * Upper/Lower split, so someone who said they train four days gets exactly
+ * those four as training days and the rest marked as rest. Names alternate
+ * Upper/Lower because that is the split the starter program assumes; they are
+ * renameable, and adding an exercise to a rest day turns it into a training day.
+ */
+function defaultDays(trainingDays: number[]) {
+  const training = [...new Set(trainingDays)].filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b);
+  const days = training.length > 0 ? training : FALLBACK_TRAINING_DAYS;
+  const names = ["Upper A", "Lower A", "Upper B", "Lower B", "Full body", "Accessory", "Conditioning"];
+
+  return Array.from({ length: 7 }, (_, day_index) => {
+    const position = days.indexOf(day_index);
+    return position === -1
+      ? { day_index, name: "Rest", is_rest: true }
+      : { day_index, name: names[position] ?? `Day ${position + 1}`, is_rest: false };
+  });
+}
 
 /**
  * Ensures a draft exists for the given week. Idempotent — the unique index on
@@ -72,9 +87,20 @@ export async function ensureWeek(weekStart: string, label = "My week") {
     .single();
   if (error) throw error;
 
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("training_days")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const { error: daysError } = await supabase
     .from("program_days")
-    .insert(DEFAULT_DAYS.map((d) => ({ ...d, week_id: week.id })));
+    .insert(
+      defaultDays(settings?.training_days ?? FALLBACK_TRAINING_DAYS).map((d) => ({
+        ...d,
+        week_id: week.id,
+      })),
+    );
   if (daysError) throw daysError;
 
   return week.id;
@@ -82,7 +108,8 @@ export async function ensureWeek(weekStart: string, label = "My week") {
 
 export async function createCurrentWeek(): Promise<ActionState> {
   try {
-    await ensureWeek(currentWeekStart(), "The Efficient 4-Day Upper / Lower");
+    const weekStart = currentWeekStart(new Date(), await getWeekStartsOn());
+    await ensureWeek(weekStart, "The Efficient 4-Day Upper / Lower");
     refresh();
     return { notice: "Draft week created." };
   } catch (error) {

@@ -8,7 +8,7 @@ import {
   TEMPLATES,
   type EquipmentProfile,
 } from "@/lib/program/templates";
-import { DAY_NAMES } from "@/lib/dates";
+import { dayLabel } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { ActionButton } from "@/components/kit/action-button";
 
@@ -131,7 +131,7 @@ export function TemplatePicker({
                   key={day.dayIndex}
                   className="rounded-full border border-line px-2.5 py-1 font-mono text-[10px] text-fg-soft"
                 >
-                  {DAY_NAMES[day.dayIndex]?.toUpperCase()} · {day.name}
+                  {dayLabel(weekStart, day.dayIndex).toUpperCase()} · {day.name}
                 </span>
               ))}
             </div>

@@ -2,6 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Exercise, ProgramWeek, WeekStatus } from "@/lib/database.types";
 import type { LibraryExercise } from "./match";
+import { parseISO } from "date-fns";
+import { isInWeek } from "@/lib/dates";
 
 export type DayWithExercises = {
   id: string;
@@ -28,6 +30,28 @@ export type DayWithExercises = {
 export type WeekDetail = ProgramWeek & { days: DayWithExercises[] };
 
 /** The week being edited, with its days and exercises, ordered for display. */
+/**
+ * The week a date falls inside, whichever weekday it begins on.
+ *
+ * Looking a week up by an exact start date only works while every week begins
+ * on the same weekday. Once someone moves their week to a Saturday, the weeks
+ * they wrote before still start on a Monday — matching by range keeps those
+ * reachable instead of making the program look empty.
+ */
+export async function getWeekContaining(date: string): Promise<WeekDetail | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("program_weeks")
+    .select("week_start")
+    .lte("week_start", date)
+    .order("week_start", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  return isInWeek(data.week_start, parseISO(date)) ? getWeek(data.week_start) : null;
+}
+
 export async function getWeek(weekStart: string): Promise<WeekDetail | null> {
   const supabase = await createClient();
   const { data, error } = await supabase

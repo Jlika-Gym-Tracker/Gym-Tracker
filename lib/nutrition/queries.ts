@@ -2,6 +2,7 @@ import "server-only";
 import { addDays, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { currentWeekStart, toDateString } from "@/lib/dates";
+import { getWeekStartsOn } from "@/lib/settings/week";
 import { ageFromBirthDate, calculateTargets, type Targets } from "./targets";
 import type { PlannableRecipe, Slot } from "./plan";
 import type { UserExclude } from "./excludes";
@@ -117,7 +118,8 @@ export type WeekPlan = {
   }[];
 };
 
-export async function getWeekPlan(weekStart = currentWeekStart()): Promise<WeekPlan | null> {
+export async function getWeekPlan(weekStart?: string): Promise<WeekPlan | null> {
+  weekStart ??= currentWeekStart(new Date(), await getWeekStartsOn());
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("meal_plans")

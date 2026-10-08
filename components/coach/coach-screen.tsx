@@ -17,7 +17,7 @@ import type { CoachProgramDetail } from "@/lib/coach/queries";
 import type { CoachInvite, RosterAthlete } from "@/lib/database.types";
 import type { LibraryExercise } from "@/lib/program/match";
 import { findCandidates } from "@/lib/program/match";
-import { DAY_NAMES, currentWeekStart, weekRangeLabel } from "@/lib/dates";
+import { DAY_NAMES, weekRangeLabel } from "@/lib/dates";
 import { Card } from "@/components/kit/card";
 import { AvatarBubble } from "@/components/shell/avatar-bubble";
 import { ExerciseThumb } from "@/components/program/exercise-thumb";
@@ -32,18 +32,20 @@ export function CoachScreen({
   invites,
   library,
   meId,
+  weekStart,
 }: {
   roster: RosterAthlete[];
   programs: CoachProgramDetail[];
   invites: CoachInvite[];
   library: LibraryExercise[];
   meId: string;
+  /** The coach's own current week, resolved on the server from their setting. */
+  weekStart: string;
 }) {
   const [inviteState, invite] = useActionState(createCoachInvite, {} as ActionState);
   const [assignState, assign] = useActionState(assignProgram, {} as ActionState);
   const [createState, create] = useActionState(createCoachProgram, {} as ActionState);
   const [endState, end] = useActionState(endCoachLink, {} as ActionState);
-  const weekStart = currentWeekStart();
 
   const active = roster.filter((a) => a.sessions_this_week > 0).length;
   const behind = roster.filter(
@@ -117,6 +119,8 @@ export function CoachScreen({
                       </div>
 
                       <div className="ml-auto flex items-center gap-4">
+                        {/* Calendar Mon–Sun: coach_roster() counts by ISO weekday,
+                            and athletes may each start their week on a different day. */}
                         <div className="flex gap-1">
                           {DAY_NAMES.map((day, i) => (
                             <span
@@ -404,7 +408,8 @@ function CoachDayCard({
     <div className="overflow-hidden rounded-[14px] border border-line bg-surface-2">
       <header className="flex items-center gap-2.5 border-b border-[#1a1e20] px-3.5 py-3">
         <span className="font-mono text-[10px] font-bold tracking-[0.12em] text-accent">
-          {DAY_NAMES[day.day_index]?.toUpperCase()}
+          {/* A coach program is a template, not a dated week: label by position. */}
+          DAY {day.day_index + 1}
         </span>
         <span className="text-[13.5px] font-bold">{day.name}</span>
         <span className="ml-auto font-mono text-[10px] text-fg-dim">

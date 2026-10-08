@@ -67,6 +67,7 @@ export default async function ProfilePage() {
     notify_weighin: true,
     notify_unpublished_week: true,
     meals_per_day: 4,
+    week_starts_on: 1,
   };
 
   const resolvedSharing: SharingPrefs = sharing ?? {

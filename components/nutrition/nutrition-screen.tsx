@@ -18,7 +18,7 @@ import {
 } from "@/lib/nutrition/plan";
 import type { WeekPlan } from "@/lib/nutrition/queries";
 import type { Targets } from "@/lib/nutrition/targets";
-import { DAY_NAMES } from "@/lib/dates";
+import { dayLabel } from "@/lib/dates";
 import { Card } from "@/components/kit/card";
 import { cn } from "@/lib/utils";
 import { CalorieRing, MacroTile } from "./calorie-ring";
@@ -363,7 +363,7 @@ export function NutritionScreen({
                       isToday ? "text-accent" : "text-fg-dim",
                     )}
                   >
-                    {DAY_NAMES[dayIndex]?.toUpperCase()}
+                    {dayLabel(weekStart, dayIndex).toUpperCase()}
                   </div>
                   <div className="mt-2 font-mono text-[15px] font-extrabold">
                     {kcal > 0 ? Math.round(kcal) : "—"}

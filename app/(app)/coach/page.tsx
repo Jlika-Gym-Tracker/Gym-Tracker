@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCoachInvites, getCoachPrograms, getRoster } from "@/lib/coach/queries";
 import { getLibrary } from "@/lib/program/queries";
 import { CoachScreen } from "@/components/coach/coach-screen";
+import { currentWeekStart } from "@/lib/dates";
+import { getWeekStartsOn } from "@/lib/settings/week";
 import { EnableCoaching } from "@/components/coach/enable-coaching";
 
 export default async function CoachPage() {
@@ -35,6 +37,7 @@ export default async function CoachPage() {
       invites={invites}
       library={library}
       meId={user.id}
+      weekStart={currentWeekStart(new Date(), await getWeekStartsOn())}
     />
   );
 }

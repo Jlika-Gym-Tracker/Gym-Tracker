@@ -1,4 +1,5 @@
 import { currentWeekStart, toDateString } from "@/lib/dates";
+import { getWeekStartsOn } from "@/lib/settings/week";
 import {
   getExcludes,
   getRecipes,
@@ -12,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { UnitSystem } from "@/lib/database.types";
 
 export default async function NutritionPage() {
-  const weekStart = currentWeekStart();
+  const weekStart = currentWeekStart(new Date(), await getWeekStartsOn());
   const [targets, plan, recipes, excludes] = await Promise.all([
     getTargets(),
     getWeekPlan(weekStart),
