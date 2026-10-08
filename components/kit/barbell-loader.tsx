@@ -1,15 +1,9 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The loading mark: a barbell being loaded, lifted for one rep, and stripped.
- *
- * Plates go on inside-out — bumper, then the olive 15, then the steel change
- * plate, then the clip — and come off in the reverse order, the way a bar is
- * actually loaded. Pure SVG and CSS (see `.barbell` in globals.css), so it
- * animates in server-rendered HTML before any JavaScript has run, which is
- * what the boot splash needs.
- *
- * Decorative: whoever renders it owns the status text.
+ * Loading mark: a barbell loaded, lifted for one rep, and stripped. Pure SVG
+ * and CSS (`.barbell` in globals.css), so it animates before JavaScript runs.
+ * Decorative: the caller owns the status text.
  */
 export function BarbellLoader({
   width = 160,

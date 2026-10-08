@@ -297,11 +297,9 @@
 }
 
 /*
-  The barbell loader (components/kit/barbell-loader.tsx). One 2.6s loop:
-  plates slide on inside-out, the bar lifts one rep and settles, then the
-  plates come off outside-in. Every part runs the same duration so they stay
-  in step; each keyframe only differs in when its part moves. --dx sends a
-  side's plates out past its own sleeve end.
+  The barbell loader (components/kit/barbell-loader.tsx). Every part runs the
+  same 2.6s loop so they stay in step; keyframes differ only in when each part
+  moves. --dx sends a side's plates out past its sleeve end.
 */
 .barbell {
   --barbell-loop: 2.6s;
@@ -323,8 +321,6 @@
   animation: barbellShadow var(--barbell-loop) infinite;
 }
 
-/* On: a fast slide with a little overshoot, the thunk of a plate hitting the
-   one before it. Off: slow to start, as a plate is when you pull it. */
 @keyframes barbellP1 {
   0% { transform: translateX(var(--dx)); opacity: 0; animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.25); }
   10%, 86% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4); }
@@ -345,7 +341,6 @@
   31%, 68% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4); }
   74%, 100% { transform: translateX(var(--dx)); opacity: 0; }
 }
-/* The rep: drive up, a beat at lockout, lower under control, settle. */
 @keyframes barbellLift {
   0%, 36% { transform: none; animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); }
   48%, 54% { transform: translateY(-11px); animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1); }
@@ -366,8 +361,7 @@
   50% { opacity: 0.5; }
 }
 
-/* The layer behind the loader while it locks the screen: the page stays in
-   view, dimmed and out of focus, so it is plain it cannot be used right now. */
+/* Dims and blurs the page behind the loader while it locks the screen. */
 .activity-scrim {
   background: color-mix(in srgb, var(--bg) 55%, transparent);
   -webkit-backdrop-filter: blur(6px) saturate(0.8);
@@ -384,8 +378,7 @@
   }
 }
 
-/* The boot splash already says the app is loading; a second loader on top of
-   it (a sign-in that lands on the signed-in shell) would just be noise. */
+/* No activity loader on top of the boot splash. */
 body:has([data-boot-splash]) [data-activity-hud] {
   display: none;
 }

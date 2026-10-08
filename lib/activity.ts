@@ -3,26 +3,16 @@
 import { useEffect } from "react";
 
 /**
- * One app-wide answer to "is something happening?", for the activity loader.
+ * App-wide "is something happening?" store, read by the activity loader.
  *
- * Each control already shows its own progress, but that progress is wherever
- * the control is — off screen, under a thumb, or nowhere at all for a tapped
- * link. Launched from the home screen there is no browser chrome either, so
- * no address-bar spinner. Controls report here, and one loader in the root
- * layout shows it.
+ * Modes:
+ * - "block" locks the screen until the work lands: commands and navigations,
+ *   so nothing is done twice or against the screen being left.
+ * - "soft" only shows the loader: controls that change only themselves.
+ * Quick optimistic writes report nothing.
  *
- * Work comes in two modes:
- * - "block" locks the screen until it lands. For commands (save, finish,
- *   delete, sign in) and navigations: tapping the page being left, or a
- *   second command against data the first is still changing, is how things
- *   get done twice or against the wrong screen.
- * - "soft" only shows the loader. For a switch or chip that changes itself:
- *   the control disables, and freezing the whole screen for it is too much.
- * Quick optimistic writes (ticking a set, a grocery item) report nothing.
- *
- * Actions are tracked individually, so several at once (or two buttons
- * reporting the same form) clear only when the last one does. Navigation is a
- * single slot: a new one replaces the old rather than stacking on it.
+ * Actions are tracked individually, so several at once clear only when the
+ * last one does. Navigation is a single slot; a new one replaces the old.
  */
 export type ActivityMode = "block" | "soft";
 
@@ -44,8 +34,7 @@ let navTimeout: ReturnType<typeof setTimeout> | undefined;
 let snapshot: Activity | null = null;
 const listeners = new Set<() => void>();
 
-// Last resort for a navigation that never lands. The loader offers a way out
-// long before this; this only stops a lock outliving every other signal.
+// Last resort for a navigation that never lands.
 const NAV_GIVE_UP_MS = 20_000;
 
 function compute(): Activity | null {
@@ -133,7 +122,7 @@ export function useReportActivity(
   }, [pending, mode, label]);
 }
 
-/** Buttons say "Saving…"; the loader puts the motion in the barbell instead. */
+/** Drops the trailing ellipsis from button labels such as "Saving…". */
 function cleanLabel(label: string | null | undefined) {
   const trimmed = label?.trim().replace(/(…|\.\.\.)$/, "");
   return trimmed ? trimmed : null;

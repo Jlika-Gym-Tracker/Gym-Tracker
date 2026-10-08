@@ -14,19 +14,13 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * The app-wide loader: the barbell, centred, whenever a navigation or a
- * reported action is in flight (see lib/activity.ts for what reports).
+ * The app-wide loader, shown while a navigation or a reported action is in
+ * flight (lib/activity.ts).
  *
- * Blocking work also locks the screen, and the lock and the look are separate
- * on purpose:
- * - The lock is immediate. The second tap that does a thing twice lands in
- *   the first few hundred milliseconds, before any loader would show.
- * - The look waits, so a prefetched route or a fast write does not flash a
- *   blur, and once up it stays long enough to read as progress.
- * - Locking means `inert` on the page as well as a layer over it, because a
- *   layer stops a finger but not Enter in a focused field, or Tab.
- * - A lock never traps anyone: after a while, or straight away offline, it
- *   says so and offers a reload or a way back to the screen.
+ * Blocking work locks the screen immediately but only shows the loader after
+ * SHOW_AFTER_MS, so fast work does not flash. The lock is `inert` on the page
+ * as well as a layer over it: a layer stops pointers but not Enter or Tab.
+ * When stalled or offline it offers Reload/Hide so a lock never traps anyone.
  */
 const SHOW_AFTER_MS = 150;
 const HOLD_AT_LEAST_MS = 600;
@@ -87,8 +81,7 @@ function useNavigationCommits() {
 }
 
 /**
- * Starts a navigation on any tap of an in-app link, not just the nav's — Today's
- * cards, "Back to Today", a coach's athlete rows. Listens on document so it
+ * Starts a navigation on any tap of an in-app link. Listens on document so it
  * sees the click after next/link has handled it.
  */
 function useLinkTaps() {
@@ -217,8 +210,6 @@ function Overlay() {
     };
   }, []);
 
-  // The page behind is out of reach while locked — to fingers, keys and
-  // screen readers alike — and focus goes back where it was afterwards.
   useEffect(() => {
     if (!locked) return;
     const active = document.activeElement;
@@ -244,8 +235,7 @@ function Overlay() {
     };
   }, [locked]);
 
-  // Closing the app mid-save would leave not knowing whether it saved. Only
-  // for actions: leaving during a navigation loses nothing.
+  // Warn before unloading mid-action; leaving mid-navigation loses nothing.
   const savingBlock = activity?.kind === "action" && activity.block;
   useEffect(() => {
     if (!savingBlock) return;
@@ -294,9 +284,6 @@ function Overlay() {
         <div
           aria-hidden={!stuck || undefined}
           className={cn(
-            // No card, just the barbell. The status line above reads the label
-            // out; a shadow tinted to the page keeps the bar legible over
-            // content when nothing blurs it.
             "relative flex max-w-[300px] flex-col items-center drop-shadow-[0_8px_24px_rgba(8,9,10,0.7)]",
             visible
               ? "animate-in fade-in zoom-in-95 duration-200"

@@ -21,7 +21,6 @@ export function Toggle({
   disabled?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
-  // A switch only changes itself: the loader shows, the screen stays usable.
   useReportActivity(pending, { mode: "soft" });
 
   return (

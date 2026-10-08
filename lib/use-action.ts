@@ -11,10 +11,8 @@ import { useReportActivity, type ActivityMode } from "@/lib/activity";
  * Clicks that arrive while one is in flight are dropped — a ref, not the
  * transition's `pending`, because a second tap can land in the same render.
  *
- * `announce` also reports to the app-wide loader (lib/activity.ts), in the
- * given mode. Explicit commands want it ("Create a code"); the quick writes
- * this also runs — ticking a set, a grocery item — do not: they update on
- * screen at once, and a loader per tap mid-workout would be noise.
+ * `announce` also reports to the app-wide loader (lib/activity.ts) in the
+ * given mode. Leave it off for quick optimistic writes.
  */
 export function useAction({
   announce = false,

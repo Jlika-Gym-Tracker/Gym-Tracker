@@ -486,7 +486,6 @@ function Chip({
   children: React.ReactNode;
 }) {
   // Its own progress: one chip saving must not disable the rest.
-  // A chip only changes itself, so it shows the loader without locking.
   const { pending, run } = useAction({ announce: "soft" });
   return (
     <button

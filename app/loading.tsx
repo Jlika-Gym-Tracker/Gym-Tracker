@@ -2,17 +2,9 @@ import { BarbellLoader } from "@/components/kit/barbell-loader";
 import { LogoMark } from "@/components/shell/logo";
 
 /**
- * The boot splash.
- *
- * The signed-in layout awaits the user and their profile before it renders,
- * and with no boundary above it nothing at all reached the browser until both
- * queries returned. Opened from the home screen there is no address bar to
- * show that anything is happening, so a cold launch was just a dark screen.
- * As the root boundary, this streams in the first bytes of the response and
- * animates without JavaScript; the shell replaces it when the layout is ready.
- *
- * Client navigations between signed-in screens never reach it: the shell
- * stays mounted and the per-route skeletons cover those.
+ * Boot splash. As the root loading boundary it streams before the signed-in
+ * layout's queries return, and animates without JavaScript. Client navigations
+ * inside the shell never reach it; the per-route skeletons cover those.
  */
 export default function Loading() {
   return (
