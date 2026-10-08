@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { Loader2 } from "lucide-react";
+import { useReportActivity } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 /** 40×22 toggle, lime when on — the design's switch. */
@@ -20,6 +21,8 @@ export function Toggle({
   disabled?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  // A switch only changes itself: the loader shows, the screen stays usable.
+  useReportActivity(pending, { mode: "soft" });
 
   return (
     <label className="flex items-start gap-3 py-2.5">

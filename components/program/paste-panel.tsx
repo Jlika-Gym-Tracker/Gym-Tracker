@@ -9,6 +9,7 @@ import {
   matchExercises,
   type LibraryExercise,
 } from "@/lib/program/match";
+import { useReportActivity } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 const SAMPLE = `DAY 1 — UPPER A
@@ -39,6 +40,7 @@ export function PastePanel({
   const [resolutions, setResolutions] = useState<Record<string, Resolution>>({});
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  useReportActivity(pending, { label: "Importing" });
 
   const parsed = useMemo(() => parseProgramText(text), [text]);
 

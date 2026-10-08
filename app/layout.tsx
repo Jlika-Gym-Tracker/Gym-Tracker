@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
+import { ActivityLoader } from "@/components/shell/activity-loader";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -19,6 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "JLIKA Gym",
   description: "Training, body and nutrition — tracked in one private place.",
+  appleWebApp: { capable: true, title: "JLIKA", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {
@@ -39,7 +41,10 @@ export default function RootLayout({
       lang="en"
       className={`dark ${archivo.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <ActivityLoader />
+      </body>
     </html>
   );
 }
