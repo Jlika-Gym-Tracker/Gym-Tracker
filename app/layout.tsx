@@ -20,7 +20,6 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "JLIKA Gym",
   description: "Training, body and nutrition — tracked in one private place.",
-  appleWebApp: { capable: true, title: "JLIKA", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {

@@ -3,8 +3,13 @@ import { LogoMark } from "@/components/shell/logo";
 
 /**
  * Boot splash. As the root loading boundary it streams before the signed-in
- * layout's queries return, and animates without JavaScript. Client navigations
- * inside the shell never reach it; the per-route skeletons cover those.
+ * layout's queries return, and animates without JavaScript.
+ *
+ * Next mounts this boundary afresh whenever a navigation crosses into another
+ * top-level route group or folder, so a client navigation reaches it too
+ * unless the destination has a loading.tsx of its own. Only entering the
+ * signed-in shell should: every other top-level route needs its own, or
+ * moving to it mid-app (signing out, say) shows this full-screen splash.
  */
 export default function Loading() {
   return (

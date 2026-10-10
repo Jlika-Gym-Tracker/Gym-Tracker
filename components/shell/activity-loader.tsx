@@ -55,9 +55,10 @@ function RouteSettled() {
  * Some navigations land where they started, so the URL never changes: on
  * /session/abc, the sidebar's Session link redirects straight back to it.
  * Next writes history once per committed navigation, flagging its own
- * entries with `__NA`, so that write is the signal it landed. Wrapped before
- * Next patches history itself (child effects run first), so Next's internal
- * calls still come through here.
+ * entries with `__NA`, so that write is the signal it landed. Next writes
+ * through whatever pushState/replaceState is installed at the time, and its
+ * own patch passes `__NA` writes on to the one it found, so this wrapper sees
+ * them whichever of the two is installed first.
  *
  * Next makes that write from a useInsertionEffect, where React forbids
  * scheduling updates — and ending the navigation updates the loader — so the
@@ -132,18 +133,21 @@ function Overlay() {
   const activity = useSyncExternalStore(subscribeActivity, getActivity, getServerActivity);
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const busy = activity !== null;
+  const generation = activity?.generation ?? null;
 
   // `shown` is what the loader displays. It outlives the work itself by the
   // hold and the exit fade, so it leaves still saying what it did.
   const [shown, setShown] = useState<Activity | null>(null);
   const [visible, setVisible] = useState(false);
-  const [stalled, setStalled] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [stalledGeneration, setStalledGeneration] = useState<number | null>(null);
+  const [dismissedGeneration, setDismissedGeneration] = useState<number | null>(null);
   const shownAt = useRef(0);
   const root = useRef<HTMLDivElement>(null);
   const reloading = useRef(false);
 
-  const locked = !!activity?.block && !dismissed;
+  const stalled = generation !== null && generation === stalledGeneration;
+  const locked = !!activity?.block && generation !== dismissedGeneration;
+  const dismissed = shown !== null && shown.generation === dismissedGeneration;
 
   useEffect(() => {
     if (activity) {
@@ -173,17 +177,11 @@ function Overlay() {
     return () => clearTimeout(timer);
   }, [visible, shown]);
 
-  // Each burst of work starts fresh: its own stall clock, and a lock that an
-  // earlier "Hide" does not carry over to.
   useEffect(() => {
-    if (!busy) {
-      setStalled(false);
-      setDismissed(false);
-      return;
-    }
-    const timer = setTimeout(() => setStalled(true), STALLED_AFTER_MS);
+    if (generation === null) return;
+    const timer = setTimeout(() => setStalledGeneration(generation), STALLED_AFTER_MS);
     return () => clearTimeout(timer);
-  }, [busy]);
+  }, [generation]);
 
   // What the person last pressed or typed in: the control that started the
   // work. Read at lock time instead, focus is often already gone — the pressed
@@ -255,7 +253,7 @@ function Overlay() {
 
   function reload() {
     reloading.current = true;
-    if (activity?.kind === "nav" && activity.href) window.location.assign(activity.href);
+    if (activity?.href) window.location.assign(activity.href);
     else window.location.reload();
   }
 
@@ -304,7 +302,7 @@ function Overlay() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDismissed(true)}
+                  onClick={() => setDismissedGeneration(generation)}
                   className="rounded-[11px] border border-stroke bg-ghost px-4 py-2.5 text-[13px] font-semibold text-fg-2 hover:bg-hover"
                 >
                   Hide

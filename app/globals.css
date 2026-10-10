@@ -41,6 +41,7 @@
   --accent-soft: #151b0c;
   --accent-2: #7d9440;
   --accent-deep: #3f5320;
+  --steel: #5a6670;            /* bare plates on the barbell loader */
 
   /* Status */
   --warn: #c98d4d;
@@ -113,6 +114,7 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-2: var(--accent-2);
   --color-accent-deep: var(--accent-deep);
+  --color-steel: var(--steel);
 
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
@@ -309,7 +311,7 @@
 .barbell .barbell-right { --dx: 26px; }
 .barbell .barbell-p1 { fill: var(--accent); animation: barbellP1 var(--barbell-loop) infinite; }
 .barbell .barbell-p2 { fill: var(--accent-2); animation: barbellP2 var(--barbell-loop) infinite; }
-.barbell .barbell-p3 { fill: #5a6670; animation: barbellP3 var(--barbell-loop) infinite; }
+.barbell .barbell-p3 { fill: var(--steel); animation: barbellP3 var(--barbell-loop) infinite; }
 .barbell .barbell-clip { fill: var(--fg-muted); animation: barbellClip var(--barbell-loop) infinite; }
 .barbell .barbell-knurl { fill: var(--fg-soft); opacity: 0.35; }
 .barbell .barbell-lift { animation: barbellLift var(--barbell-loop) infinite; }

@@ -24,12 +24,19 @@ export type Activity = {
   label: string | null;
   /** Where a navigation is heading, so a stalled one can be retried. */
   href: string | null;
+  /**
+   * Identifies the newest work still in flight; each start gets a higher
+   * number. The loader times stalls and applies "Hide" per generation, so
+   * work that starts later gets its own stall clock and is locked again.
+   */
+  generation: number;
 };
 
-type Entry = { mode: ActivityMode; label: string | null };
+type Entry = { mode: ActivityMode; label: string | null; generation: number };
 
 const actions = new Set<Entry>();
-let navigation: { href: string | null } | null = null;
+let navigation: { href: string | null; generation: number } | null = null;
+let generations = 0;
 let navTimeout: ReturnType<typeof setTimeout> | undefined;
 let snapshot: Activity | null = null;
 const listeners = new Set<() => void>();
@@ -41,9 +48,11 @@ function compute(): Activity | null {
   if (actions.size === 0 && !navigation) return null;
   let block = !!navigation;
   let label: string | null = null;
+  let generation = navigation?.generation ?? 0;
   for (const entry of actions) {
     if (entry.mode === "block") block = true;
     if (entry.label) label = entry.label;
+    generation = Math.max(generation, entry.generation);
   }
   return {
     // An action outranks a navigation: its label says more, and an action
@@ -52,6 +61,7 @@ function compute(): Activity | null {
     block,
     label,
     href: navigation?.href ?? null,
+    generation,
   };
 }
 
@@ -62,7 +72,8 @@ function emit() {
     next?.kind === snapshot?.kind &&
     next?.block === snapshot?.block &&
     next?.label === snapshot?.label &&
-    next?.href === snapshot?.href
+    next?.href === snapshot?.href &&
+    next?.generation === snapshot?.generation
   ) {
     return;
   }
@@ -85,7 +96,7 @@ export function beginAction({
   mode = "block",
   label,
 }: { mode?: ActivityMode; label?: string | null } = {}) {
-  const entry: Entry = { mode, label: cleanLabel(label) };
+  const entry: Entry = { mode, label: cleanLabel(label), generation: ++generations };
   actions.add(entry);
   emit();
   return () => {
@@ -98,7 +109,7 @@ export function beginAction({
  * it for navigations that do not come from a link, such as router.replace.
  */
 export function startNavigation(href: string | null = null) {
-  navigation = { href };
+  navigation = { href, generation: ++generations };
   clearTimeout(navTimeout);
   navTimeout = setTimeout(endNavigation, NAV_GIVE_UP_MS);
   emit();

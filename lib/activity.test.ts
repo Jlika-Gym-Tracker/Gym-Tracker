@@ -68,11 +68,31 @@ describe("activity store", () => {
   });
 
   it("hands back the same object while nothing changed", () => {
-    const end = beginAction({ label: "Saving" });
+    const older = beginAction({ label: "Saving" });
+    const newer = beginAction({ label: "Saving" });
     const before = getActivity();
-    const twin = beginAction({ label: "Saving" });
+    older();
     expect(getActivity()).toBe(before);
-    twin();
+    newer();
+  });
+
+  it("gives work that starts later a newer generation, even mid-flight", () => {
+    const first = beginAction();
+    const older = getActivity()!.generation;
+    const second = beginAction({ mode: "soft" });
+    expect(getActivity()!.generation).toBeGreaterThan(older);
+    second();
+    expect(getActivity()?.generation).toBe(older);
+    first();
+  });
+
+  it("gives a navigation a generation of its own", () => {
+    const end = beginAction();
+    const action = getActivity()!.generation;
+    startNavigation("/program");
+    expect(getActivity()!.generation).toBeGreaterThan(action);
+    endNavigation();
+    expect(getActivity()?.generation).toBe(action);
     end();
   });
 
