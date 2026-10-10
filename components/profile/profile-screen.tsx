@@ -486,7 +486,7 @@ function Chip({
   children: React.ReactNode;
 }) {
   // Its own progress: one chip saving must not disable the rest.
-  const { pending, run } = useAction();
+  const { pending, run } = useAction({ announce: "soft" });
   return (
     <button
       type="button"
@@ -521,7 +521,7 @@ function CrewTab({
   const [redeemState, redeem] = useActionState(redeemInvite, {} as ActionState);
   const [removeState, remove] = useActionState(removeCrewLink, {} as ActionState);
   const [inviteState, setInviteState] = useState<ActionState & { code?: string }>({});
-  const { pending: minting, run: mint } = useAction();
+  const { pending: minting, run: mint } = useAction({ announce: "block", label: "Creating an invite code" });
 
   return (
     <div className="grid gap-[18px] lg:grid-cols-[1fr_320px]">

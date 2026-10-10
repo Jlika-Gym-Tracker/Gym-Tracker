@@ -4,10 +4,12 @@ import { useState, useTransition } from "react";
 import { setCoaching } from "@/app/actions/coach";
 import { Card } from "@/components/kit/card";
 import { Message } from "@/components/profile/controls";
+import { useReportActivity } from "@/lib/activity";
 
 /** Coaching is a capability you switch on, not a separate kind of account. */
 export function EnableCoaching() {
   const [pending, startTransition] = useTransition();
+  useReportActivity(pending, { label: "Turning on coaching" });
   const [error, setError] = useState<string | null>(null);
 
   return (

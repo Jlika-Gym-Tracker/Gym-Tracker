@@ -1,0 +1,140 @@
+"use client";
+
+import { useEffect } from "react";
+
+/**
+ * App-wide "is something happening?" store, read by the activity loader.
+ *
+ * Modes:
+ * - "block" locks the screen until the work lands: commands and navigations,
+ *   so nothing is done twice or against the screen being left.
+ * - "soft" only shows the loader: controls that change only themselves.
+ * Quick optimistic writes report nothing.
+ *
+ * Actions are tracked individually, so several at once clear only when the
+ * last one does. Navigation is a single slot; a new one replaces the old.
+ */
+export type ActivityMode = "block" | "soft";
+
+export type Activity = {
+  kind: "action" | "nav";
+  /** True if any of the work in flight locks the screen. */
+  block: boolean;
+  /** What the newest labelled work says it is doing, e.g. "Saving". */
+  label: string | null;
+  /** Where a navigation is heading, so a stalled one can be retried. */
+  href: string | null;
+  /**
+   * Identifies the newest work still in flight; each start gets a higher
+   * number. The loader times stalls and applies "Hide" per generation, so
+   * work that starts later gets its own stall clock and is locked again.
+   */
+  generation: number;
+};
+
+type Entry = { mode: ActivityMode; label: string | null; generation: number };
+
+const actions = new Set<Entry>();
+let navigation: { href: string | null; generation: number } | null = null;
+let generations = 0;
+let navTimeout: ReturnType<typeof setTimeout> | undefined;
+let snapshot: Activity | null = null;
+const listeners = new Set<() => void>();
+
+// Last resort for a navigation that never lands.
+const NAV_GIVE_UP_MS = 20_000;
+
+function compute(): Activity | null {
+  if (actions.size === 0 && !navigation) return null;
+  let block = !!navigation;
+  let label: string | null = null;
+  let generation = navigation?.generation ?? 0;
+  for (const entry of actions) {
+    if (entry.mode === "block") block = true;
+    if (entry.label) label = entry.label;
+    generation = Math.max(generation, entry.generation);
+  }
+  return {
+    // An action outranks a navigation: its label says more, and an action
+    // that redirects is still that action until it lands.
+    kind: actions.size > 0 ? "action" : "nav",
+    block,
+    label,
+    href: navigation?.href ?? null,
+    generation,
+  };
+}
+
+function emit() {
+  const next = compute();
+  // useSyncExternalStore needs the same object back while nothing changed.
+  if (
+    next?.kind === snapshot?.kind &&
+    next?.block === snapshot?.block &&
+    next?.label === snapshot?.label &&
+    next?.href === snapshot?.href &&
+    next?.generation === snapshot?.generation
+  ) {
+    return;
+  }
+  snapshot = next;
+  for (const listener of listeners) listener();
+}
+
+export function subscribeActivity(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export const getActivity = () => snapshot;
+export const getServerActivity = (): Activity | null => null;
+
+/** Marks an action in flight. Returns its end, which is safe to call twice. */
+export function beginAction({
+  mode = "block",
+  label,
+}: { mode?: ActivityMode; label?: string | null } = {}) {
+  const entry: Entry = { mode, label: cleanLabel(label), generation: ++generations };
+  actions.add(entry);
+  emit();
+  return () => {
+    if (actions.delete(entry)) emit();
+  };
+}
+
+/**
+ * Link taps start this on their own (components/shell/activity-loader); call
+ * it for navigations that do not come from a link, such as router.replace.
+ */
+export function startNavigation(href: string | null = null) {
+  navigation = { href, generation: ++generations };
+  clearTimeout(navTimeout);
+  navTimeout = setTimeout(endNavigation, NAV_GIVE_UP_MS);
+  emit();
+}
+
+export function endNavigation() {
+  clearTimeout(navTimeout);
+  if (!navigation) return;
+  navigation = null;
+  emit();
+}
+
+/** Reports an action to the loader for as long as `pending` is true. */
+export function useReportActivity(
+  pending: boolean,
+  { mode = "block", label }: { mode?: ActivityMode; label?: string | null } = {},
+) {
+  useEffect(() => {
+    if (!pending) return;
+    return beginAction({ mode, label });
+  }, [pending, mode, label]);
+}
+
+/** Drops the trailing ellipsis from button labels such as "Saving…". */
+function cleanLabel(label: string | null | undefined) {
+  const trimmed = label?.trim().replace(/(…|\.\.\.)$/, "");
+  return trimmed ? trimmed : null;
+}

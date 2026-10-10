@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
+import { useReportActivity } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 /**
@@ -51,6 +52,8 @@ export function ActionButton({
   }, []);
 
   const busy = pending && (pressed || sole);
+  // The pressed button names the work; its siblings report it unnamed.
+  useReportActivity(pending, { label: busy ? pendingLabel : null });
 
   return (
     <button

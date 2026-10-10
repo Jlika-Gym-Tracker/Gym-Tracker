@@ -29,7 +29,7 @@ export function InviteCrew({
 }) {
   const [state, setState] = useState<{ code?: string; error?: string; notice?: string }>({});
   const [copied, setCopied] = useState(false);
-  const { pending, run } = useAction();
+  const { pending, run } = useAction({ announce: "block", label: "Creating an invite code" });
 
   const waiting = crew.filter((m) => !memberIds.includes(m.friend_id));
 
