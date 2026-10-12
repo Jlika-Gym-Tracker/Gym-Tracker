@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { startSession } from "@/app/actions/session";
+import { useReportActivity } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 import { ActionButton } from "@/components/kit/action-button";
 
@@ -20,6 +21,7 @@ export function StartSessionButton({
   variant?: "primary" | "tile";
 }) {
   const [pending, startTransition] = useTransition();
+  useReportActivity(pending, { label: "Starting" });
 
   return (
     <form

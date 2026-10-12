@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ChevronLeft, LogOut, Search, Settings, Trophy, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { endNavigation, startNavigation } from "@/lib/activity";
 import { titleForPath } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { AvatarBubble } from "./avatar-bubble";
@@ -58,8 +59,13 @@ export function Topbar({
   const sub = (pathname === "/" && local?.sub) || base.sub;
 
   async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    startNavigation("/login");
+    try {
+      await createClient().auth.signOut();
+    } catch (error) {
+      endNavigation();
+      throw error;
+    }
     router.replace("/login");
     router.refresh();
   }

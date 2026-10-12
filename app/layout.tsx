@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
+import { ActivityLoader } from "@/components/shell/activity-loader";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -39,7 +40,10 @@ export default function RootLayout({
       lang="en"
       className={`dark ${archivo.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <ActivityLoader />
+      </body>
     </html>
   );
 }

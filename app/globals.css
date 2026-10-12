@@ -41,6 +41,7 @@
   --accent-soft: #151b0c;
   --accent-2: #7d9440;
   --accent-deep: #3f5320;
+  --steel: #5a6670;            /* bare plates on the barbell loader */
 
   /* Status */
   --warn: #c98d4d;
@@ -113,6 +114,7 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-2: var(--accent-2);
   --color-accent-deep: var(--accent-deep);
+  --color-steel: var(--steel);
 
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
@@ -294,4 +296,91 @@
 }
 .jl-slider:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/*
+  The barbell loader (components/kit/barbell-loader.tsx). Every part runs the
+  same 2.6s loop so they stay in step; keyframes differ only in when each part
+  moves. --dx sends a side's plates out past its sleeve end.
+*/
+.barbell {
+  --barbell-loop: 2.6s;
+  overflow: visible;
+}
+.barbell .barbell-left { --dx: -26px; }
+.barbell .barbell-right { --dx: 26px; }
+.barbell .barbell-p1 { fill: var(--accent); animation: barbellP1 var(--barbell-loop) infinite; }
+.barbell .barbell-p2 { fill: var(--accent-2); animation: barbellP2 var(--barbell-loop) infinite; }
+.barbell .barbell-p3 { fill: var(--steel); animation: barbellP3 var(--barbell-loop) infinite; }
+.barbell .barbell-clip { fill: var(--fg-muted); animation: barbellClip var(--barbell-loop) infinite; }
+.barbell .barbell-knurl { fill: var(--fg-soft); opacity: 0.35; }
+.barbell .barbell-lift { animation: barbellLift var(--barbell-loop) infinite; }
+.barbell .barbell-shadow {
+  fill: var(--accent);
+  opacity: 0.14;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: barbellShadow var(--barbell-loop) infinite;
+}
+
+@keyframes barbellP1 {
+  0% { transform: translateX(var(--dx)); opacity: 0; animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.25); }
+  10%, 86% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4); }
+  94%, 100% { transform: translateX(var(--dx)); opacity: 0; }
+}
+@keyframes barbellP2 {
+  0%, 8% { transform: translateX(var(--dx)); opacity: 0; animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.25); }
+  18%, 80% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4); }
+  88%, 100% { transform: translateX(var(--dx)); opacity: 0; }
+}
+@keyframes barbellP3 {
+  0%, 16% { transform: translateX(var(--dx)); opacity: 0; animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.25); }
+  26%, 74% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4); }
+  82%, 100% { transform: translateX(var(--dx)); opacity: 0; }
+}
+@keyframes barbellClip {
+  0%, 24% { transform: translateX(var(--dx)); opacity: 0; animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+  31%, 68% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4); }
+  74%, 100% { transform: translateX(var(--dx)); opacity: 0; }
+}
+@keyframes barbellLift {
+  0%, 36% { transform: none; animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); }
+  48%, 54% { transform: translateY(-11px); animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1); }
+  63% { transform: translateY(1.2px); animation-timing-function: ease-out; }
+  67%, 100% { transform: none; }
+}
+@keyframes barbellShadow {
+  0%, 36% { transform: none; opacity: 0.14; animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); }
+  48%, 54% { transform: scaleX(0.7); opacity: 0.06; animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1); }
+  63%, 100% { transform: none; opacity: 0.14; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barbell * { animation: none !important; }
+  .barbell .barbell-lift { animation: barbellBreathe 1.8s ease-in-out infinite !important; }
+}
+@keyframes barbellBreathe {
+  50% { opacity: 0.5; }
+}
+
+/* Dims and blurs the page behind the loader while it locks the screen. */
+.activity-scrim {
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  -webkit-backdrop-filter: blur(6px) saturate(0.8);
+  backdrop-filter: blur(6px) saturate(0.8);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .activity-scrim { background: color-mix(in srgb, var(--bg) 82%, transparent); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .activity-scrim {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+  }
+}
+
+/* No activity loader on top of the boot splash. */
+body:has([data-boot-splash]) [data-activity-hud] {
+  display: none;
 }

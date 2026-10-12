@@ -6,6 +6,7 @@ import { createPhotoUploadTarget, recordPhoto } from "@/app/actions/body";
 import { createClient } from "@/lib/supabase/client";
 import { toDateString } from "@/lib/dates";
 import type { Pose } from "@/lib/database.types";
+import { useReportActivity } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 const MAX_EDGE = 1600;
@@ -44,6 +45,8 @@ export function PhotoUpload({ pose }: { pose: Pose }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Navigating away mid-upload would drop the photo.
+  useReportActivity(busy || pending, { label: "Uploading photo" });
 
   async function upload(file: File) {
     setError(null);

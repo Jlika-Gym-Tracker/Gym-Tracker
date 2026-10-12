@@ -23,7 +23,7 @@ export function AsyncButton({
   /** "replace" hands the spinner the children's place — for icon-only buttons. */
   spinner?: "prepend" | "replace";
 }) {
-  const { pending, run } = useAction();
+  const { pending, run } = useAction({ announce: "block" });
 
   return (
     <button

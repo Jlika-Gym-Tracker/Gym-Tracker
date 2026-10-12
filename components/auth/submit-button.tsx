@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
+import { useReportActivity } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 export function SubmitButton({
@@ -15,6 +16,7 @@ export function SubmitButton({
   variant?: "primary" | "ghost";
 }) {
   const { pending } = useFormStatus();
+  useReportActivity(pending, { label: pendingLabel });
 
   return (
     <button
