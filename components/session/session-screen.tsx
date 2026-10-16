@@ -159,6 +159,20 @@ export function SessionScreen({
     return () => document.removeEventListener("keydown", onKey);
   }, [shortcutsEnabled, system]);
 
+  const statsRef = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(false);
+
+  useEffect(() => {
+    const el = statsRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setPinned(entry.intersectionRatio < 1),
+      { rootMargin: "-1px 0px 0px 0px", threshold: 1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const message = error ?? finishState.error ?? discardState.error;
   const focus = session.exercises.find((e) => e.exercise.id === focusId) ?? session.exercises[0];
   const actions = {
@@ -174,43 +188,65 @@ export function SessionScreen({
     <>
       <div className="grid items-start gap-[18px] xl:grid-cols-[1fr_372px]">
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-4 rounded-[18px] border border-line bg-surface px-4 py-3.5 lg:px-5 lg:py-[18px]">
-            <div className="grid w-full grid-cols-3 gap-3 lg:flex lg:w-auto lg:items-center lg:gap-4">
-              <Stat label="Elapsed">
-                <ElapsedClock startedAt={session.started_at} />
-              </Stat>
-              <Divider />
-              <Stat label="Sets done">
-                <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
-                  {totals.done}
-                  <span className="text-fg-dim">/{totals.planned}</span>
-                </span>
-              </Stat>
-              <Divider />
-              <Stat label={`Volume (${unit})`}>
-                <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
-                  {totals.volume > 0 ? formatVolume(totals.volume, "metric") : "0"}
-                </span>
-              </Stat>
+          <div ref={statsRef} className="sticky top-0 z-30 -mt-4 bg-bg pt-4 lg:-mt-5 lg:pt-5">
+            <div
+              className={cn(
+                "relative flex flex-wrap items-center gap-4 rounded-[18px] border border-line bg-surface px-4 py-3.5 transition-colors duration-300 lg:px-5 lg:py-[18px]",
+                pinned && "border-stroke",
+              )}
+            >
+              <div
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute inset-x-6 -bottom-px h-px bg-linear-to-r from-transparent via-accent/60 to-transparent opacity-0 transition-opacity duration-500",
+                  pinned && "opacity-100",
+                )}
+              />
+              <div className="grid w-full grid-cols-3 gap-3 lg:flex lg:w-auto lg:items-center lg:gap-4">
+                <Stat label="Elapsed">
+                  <ElapsedClock startedAt={session.started_at} />
+                </Stat>
+                <Divider />
+                <Stat label="Sets done">
+                  <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
+                    {totals.done}
+                    <span className="text-fg-dim">/{totals.planned}</span>
+                  </span>
+                </Stat>
+                <Divider />
+                <Stat label={`Volume (${unit})`}>
+                  <span className="font-mono text-2xl font-extrabold tracking-[-0.02em]">
+                    {totals.volume > 0 ? formatVolume(totals.volume, "metric") : "0"}
+                  </span>
+                </Stat>
+              </div>
+
+              {/* On a phone these move to the bar at the bottom of the screen. */}
+              <div className="ml-auto hidden items-center gap-2.5 lg:flex">
+                <SessionActions {...actions} />
+              </div>
+
+              {message ? (
+                <p className="hidden w-full rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-xs text-danger lg:block">
+                  {message}
+                </p>
+              ) : null}
+
+              {/* Keyboard shortcuts mean nothing on a touchscreen. */}
+              {shortcutsEnabled ? (
+                <p className="hidden w-full font-mono text-[10px] text-fg-dim uppercase pointer-fine:block">
+                  Space completes the next set · R restarts rest
+                </p>
+              ) : null}
             </div>
 
-            {/* On a phone these move to the bar at the bottom of the screen. */}
-            <div className="ml-auto hidden items-center gap-2.5 lg:flex">
-              <SessionActions {...actions} />
-            </div>
-
-            {message ? (
-              <p className="hidden w-full rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-xs text-danger lg:block">
-                {message}
-              </p>
-            ) : null}
-
-            {/* Keyboard shortcuts mean nothing on a touchscreen. */}
-            {shortcutsEnabled ? (
-              <p className="hidden w-full font-mono text-[10px] text-fg-dim uppercase pointer-fine:block">
-                Space completes the next set · R restarts rest
-              </p>
-            ) : null}
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-x-0 top-full h-8 bg-linear-to-b from-bg via-bg/70 to-transparent opacity-0 transition-opacity duration-300",
+                pinned && "opacity-100",
+              )}
+            />
           </div>
 
           {session.exercises.length === 0 ? (
