@@ -160,17 +160,31 @@ export function SessionScreen({
   }, [shortcutsEnabled, system]);
 
   const statsRef = useRef<HTMLDivElement>(null);
+  const fadeRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
     const el = statsRef.current;
     if (!el) return;
+    // Pinned once the bar crosses a line 1px below its sticky top. Assumes the window scrolls.
+    const top = parseFloat(getComputedStyle(el).top) || 0;
     const observer = new IntersectionObserver(
       ([entry]) => setPinned(entry.intersectionRatio < 1),
-      { rootMargin: "-1px 0px 0px 0px", threshold: 1 },
+      { rootMargin: `${-(top + 1)}px 0px 0px 0px`, threshold: 1 },
     );
+    // Keeps focused fields and scrollIntoView targets clear of the bar and its fade.
+    const html = document.documentElement;
+    const resize = new ResizeObserver(() => {
+      const fade = fadeRef.current?.offsetHeight ?? 0;
+      html.style.scrollPaddingTop = `${top + el.offsetHeight + fade}px`;
+    });
     observer.observe(el);
-    return () => observer.disconnect();
+    resize.observe(el);
+    return () => {
+      observer.disconnect();
+      resize.disconnect();
+      html.style.removeProperty("scroll-padding-top");
+    };
   }, []);
 
   const message = error ?? finishState.error ?? discardState.error;
@@ -241,6 +255,7 @@ export function SessionScreen({
             </div>
 
             <div
+              ref={fadeRef}
               aria-hidden
               className={cn(
                 "pointer-events-none absolute inset-x-0 top-full h-8 bg-linear-to-b from-bg via-bg/70 to-transparent opacity-0 transition-opacity duration-300",
