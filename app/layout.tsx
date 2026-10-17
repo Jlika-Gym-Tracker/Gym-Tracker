@@ -37,9 +37,10 @@ export default function RootLayout({
   return (
     // The font variables live on <html> because globals.css applies `font-sans`
     // there — on <body> the var() would be out of scope and silently fall back.
+    // The bottom scroll padding keeps focused fields clear of the phone's fixed bottom bar.
     <html
       lang="en"
-      className={`dark ${archivo.variable} ${jetbrainsMono.variable}`}
+      className={`dark scroll-pb-[calc(88px+env(safe-area-inset-bottom))] lg:scroll-pb-0 ${archivo.variable} ${jetbrainsMono.variable}`}
     >
       <body>
         {children}
