@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getPersonalBests, getRecentSessions, getSession } from "@/lib/training/queries";
+import { getRecentSessions, getSession } from "@/lib/training/queries";
+import { getBestsBefore } from "@/lib/training/history-queries";
 import { prescribe } from "@/lib/program/prescription";
 import { SessionScreen, type SessionSettings } from "@/components/session/session-screen";
 import type { SidePanelData } from "@/components/session/side-panel";
@@ -56,7 +57,9 @@ export default async function SessionPage({
   const ids = session.exercises.map((ex) => ex.exercise.id);
   const [recent, bests] = await Promise.all([
     getRecentSessions(ids, { excludeSessionId: session.id, perExercise: 8 }),
-    getPersonalBests(ids, { excludeSessionId: session.id }),
+    // Everything logged before this session started, read page by page: a
+    // PR badge has to beat all of it, not the first thousand sets.
+    getBestsBefore(ids, session.started_at, { excludeSessionId: session.id }),
   ]);
 
   const panels: Record<string, SidePanelData> = {};

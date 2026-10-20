@@ -2,7 +2,6 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { DayProgression, Exercise, ProgressionPolicy, SetLog } from "@/lib/database.types";
 import type { LoggedSet, PastSession, SessionTarget } from "@/lib/program/prescription";
-import { bestSet } from "@/lib/training/e1rm";
 
 export type SessionExercise = {
   exercise: Pick<
@@ -165,53 +164,6 @@ export type PersonalBest = {
   /** Longest hold or session, for timed and cardio movements. */
   longestS: number;
 };
-
-/**
- * All-time bests per movement, from every completed set outside `excludeSessionId`
- * — the bar a set has to clear to be called a PR. All-time rather than recent,
- * so a PR badge means what it says.
- */
-export async function getPersonalBests(
-  exerciseIds: string[],
-  { excludeSessionId }: { excludeSessionId?: string } = {},
-): Promise<Map<string, PersonalBest>> {
-  const result = new Map<string, PersonalBest>();
-  if (exerciseIds.length === 0) return result;
-
-  const supabase = await createClient();
-  const me = await userId(supabase);
-  if (!me) return result;
-  let query = supabase
-    .from("set_logs")
-    .select("exercise_id, weight_kg, reps, duration_s, session:workout_sessions!inner ( user_id )")
-    .eq("session.user_id", me)
-    .in("exercise_id", exerciseIds)
-    .eq("is_complete", true)
-    .limit(20000);
-  if (excludeSessionId) query = query.neq("session_id", excludeSessionId);
-  const { data, error } = await query;
-  if (error) throw error;
-
-  const byExercise = new Map<string, { weight_kg: number | null; reps: number | null; duration_s: number | null }[]>();
-  for (const row of data ?? []) {
-    const list = byExercise.get(row.exercise_id) ?? [];
-    list.push({
-      weight_kg: row.weight_kg == null ? null : Number(row.weight_kg),
-      reps: row.reps,
-      duration_s: row.duration_s,
-    });
-    byExercise.set(row.exercise_id, list);
-  }
-  for (const [id, sets] of byExercise) {
-    const top = bestSet(sets);
-    result.set(id, {
-      bestSet: top ? { weight_kg: top.weight_kg, reps: top.reps } : null,
-      heaviestKg: Math.max(0, ...sets.map((s) => Number(s.weight_kg ?? 0))),
-      longestS: Math.max(0, ...sets.map((s) => s.duration_s ?? 0)),
-    });
-  }
-  return result;
-}
 
 /**
  * Recent sessions of several movements at once, each with the plan the session

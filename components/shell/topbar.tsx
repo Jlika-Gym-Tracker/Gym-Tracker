@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronLeft, LogOut, Search, Settings, Trophy, Users } from "lucide-react";
+import { ChevronLeft, History, LogOut, Search, Settings, Trophy, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { endNavigation, startNavigation } from "@/lib/activity";
 import { titleForPath } from "@/lib/nav";
@@ -132,6 +132,10 @@ export function Topbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             {/* On a phone these are not in the tab bar, so they live here. */}
+            <DropdownMenuItem render={<Link href="/history" />} className="py-2.5 lg:hidden">
+              <History className="size-4" />
+              History
+            </DropdownMenuItem>
             <DropdownMenuItem render={<Link href="/league" />} className="py-2.5 lg:hidden">
               <Trophy className="size-4" />
               Crew league
