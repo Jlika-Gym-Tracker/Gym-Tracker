@@ -150,7 +150,7 @@ export async function signUp(
         display_name: parsed.data.displayName,
         ...(parsed.data.inviteCode ? { invite_code: parsed.data.inviteCode } : {}),
         ...(parsed.data.asCoach ? { wants_coaching: true } : {}),
-        // Read, spent and stripped by the enforce_signup_invite trigger.
+        // Read and spent by the enforce_signup_invite trigger.
         ...(signupCode ? { signup_code: signupCode } : {}),
       },
       emailRedirectTo: `${await siteUrl()}/auth/confirm`,
@@ -159,8 +159,9 @@ export async function signUp(
 
   if (error) {
     // The trigger refused: the code went stale between the check and the
-    // insert (its last use taken, say). GoTrue only reports a database error.
-    if (inviteOnly && /database error saving new user/i.test(error.message)) {
+    // insert (its last use taken, say). Recent GoTrue passes the trigger's
+    // message through; older versions only say there was a database error.
+    if (inviteOnly && /invite-only|database error saving new user/i.test(error.message)) {
       return { error: INVITE_REJECTED, inviteRequired: true };
     }
     return {

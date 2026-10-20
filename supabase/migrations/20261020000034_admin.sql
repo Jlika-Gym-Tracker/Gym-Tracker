@@ -97,8 +97,12 @@ $$;
  *     account can still link Google to it, because that inserts no user.
  *   * The single UPDATE is the check and the consumption at once: the row lock
  *     means two signups racing for a code's last use cannot both get it.
- *   * Raising aborts the insert; GoTrue reports it as "Database error saving
- *     new user", which the signUp action turns into a readable message.
+ *   * Raising aborts the insert. Recent GoTrue passes this message through;
+ *     older versions say "Database error saving new user". The signUp action
+ *     recognises both.
+ *   * The code stays in the account's own metadata (GoTrue writes metadata
+ *     back after the insert, so it cannot be stripped here). It is spent, and
+ *     only that account can see it.
  */
 create or replace function public.enforce_signup_invite()
 returns trigger
@@ -122,12 +126,9 @@ begin
      and i.uses < i.max_uses;
 
   if not found then
-    raise exception 'signup_invite_required'
-      using hint = 'Signups are invite-only: a valid, unexpired invite code is required.';
+    raise exception 'Signups are invite-only: a valid, unexpired invite code is required.';
   end if;
 
-  -- The code has done its job; it need not ride in the account's metadata.
-  new.raw_user_meta_data := new.raw_user_meta_data - 'signup_code';
   return new;
 end;
 $$;
