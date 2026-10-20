@@ -1,48 +1,40 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, Plus, Search } from "lucide-react";
 import { addExerciseToDay } from "@/app/actions/program";
-import { createExercise, type ActionState } from "@/app/actions/exercises";
 import type { LibraryExercise } from "@/lib/program/match";
-import { findCandidates } from "@/lib/program/match";
+import { isPreferred, searchLibrary } from "@/lib/program/match";
 import { Card } from "@/components/kit/card";
-import { ActionButton } from "@/components/kit/action-button";
+import { CreateExercise } from "@/components/exercises/exercise-form";
+import {
+  MUSCLE_GROUPS,
+  MUSCLE_LABEL,
+  equipmentLabel,
+  sortEquipment,
+} from "@/components/exercises/taxonomy";
+import type { Muscle } from "@/lib/database.types";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
 import { useAction } from "@/lib/use-action";
 
 const FILTERS = [
-  { key: "all", label: "ALL", muscles: [] as string[] },
-  { key: "chest", label: "CHEST", muscles: ["chest"] },
-  { key: "back", label: "BACK", muscles: ["lats", "middle_back", "lower_back", "traps"] },
-  { key: "shoulders", label: "DELTS", muscles: ["shoulders"] },
-  { key: "arms", label: "ARMS", muscles: ["biceps", "triceps", "forearms"] },
-  { key: "legs", label: "LEGS", muscles: ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"] },
-  { key: "core", label: "CORE", muscles: ["abdominals"] },
-  { key: "cardio", label: "CARDIO", muscles: [] as string[] },
+  { key: "all", label: "ALL", muscles: [] as readonly Muscle[] },
+  ...MUSCLE_GROUPS,
+  { key: "cardio", label: "CARDIO", muscles: [] as readonly Muscle[] },
 ];
 
-const MUSCLE_LABEL: Record<string, string> = {
-  chest: "Chest", lats: "Lats", middle_back: "Back", lower_back: "Lower back",
-  traps: "Traps", shoulders: "Shoulders", biceps: "Biceps", triceps: "Triceps",
-  forearms: "Forearms", quadriceps: "Quads", hamstrings: "Hamstrings",
-  glutes: "Glutes", calves: "Calves", abdominals: "Core",
-  abductors: "Abductors", adductors: "Adductors", neck: "Neck",
-};
-
-const EQUIPMENT_LABEL: Record<string, string> = {
-  barbell: "Barbell", dumbbell: "Dumbbell", machine: "Machine", cable: "Cable",
-  body_only: "Bodyweight", bands: "Bands", kettlebells: "Kettlebell",
-  ez_curl_bar: "EZ bar", exercise_ball: "Ball", medicine_ball: "Med ball",
-  foam_roll: "Foam roll", other: "Other",
-};
+/** Rows drawn at a time: the whole library is ~750, more than a list should hold at once. */
+const PAGE = 60;
 
 function inGroup(exercise: LibraryExercise, key: string) {
   if (key === "all") return true;
   if (key === "cardio") return exercise.tracking === "cardio";
   const group = FILTERS.find((f) => f.key === key);
-  return exercise.tracking !== "cardio" && (group?.muscles.includes(exercise.primary_muscle) ?? false);
+  return (
+    exercise.tracking !== "cardio" &&
+    (group?.muscles.includes(exercise.primary_muscle as Muscle) ?? false)
+  );
 }
 
 export function LibraryPanel({
@@ -57,32 +49,33 @@ export function LibraryPanel({
   const [filter, setFilter] = useState("all");
   const [equipment, setEquipment] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  // The curated movements and your own by default; the whole library on request.
+  const [showAll, setShowAll] = useState(false);
+  const [shown, setShown] = useState(PAGE);
   const [creating, setCreating] = useState(false);
   const { pending, run } = useAction();
   const [justAdded, setJustAdded] = useState<string | null>(null);
   // Which row is being written, so the spinner lands on the one pressed.
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  const byGroup = useMemo(() => library.filter((e) => inGroup(e, filter)), [library, filter]);
+  const shortList = useMemo(() => library.filter(isPreferred), [library]);
+  const searching = query.trim().length > 0;
 
-  // Only equipment that something in the current group uses, so every chip on
-  // screen has results behind it.
-  const equipmentOptions = useMemo(
-    () => [...new Set(byGroup.map((e) => e.equipment))].sort(
-      (a, b) => (EQUIPMENT_LABEL[a] ?? a).localeCompare(EQUIPMENT_LABEL[b] ?? b),
-    ),
-    [byGroup],
-  );
+  // A search always reaches the whole library; browsing starts from the short list.
+  const pool = useMemo(() => {
+    const base = (searching || showAll ? library : shortList).filter((e) => inGroup(e, filter));
+    // Reuse the matcher's shorthand ("DB" for dumbbell), plus prefixes as you type.
+    return searching ? searchLibrary(query, base) : base;
+  }, [library, shortList, searching, showAll, filter, query]);
+
+  // Only equipment that something on screen uses, so every chip has results.
+  const equipmentOptions = useMemo(() => sortEquipment(pool.map((e) => e.equipment)), [pool]);
   const activeEquipment = equipment.filter((e) => equipmentOptions.includes(e));
 
-  const results = useMemo(() => {
-    const pool = activeEquipment.length
-      ? byGroup.filter((e) => activeEquipment.includes(e.equipment))
-      : byGroup;
-    if (!query.trim()) return pool.slice(0, 40);
-    // Reuse the paste matcher so search tolerates the same shorthand.
-    return findCandidates(query, pool, 40).map((c) => c.exercise);
-  }, [byGroup, activeEquipment, query]);
+  const results = useMemo(
+    () => (activeEquipment.length ? pool.filter((e) => activeEquipment.includes(e.equipment)) : pool),
+    [pool, activeEquipment],
+  );
 
   function add(exerciseId: string) {
     if (!activeDayId) return;
@@ -105,6 +98,7 @@ export function LibraryPanel({
   }
 
   function toggleEquipment(key: string) {
+    setShown(PAGE);
     setEquipment((current) =>
       current.includes(key) ? current.filter((e) => e !== key) : [...current, key],
     );
@@ -116,7 +110,7 @@ export function LibraryPanel({
         <div className="min-w-0">
           <h2 className="text-[15px] font-bold">Exercise library</h2>
           <p className="mt-1 font-mono text-[10.5px] text-fg-dim uppercase">
-            {library.length} movements
+            {library.filter((e) => e.featured).length} featured · {library.length} in all
             {activeDayName ? ` · adding to ${activeDayName}` : " · pick a day first"}
           </p>
         </div>
@@ -144,8 +138,11 @@ export function LibraryPanel({
         <Search className="size-3.5 flex-none text-fg-dim" strokeWidth={1.5} />
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search movements…"
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setShown(PAGE);
+          }}
+          placeholder={`Search all ${library.length} movements…`}
           aria-label="Search the exercise library"
           className="w-full bg-transparent text-[12.5px] text-fg-2 outline-none placeholder:text-fg-dim"
         />
@@ -156,7 +153,10 @@ export function LibraryPanel({
           <button
             key={f.key}
             type="button"
-            onClick={() => setFilter(f.key)}
+            onClick={() => {
+              setFilter(f.key);
+              setShown(PAGE);
+            }}
             aria-pressed={filter === f.key}
             className={cn(
               "hit rounded-lg border px-[11px] py-[7px] font-mono text-[11px] font-semibold transition-colors",
@@ -171,7 +171,7 @@ export function LibraryPanel({
       </div>
 
       {equipmentOptions.length > 1 ? (
-        <div className="mt-2.5 mb-3">
+        <div className="mt-2.5">
           <div className="mb-1.5 flex items-baseline">
             <span className="eyebrow">Equipment</span>
             {activeEquipment.length ? (
@@ -198,14 +198,35 @@ export function LibraryPanel({
                     : "border-line text-fg-dim hover:border-stroke",
                 )}
               >
-                {EQUIPMENT_LABEL[key] ?? key}
+                {equipmentLabel(key)}
               </button>
             ))}
           </div>
         </div>
-      ) : (
-        <div className="mb-3" />
-      )}
+      ) : null}
+
+      <div className="mt-3 mb-2 flex items-baseline gap-2">
+        <span className="eyebrow">
+          {searching
+            ? `${results.length} ${results.length === 1 ? "match" : "matches"} in the whole library`
+            : showAll
+              ? `All ${results.length}`
+              : `${results.length} featured & yours`}
+        </span>
+        {searching ? null : (
+          <button
+            type="button"
+            onClick={() => {
+              setShowAll((v) => !v);
+              setShown(PAGE);
+            }}
+            aria-pressed={showAll}
+            className="hit ml-auto font-mono text-[10px] font-semibold text-fg-dim hover:text-accent"
+          >
+            {showAll ? "FEATURED ONLY" : `SHOW ALL ${library.length}`}
+          </button>
+        )}
+      </div>
 
       <div className="flex max-h-[420px] flex-col gap-2 overflow-y-auto pr-1">
         {results.length === 0 ? (
@@ -220,7 +241,7 @@ export function LibraryPanel({
             </button>
           </p>
         ) : (
-          results.map((exercise) => (
+          results.slice(0, shown).map((exercise) => (
             <button
               key={exercise.id}
               type="button"
@@ -247,8 +268,8 @@ export function LibraryPanel({
                   {exercise.name}
                 </span>
                 <span className="mt-0.5 block font-mono text-[10px] text-fg-dim uppercase">
-                  {MUSCLE_LABEL[exercise.primary_muscle] ?? exercise.primary_muscle} ·{" "}
-                  {EQUIPMENT_LABEL[exercise.equipment] ?? exercise.equipment}
+                  {MUSCLE_LABEL[exercise.primary_muscle as Muscle] ?? exercise.primary_muscle} ·{" "}
+                  {equipmentLabel(exercise.equipment)}
                   {exercise.tracking === "time" ? " · timed" : ""}
                   {exercise.tracking === "cardio" ? " · cardio" : ""}
                   {exercise.owner_id ? <span className="text-accent"> · yours</span> : null}
@@ -268,100 +289,16 @@ export function LibraryPanel({
             </button>
           ))
         )}
+        {results.length > shown ? (
+          <button
+            type="button"
+            onClick={() => setShown((n) => n + PAGE)}
+            className="hit rounded-[11px] border border-line py-2.5 font-mono text-[10.5px] font-semibold text-fg-soft hover:border-stroke hover:text-fg"
+          >
+            SHOW {Math.min(PAGE, results.length - shown)} MORE · {results.length - shown} LEFT
+          </button>
+        ) : null}
       </div>
     </Card>
-  );
-}
-
-/** A name and a muscle are enough; the rest has sensible defaults. */
-function CreateExercise({
-  initialName,
-  onCreated,
-}: {
-  initialName: string;
-  onCreated: (name: string) => void;
-}) {
-  const [state, create] = useActionState(createExercise, {} as ActionState);
-  const [name, setName] = useState(initialName);
-
-  useEffect(() => {
-    if (state.id) onCreated(name);
-    // Only when a new exercise lands, not on every keystroke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.id]);
-
-  const control =
-    "w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-base text-fg-2 outline-none focus:border-line-hi sm:text-[13px]";
-
-  return (
-    <form action={create} className="mt-3.5 flex flex-col gap-2.5 rounded-[12px] border border-line bg-surface-2 p-3">
-      <label className="block">
-        <span className="eyebrow mb-1.5 block">Name</span>
-        <input
-          name="name"
-          required
-          minLength={2}
-          maxLength={80}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Sissy squat, Landmine press…"
-          className={control}
-        />
-      </label>
-      <div className="grid grid-cols-2 gap-2.5">
-        <label className="block">
-          <span className="eyebrow mb-1.5 block">Works</span>
-          <select name="primaryMuscle" required defaultValue="" className={control}>
-            <option value="" disabled>
-              Pick one
-            </option>
-            {Object.entries(MUSCLE_LABEL).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="eyebrow mb-1.5 block">Equipment</span>
-          <select name="equipment" defaultValue="other" className={control}>
-            {Object.entries(EQUIPMENT_LABEL).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <label className="block">
-        <span className="eyebrow mb-1.5 block">Logged as</span>
-        <select name="tracking" defaultValue="reps" className={control}>
-          <option value="reps">Weight × reps</option>
-          <option value="time">Time held (planks, hangs, carries)</option>
-          <option value="cardio">Cardio — time and distance</option>
-        </select>
-      </label>
-      <label className="block">
-        <span className="eyebrow mb-1.5 block">How to do it — optional</span>
-        <textarea
-          name="description"
-          maxLength={600}
-          rows={2}
-          placeholder="A line or two for future you."
-          className={cn(control, "resize-none")}
-        />
-      </label>
-      {state.error ? (
-        <p className="rounded-[10px] border border-danger-border bg-danger-soft px-3 py-2 text-[12px] text-danger">
-          {state.error}
-        </p>
-      ) : null}
-      <ActionButton
-        pendingLabel="Adding…"
-        className="w-fit rounded-[10px] bg-accent px-4 py-2.5 text-[12.5px] font-bold text-[#0a0c0d] hover:bg-accent-hi"
-      >
-        Add to my library
-      </ActionButton>
-    </form>
   );
 }

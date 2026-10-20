@@ -117,13 +117,30 @@ export async function findPreviousWeek(weekStart: string, status?: WeekStatus) {
   return data;
 }
 
-/** Global seed rows plus the user's own movements. RLS handles the filtering. */
+/**
+ * Global rows plus the user's own movements, minus any they removed. RLS
+ * limits it to those two; it is not training data, so a coach reading an
+ * athlete's sets does not change what comes back here.
+ *
+ * The full library is ~760 global rows. Supabase caps a response at 1000, so
+ * it is read a page at a time rather than trusting one response to hold it.
+ */
 export async function getLibrary(): Promise<LibraryExercise[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("exercises")
-    .select("id, name, slug, aliases, primary_muscle, equipment, image_start_url, tracking, owner_id")
-    .order("name");
-  if (error) throw error;
-  return data ?? [];
+  const PAGE = 1000;
+  const rows: LibraryExercise[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("exercises")
+      .select(
+        "id, name, slug, aliases, primary_muscle, equipment, image_start_url, tracking, owner_id, featured, archived_at",
+      )
+      .is("archived_at", null)
+      .order("name")
+      .order("id")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE) return rows;
+  }
 }
