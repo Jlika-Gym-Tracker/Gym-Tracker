@@ -6,6 +6,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -40,13 +41,17 @@ export function TrendChart({
   height = 150,
   unit = "",
   domainPadding = 1,
+  reference,
 }: {
   data: SeriesPoint[];
   dataKey: string;
   height?: number;
   unit?: string;
   domainPadding?: number;
+  /** A dashed target line, e.g. a goal weight. The y-axis always stretches to show it. */
+  reference?: { value: number; label: string };
 }) {
+  const target = reference?.value;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: -18 }}>
@@ -64,8 +69,8 @@ export function TrendChart({
           tick={AXIS}
           width={44}
           domain={[
-            (min: number) => Math.floor(min - domainPadding),
-            (max: number) => Math.ceil(max + domainPadding),
+            (min: number) => Math.floor(Math.min(min, target ?? min) - domainPadding),
+            (max: number) => Math.ceil(Math.max(max, target ?? max) + domainPadding),
           ]}
         />
         <Tooltip
@@ -74,6 +79,21 @@ export function TrendChart({
           formatter={(value) => [`${value ?? "—"}${unit ? ` ${unit}` : ""}`, ""]}
           cursor={{ stroke: "#2c3a14" }}
         />
+        {reference ? (
+          <ReferenceLine
+            y={reference.value}
+            stroke="#7d9440"
+            strokeDasharray="4 4"
+            ifOverflow="extendDomain"
+            label={{
+              value: reference.label,
+              position: "insideTopRight",
+              fill: "#7d9440",
+              fontSize: 10,
+              fontFamily: AXIS.fontFamily,
+            }}
+          />
+        ) : null}
         <Area
           type="monotone"
           dataKey={dataKey}

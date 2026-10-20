@@ -114,6 +114,52 @@ export function goalProgressPct(
   }
 }
 
+export type WeightDirection = "toward" | "away" | "none";
+
+/**
+ * Whether a change in weight moved toward what this person wants.
+ *
+ * With a goal weight, it is judged by distance: ending closer to the goal than
+ * you started is toward it, so overshooting a little still counts and
+ * overshooting by more than you started away does not. Without one, the stated
+ * goal decides — gaining is the point of a bulk, losing is the default for
+ * everything else.
+ */
+export function weightDirection({
+  fromKg,
+  toKg,
+  goalWeightKg,
+  goal,
+}: {
+  fromKg: number;
+  toKg: number;
+  goalWeightKg: number | null;
+  goal: Goal;
+}): WeightDirection {
+  if (goalWeightKg != null) {
+    const before = Math.abs(fromKg - goalWeightKg);
+    const after = Math.abs(toKg - goalWeightKg);
+    return after < before ? "toward" : after > before ? "away" : "none";
+  }
+  const change = toKg - fromKg;
+  if (change === 0) return "none";
+  const upIsGood = goal === "bulk";
+  return change > 0 === upIsGood ? "toward" : "away";
+}
+
+/** Closer than this to the goal weight and you are there: it is inside a day's water swing. */
+export const AT_GOAL_KG = 0.2;
+
+/** How much is left to lose or gain, or null once the goal is reached. */
+export function remainingToGoal(
+  currentKg: number,
+  goalWeightKg: number,
+): { kg: number; to: "lose" | "gain" } | null {
+  const gap = goalWeightKg - currentKg;
+  if (Math.abs(gap) < AT_GOAL_KG) return null;
+  return { kg: Math.abs(gap), to: gap > 0 ? "gain" : "lose" };
+}
+
 /** Index a series to 100 at its first point, for the strength-vs-bodyweight chart. */
 export function indexToStart(values: number[]): number[] {
   const base = values.find((v) => v > 0);

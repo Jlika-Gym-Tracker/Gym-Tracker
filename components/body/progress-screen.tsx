@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import type { PhotoWithUrl } from "@/lib/body/queries";
-import type { Metric } from "@/lib/body/stats";
-import { delta } from "@/lib/body/stats";
+import type { Goal, Metric } from "@/lib/body/stats";
+import { delta, earliest, latest, weightDirection } from "@/lib/body/stats";
 import type { Pose, UnitSystem } from "@/lib/database.types";
 import { cmToDisplay, kgToDisplay, lengthUnit, trimNumber, weightUnit } from "@/lib/units";
 import { Card, Eyebrow } from "@/components/kit/card";
 import { ChartLegend, DualLineChart, TrendChart } from "@/components/charts/line-chart";
+import { GoalWeightNote, goalLineLabel } from "@/components/stats/goal-weight";
 import { cn } from "@/lib/utils";
 import { CompareSlider } from "./compare-slider";
 import { PhotoTimeline } from "./photo-timeline";
@@ -17,18 +18,24 @@ import { MeasurementsPanel } from "./measurements-panel";
 
 const POSES: Pose[] = ["front", "side", "back"];
 
+const TONE = { toward: "text-accent", away: "text-warn", none: "text-fg-dim" } as const;
+
 export function ProgressScreen({
   metrics,
   photosByPose,
   system,
   strengthSeries,
   strengthDeltaPct,
+  goal,
+  goalWeightKg,
 }: {
   metrics: Metric[];
   photosByPose: Record<Pose, PhotoWithUrl[]>;
   system: UnitSystem;
   strengthSeries: { label: string; strength: number | null; bodyweight: number | null }[];
   strengthDeltaPct: number | null;
+  goal: Goal;
+  goalWeightKg: number | null;
 }) {
   const [pose, setPose] = useState<Pose>("front");
   const photos = photosByPose[pose] ?? [];
@@ -44,10 +51,24 @@ export function ProgressScreen({
       weight: Number(kgToDisplay(Number(m.weight_kg), system).toFixed(1)),
     }));
 
+  // Weight is judged against the goal weight when there is one; the tape
+  // measurements keep their fixed sense of better.
+  const firstWeight = earliest(metrics, "weight_kg");
+  const lastWeight = latest(metrics, "weight_kg");
+  const weightTone =
+    firstWeight && lastWeight
+      ? TONE[weightDirection({ fromKg: firstWeight.value, toKg: lastWeight.value, goalWeightKg, goal })]
+      : TONE.none;
+
+  const tape = (value: number | null, downIsGood: boolean) =>
+    value != null && downIsGood === value < 0 ? TONE.toward : TONE.away;
+  const waist = delta(metrics, "waist_cm");
+  const arm = delta(metrics, "arm_cm");
+
   const tiles = [
-    { label: "Weight", value: delta(metrics, "weight_kg"), unit: "kg" as const, downIsGood: true },
-    { label: "Waist", value: delta(metrics, "waist_cm"), unit: "cm" as const, downIsGood: true },
-    { label: "Arm", value: delta(metrics, "arm_cm"), unit: "cm" as const, downIsGood: false },
+    { label: "Weight", value: delta(metrics, "weight_kg"), unit: "kg" as const, tone: weightTone },
+    { label: "Waist", value: waist, unit: "cm" as const, tone: tape(waist, true) },
+    { label: "Arm", value: arm, unit: "cm" as const, tone: tape(arm, false) },
   ];
 
   return (
@@ -102,11 +123,7 @@ export function ProgressScreen({
                   <span
                     className={cn(
                       "text-xl font-extrabold tracking-[-0.03em]",
-                      tile.value == null
-                        ? "text-fg-dim"
-                        : tile.downIsGood === tile.value < 0
-                          ? "text-accent"
-                          : "text-warn",
+                      tile.value == null ? "text-fg-dim" : tile.tone,
                     )}
                   >
                     {tile.value == null
@@ -157,9 +174,29 @@ export function ProgressScreen({
 
         <Card className="rounded-[18px]">
           <Eyebrow>Weight trend</Eyebrow>
+          {goalWeightKg != null ? (
+            <GoalWeightNote
+              goalWeightKg={goalWeightKg}
+              currentKg={lastWeight?.value ?? null}
+              system={system}
+              className="mt-2"
+            />
+          ) : null}
           {weightTrend.length >= 2 ? (
             <div className="mt-3">
-              <TrendChart data={weightTrend} dataKey="weight" unit={weightUnit(system)} />
+              <TrendChart
+                data={weightTrend}
+                dataKey="weight"
+                unit={weightUnit(system)}
+                reference={
+                  goalWeightKg != null
+                    ? {
+                        value: Number(kgToDisplay(goalWeightKg, system).toFixed(1)),
+                        label: goalLineLabel(goalWeightKg, system),
+                      }
+                    : undefined
+                }
+              />
             </div>
           ) : (
             <p className="py-10 text-center text-[13px] text-fg-dim">

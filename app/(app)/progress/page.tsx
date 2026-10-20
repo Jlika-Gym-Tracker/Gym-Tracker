@@ -1,7 +1,7 @@
 import { format, parseISO, startOfWeek } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getMetrics, getPhotos, getStrengthSeries } from "@/lib/body/queries";
-import { indexToStart, rollingAverage } from "@/lib/body/stats";
+import { indexToStart, rollingAverage, type Goal } from "@/lib/body/stats";
 import { estimateOneRepMax } from "@/lib/training/e1rm";
 import { WEEK_STARTS_ON, toDateString } from "@/lib/dates";
 import type { Pose, UnitSystem } from "@/lib/database.types";
@@ -13,7 +13,7 @@ export default async function ProgressPage() {
   const supabase = await createClient();
 
   const [{ data: profile }, metrics, strengthRows, ...photoLists] = await Promise.all([
-    supabase.from("profiles").select("unit_system").maybeSingle(),
+    supabase.from("profiles").select("unit_system, goal, goal_weight_kg").maybeSingle(),
     getMetrics(),
     getStrengthSeries(12),
     ...POSES.map((pose) => getPhotos(pose)),
@@ -68,6 +68,8 @@ export default async function ProgressPage() {
       system={system}
       strengthSeries={strengthSeries}
       strengthDeltaPct={strengthDeltaPct}
+      goal={(profile?.goal ?? "cut") as Goal}
+      goalWeightKg={profile?.goal_weight_kg == null ? null : Number(profile.goal_weight_kg)}
     />
   );
 }
