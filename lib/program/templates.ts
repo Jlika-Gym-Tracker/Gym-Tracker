@@ -1,11 +1,11 @@
 /**
  * Starting points for someone who does not yet know what to write.
  *
- * The brief's first rule is that the user writes the program — no AI
- * generation. These templates keep that true: they are fixed, human-authored
- * blueprints that fill a draft week you then edit and publish. Nothing is
- * generated, nothing calls a model, and the same choice always produces the
- * same week.
+ * The brief's first rule is that the user writes the program. These templates
+ * keep that true: they are fixed, human-authored blueprints that fill a draft
+ * week you then edit and publish. Nothing is generated, nothing calls a model,
+ * and the same choice always produces the same week. (The optional AI Coach in
+ * lib/ai-coach is separate: off unless switched on, and it only ever proposes.)
  *
  * Each slot lists candidate exercises best-first. The resolver takes the first
  * one the person's equipment allows, so one blueprint serves a full gym, a pair

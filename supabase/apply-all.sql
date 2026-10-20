@@ -6,9 +6,11 @@
 -- Paste the whole thing into the Supabase SQL editor and run it once. Every
 -- statement is idempotent, so running it again is harmless.
 --
--- Not included: 20260905000001_profiles.sql (already applied) and
+-- Not included: 20260905000001_profiles.sql (already applied),
 -- 20260905000012_weekly_review_cron.sql (optional; needs app.weekly_review_url
--- and app.cron_secret set on the database first).
+-- and app.cron_secret set on the database first) and
+-- 20261020000030_workout_reminder_cron.sql (optional; needs
+-- app.workout_reminder_url and app.cron_secret set first).
 
 
 -- ========================================================================
@@ -2747,3 +2749,768 @@ drop policy if exists "league_members: leave own" on public.league_members;
 create policy "league_members: leave own"
   on public.league_members for delete
   using (user_id = (select auth.uid()));
+
+
+-- ========================================================================
+-- 20261008000025_week_starts_on.sql
+-- ========================================================================
+
+-- JLIKA Gym — the training week no longer has to start on a Monday.
+--
+-- Weeks were Monday→Sunday everywhere: `currentWeekStart()` snapped to Monday
+-- and each day was labelled by its position in a fixed Mon..Sun array. Someone
+-- whose split runs Saturday→Friday could not express that at all.
+--
+-- 0 = Sunday … 6 = Saturday, matching date-fns' weekStartsOn, so the value can
+-- be handed straight to startOfWeek without translation.
+
+alter table public.user_settings
+  add column if not exists week_starts_on smallint not null default 1
+  check (week_starts_on between 0 and 6);
+
+comment on column public.user_settings.week_starts_on is
+  'Which weekday a training week begins on. 0 = Sunday … 6 = Saturday (date-fns weekStartsOn). Existing rows keep Monday.';
+
+
+-- ========================================================================
+-- 20261008000026_swap_program_days.sql
+-- ========================================================================
+
+-- JLIKA Gym — moving a whole training day to a different slot in the week.
+--
+-- Swapping two days means swapping their `day_index`: the rows themselves stay
+-- put, so their exercises, and any session already logged against them, travel
+-- with the day. Swapping the *contents* instead would silently relabel history
+-- — a session recorded against "Monday · Push" would end up reading as whatever
+-- moved into that row.
+--
+-- The obstacle is unique (week_id, day_index). A full week occupies every index
+-- from 0 to 6, and the CHECK forbids parking a row outside that range, so there
+-- is nowhere to put the first row while the second is still holding its slot.
+-- Making the constraint deferrable lets both updates land and be judged
+-- together at commit. Nothing uses this constraint as an ON CONFLICT target, so
+-- deferring it costs nothing elsewhere.
+
+alter table public.program_days
+  drop constraint if exists program_days_week_id_day_index_key;
+
+alter table public.program_days
+  add constraint program_days_week_id_day_index_key
+  unique (week_id, day_index) deferrable initially immediate;
+
+/**
+ * Swaps two days of the same week.
+ *
+ * SECURITY INVOKER on purpose: the caller's own row-level security decides
+ * whether they may touch these rows, so this cannot be used to reorder someone
+ * else's program.
+ */
+create or replace function public.swap_program_days(day_a uuid, day_b uuid)
+returns void
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  a public.program_days%rowtype;
+  b public.program_days%rowtype;
+begin
+  if day_a = day_b then
+    return;
+  end if;
+
+  select * into a from public.program_days where id = day_a;
+  if not found then
+    raise exception 'That day no longer exists';
+  end if;
+
+  select * into b from public.program_days where id = day_b;
+  if not found then
+    raise exception 'That day no longer exists';
+  end if;
+
+  if a.week_id <> b.week_id then
+    raise exception 'Those days belong to different weeks';
+  end if;
+
+  set constraints public.program_days_week_id_day_index_key deferred;
+  update public.program_days set day_index = b.day_index where id = a.id;
+  update public.program_days set day_index = a.day_index where id = b.id;
+end;
+$$;
+
+revoke all on function public.swap_program_days(uuid, uuid) from public;
+revoke all on function public.swap_program_days(uuid, uuid) from anon;
+grant execute on function public.swap_program_days(uuid, uuid) to authenticated;
+
+
+-- ========================================================================
+-- 20261020000027_workout_preferences.sql
+-- ========================================================================
+
+-- JLIKA Gym — preferences for the workout screen, and a goal weight.
+--
+-- keep_awake   Hold a screen wake lock while a session is open, so a phone does
+--              not lock between sets. On by default: unlocking and finding your
+--              place again after every set is the most annoying part of logging.
+-- rest_sound   Beep (and vibrate, where the device can) when rest runs out.
+-- effort_scale Which scale the effort column asks in. Stored values are always
+--              RPE in set_logs.rpe; RIR is RPE read the other way (RIR = 10 − RPE),
+--              so switching scale never rewrites a logged set. 'off' hides the
+--              column. Defaults to 'rpe' because that column already exists.
+--
+-- goal_weight_kg draws a target line on the weight chart and colours each change
+-- by whether it moved toward it. Null = no goal, and nothing is coloured.
+--
+-- body_figure picks the figure the muscle map is drawn on. It is a drawing
+-- preference only and is not read for anything else.
+
+alter table public.user_settings
+  add column if not exists keep_awake boolean not null default true,
+  add column if not exists rest_sound boolean not null default true,
+  add column if not exists effort_scale text not null default 'rpe';
+
+alter table public.user_settings
+  drop constraint if exists user_settings_effort_scale_check;
+alter table public.user_settings
+  add constraint user_settings_effort_scale_check
+  check (effort_scale in ('off', 'rpe', 'rir'));
+
+alter table public.profiles
+  add column if not exists goal_weight_kg numeric(5,2),
+  add column if not exists body_figure text not null default 'male';
+
+alter table public.profiles
+  drop constraint if exists profiles_goal_weight_kg_check;
+alter table public.profiles
+  add constraint profiles_goal_weight_kg_check
+  check (goal_weight_kg is null or (goal_weight_kg > 20 and goal_weight_kg < 400));
+
+alter table public.profiles
+  drop constraint if exists profiles_body_figure_check;
+alter table public.profiles
+  add constraint profiles_body_figure_check
+  check (body_figure in ('male', 'female'));
+
+
+-- ========================================================================
+-- 20261020000028_tracking_supersets_progression.sql
+-- ========================================================================
+
+-- JLIKA Gym — how a movement is logged, supersets, and progression rules.
+--
+-- Until now every set was weight × reps. A plank has no reps, a treadmill has
+-- neither, and logging either as "1 rep" made every number derived from it
+-- (volume, PRs, the progression hint) quietly wrong. Each movement now says how
+-- it is logged:
+--
+--   reps    weight × reps, as before
+--   time    held for a duration (planks, hangs, carries); may carry a load
+--   cardio  duration plus an optional distance
+--
+-- set_logs gains the two columns the new modes need. reps and weight_kg were
+-- already nullable, so nothing about existing rows changes.
+
+-- ------------------------------------------------------------- exercises
+
+alter table public.exercises
+  add column if not exists tracking text not null default 'reps';
+
+alter table public.exercises
+  drop constraint if exists exercises_tracking_check;
+alter table public.exercises
+  add constraint exercises_tracking_check
+  check (tracking in ('reps', 'time', 'cardio'));
+
+-- ------------------------------------------------------------- set logs
+
+alter table public.set_logs
+  add column if not exists duration_s int,
+  add column if not exists distance_m numeric(9,1);
+
+alter table public.set_logs
+  drop constraint if exists set_logs_duration_s_check;
+alter table public.set_logs
+  add constraint set_logs_duration_s_check
+  check (duration_s is null or (duration_s >= 0 and duration_s <= 86400));
+
+alter table public.set_logs
+  drop constraint if exists set_logs_distance_m_check;
+alter table public.set_logs
+  add constraint set_logs_distance_m_check
+  check (distance_m is null or distance_m >= 0);
+
+-- --------------------------------------------------- program: the plan side
+--
+-- superset_group  Exercises of one day that share a number are done back to
+--                 back, with rest only after the last of them. Null = alone.
+-- target_seconds  Hold time per set for a timed movement; session length for
+--                 cardio. Ignored for reps movements.
+-- progression     The rule that moves this exercise's load forward. Null means
+--                 "whatever the day says", so a day can switch everything to
+--                 linear while one accessory stays on double progression.
+-- increment_kg    The step that rule adds. Null = the default for the movement
+--                 (5 kg for big lower-body lifts, 2.5 kg for the rest).
+
+alter table public.program_days
+  add column if not exists progression text not null default 'double';
+
+alter table public.program_days
+  drop constraint if exists program_days_progression_check;
+alter table public.program_days
+  add constraint program_days_progression_check
+  check (progression in ('off', 'double', 'linear', 'greyskull'));
+
+alter table public.program_exercises
+  add column if not exists superset_group smallint,
+  add column if not exists target_seconds int,
+  add column if not exists progression text,
+  add column if not exists increment_kg numeric(5,2);
+
+alter table public.program_exercises
+  drop constraint if exists program_exercises_superset_group_check;
+alter table public.program_exercises
+  add constraint program_exercises_superset_group_check
+  check (superset_group is null or superset_group between 1 and 9);
+
+alter table public.program_exercises
+  drop constraint if exists program_exercises_target_seconds_check;
+alter table public.program_exercises
+  add constraint program_exercises_target_seconds_check
+  check (target_seconds is null or target_seconds between 1 and 14400);
+
+alter table public.program_exercises
+  drop constraint if exists program_exercises_progression_check;
+alter table public.program_exercises
+  add constraint program_exercises_progression_check
+  check (progression is null or progression in ('off', 'double', 'linear', 'greyskull', 'time'));
+
+alter table public.program_exercises
+  drop constraint if exists program_exercises_increment_kg_check;
+alter table public.program_exercises
+  add constraint program_exercises_increment_kg_check
+  check (increment_kg is null or (increment_kg > 0 and increment_kg <= 50));
+
+-- ------------------------------------------------- how a session felt
+--
+-- One tap on the finish summary: 1 = too easy, 2 = about right, 3 = brutal.
+-- The free-text half goes in workout_sessions.notes, which already exists.
+
+alter table public.workout_sessions
+  add column if not exists rating smallint;
+
+alter table public.workout_sessions
+  drop constraint if exists workout_sessions_rating_check;
+alter table public.workout_sessions
+  add constraint workout_sessions_rating_check
+  check (rating is null or rating between 1 and 3);
+
+-- ------------------------------------------- movements the new modes need
+--
+-- From free-exercise-db (public domain), like the rest of the library.
+
+update public.exercises set tracking = 'time' where slug = 'farmers-walk' and owner_id is null;
+
+insert into public.exercises
+  (slug, name, primary_muscle, secondary_muscles, equipment, aliases,
+   image_start_url, image_end_url, how_to, cues, common_mistake, tracking)
+values
+  ('plank', 'Plank', 'abdominals', '{}'::text[], 'body_only', array['Front Plank','Forearm Plank']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/1.jpg',
+   array['Get into a prone position on the floor, supporting your weight on your toes and your forearms. Your arms are bent and directly below the shoulder.','Keep your body straight at all times, and hold this position as long as possible. To increase difficulty, an arm or leg can be raised.']::text[],
+   array['Squeeze your glutes — it stops the hips sagging.']::text[],
+   'Letting the hips drift up into a pike, which turns it into a rest.', 'time'),
+  ('side-bridge', 'Side Plank', 'abdominals', array['shoulders']::text[], 'body_only', array['Side Bridge']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Bridge/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Bridge/1.jpg',
+   array['Lie on one side with your forearm under your shoulder and your legs stacked.','Lift your hips until your body is a straight line from head to feet, and hold.','Switch sides and repeat.']::text[],
+   array['Stack the shoulder directly over the elbow.']::text[], null, 'time'),
+  ('running-treadmill', 'Running, Treadmill', 'quadriceps', array['calves','glutes','hamstrings']::text[], 'machine', array['Treadmill Run','Treadmill','Running']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Running_Treadmill/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Running_Treadmill/1.jpg',
+   array['Step onto the treadmill and choose a manual setting or a program.','Maintain proper posture as you run, and only hold onto the handles when necessary, such as when dismounting.']::text[],
+   '{}'::text[], null, 'cardio'),
+  ('walking-treadmill', 'Walking, Treadmill', 'quadriceps', array['calves','glutes','hamstrings']::text[], 'machine', array['Treadmill Walk','Incline Walk','Walking']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Walking_Treadmill/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Walking_Treadmill/1.jpg',
+   array['Step onto the treadmill and choose a manual setting or a program.','Walk at a moderate to fast pace, adding incline to raise the intensity.']::text[],
+   '{}'::text[], null, 'cardio'),
+  ('bicycling-stationary', 'Stationary Bike', 'quadriceps', array['calves','glutes','hamstrings']::text[], 'machine', array['Bicycling, Stationary','Exercise Bike','Bike']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycling_Stationary/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycling_Stationary/1.jpg',
+   array['Seat yourself on the bike and adjust the seat to your height.','Choose a manual setting or a program, and change the resistance as you go.']::text[],
+   '{}'::text[], null, 'cardio'),
+  ('rowing-stationary', 'Rowing Machine', 'quadriceps', array['biceps','calves','glutes','hamstrings','lower_back','middle_back']::text[], 'machine', array['Rowing, Stationary','Rower','Erg']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rowing_Stationary/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rowing_Stationary/1.jpg',
+   array['Sit on the rower with your heels against the base of the foot pedals and the straps secured.','Push through the pedals and extend your legs, then bring your hands to your upper abdomen, squeezing your shoulders back.','Recover by straightening the arms, bending the knees and coming forward again.']::text[],
+   array['Legs, then back, then arms — and reverse it on the way in.']::text[],
+   'Pulling mostly with the arms; the drive comes from the legs.', 'cardio'),
+  ('elliptical-trainer', 'Elliptical Trainer', 'quadriceps', array['calves','glutes','hamstrings']::text[], 'machine', array['Elliptical','Cross Trainer']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/1.jpg',
+   array['Step onto the elliptical and choose a manual setting or a program.','Adjust the resistance or incline to change the intensity.']::text[],
+   '{}'::text[], null, 'cardio'),
+  ('stairmaster', 'Stairmaster', 'quadriceps', array['calves','glutes','hamstrings']::text[], 'machine', array['Stair Climber','Stairs']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stairmaster/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stairmaster/1.jpg',
+   array['Step onto the stairmaster and choose a manual setting or a program.','Pump your legs in a steady rhythm, driving the pedals down but not all the way to the floor.']::text[],
+   '{}'::text[], null, 'cardio'),
+  ('rope-jumping', 'Jump Rope', 'quadriceps', array['calves','hamstrings']::text[], 'other', array['Rope Jumping','Skipping']::text[],
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/0.jpg',
+   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/1.jpg',
+   array['Hold an end of the rope in each hand with the rope behind you.','Turn the rope over your head and jump it as it reaches the ground. Find a pace you can hold.']::text[],
+   '{}'::text[], null, 'cardio')
+on conflict (slug) do update set
+  name = excluded.name,
+  primary_muscle = excluded.primary_muscle,
+  secondary_muscles = excluded.secondary_muscles,
+  equipment = excluded.equipment,
+  aliases = excluded.aliases,
+  image_start_url = excluded.image_start_url,
+  image_end_url = excluded.image_end_url,
+  how_to = excluded.how_to,
+  cues = excluded.cues,
+  common_mistake = excluded.common_mistake,
+  tracking = excluded.tracking;
+
+
+-- ========================================================================
+-- 20261020000029_push.sql
+-- ========================================================================
+
+-- JLIKA Gym — web push: rest-timer alerts and workout-day reminders.
+--
+-- push_subscriptions  One row per browser that agreed to notifications. The
+--                     endpoint is the push service's address for that browser.
+--                     It is unique because a browser holds one subscription per
+--                     site, whoever happens to be signed in.
+-- rest_alerts         The rest-timer alert a session is waiting on, at most one
+--                     per person. The server sleeps until ends_at and sends only
+--                     if the row still carries the token it wrote, so starting a
+--                     new rest replaces the pending alert and skipping one
+--                     deletes it. A row is gone the moment its alert is sent.
+--
+-- user_settings gains the reminder preferences. "18:00" and "today" only mean
+-- something in the lifter's own time zone, so the browser's zone is saved when a
+-- device subscribes and the hourly reminder job reads it.
+
+-- ------------------------------------------------------ push subscriptions
+
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  endpoint text not null unique
+    check (endpoint like 'https://%' and char_length(endpoint) <= 2048),
+  -- The two keys the browser hands over with its subscription. Payloads are
+  -- encrypted to them, so the push service never sees what a notification says.
+  p256dh text not null check (char_length(p256dh) <= 200),
+  auth text not null check (char_length(auth) <= 100),
+  user_agent text check (user_agent is null or char_length(user_agent) <= 300),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists push_subscriptions_user_idx
+  on public.push_subscriptions (user_id);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists "push_subscriptions: own rows" on public.push_subscriptions;
+create policy "push_subscriptions: own rows"
+  on public.push_subscriptions for all
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+/**
+ * Saves this browser's subscription for the signed-in account.
+ *
+ * A browser keeps its subscription across sign-outs, so on a shared phone the
+ * same endpoint can arrive from a second account. RLS hides the first account's
+ * row, and the unique endpoint would then reject the insert with nothing the
+ * caller can do about it. This hands the endpoint to whoever is signed in now,
+ * which is who should hear from that device. Knowing an endpoint means holding
+ * the browser it belongs to, so this cannot be used to take over someone else's.
+ */
+create or replace function public.save_push_subscription(
+  sub_endpoint text,
+  sub_p256dh text,
+  sub_auth text,
+  sub_user_agent text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := auth.uid();
+begin
+  if me is null then
+    raise exception 'Not signed in.';
+  end if;
+
+  delete from public.push_subscriptions
+  where endpoint = sub_endpoint and user_id <> me;
+
+  insert into public.push_subscriptions (user_id, endpoint, p256dh, auth, user_agent)
+  values (me, sub_endpoint, sub_p256dh, sub_auth, left(sub_user_agent, 300))
+  on conflict (endpoint) do update set
+    p256dh = excluded.p256dh,
+    auth = excluded.auth,
+    user_agent = excluded.user_agent;
+end;
+$$;
+
+revoke all on function public.save_push_subscription(text, text, text, text) from public;
+revoke all on function public.save_push_subscription(text, text, text, text) from anon;
+revoke all on function public.save_push_subscription(text, text, text, text) from authenticated;
+grant execute on function public.save_push_subscription(text, text, text, text) to authenticated;
+
+-- ------------------------------------------------------------ rest alerts
+
+create table if not exists public.rest_alerts (
+  user_id uuid primary key references auth.users on delete cascade,
+  -- Rewritten on every schedule. The sleeping sender compares it before
+  -- sending, which is what makes a replaced or cancelled alert stay silent.
+  token uuid not null,
+  -- Only the device that started the rest hears about it; a laptop left open
+  -- at home should not beep because a set ended at the gym.
+  endpoint text not null,
+  -- Where tapping the notification lands: the session it came from.
+  url text not null default '/' check (url like '/%' and char_length(url) <= 300),
+  ends_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.rest_alerts enable row level security;
+
+drop policy if exists "rest_alerts: own row" on public.rest_alerts;
+create policy "rest_alerts: own row"
+  on public.rest_alerts for all
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+-- ---------------------------------------------------------- user settings
+--
+-- notify_workout_day  Push on a training day of the published week if no
+--                     session has started by reminder_hour. Off by default: it
+--                     only works once a device has subscribed anyway.
+-- reminder_hour       Local hour, 0–23, the reminder goes out at.
+-- timezone            IANA name from the browser (Intl), e.g. Europe/Paris.
+-- rest_push           Push when rest runs out while the app is in the
+--                     background. On by default; it does nothing until a
+--                     device subscribes.
+
+alter table public.user_settings
+  add column if not exists notify_workout_day boolean not null default false,
+  add column if not exists reminder_hour smallint not null default 18,
+  add column if not exists timezone text not null default 'UTC',
+  add column if not exists rest_push boolean not null default true;
+
+alter table public.user_settings
+  drop constraint if exists user_settings_reminder_hour_check;
+alter table public.user_settings
+  add constraint user_settings_reminder_hour_check
+  check (reminder_hour between 0 and 23);
+
+alter table public.user_settings
+  drop constraint if exists user_settings_timezone_check;
+alter table public.user_settings
+  add constraint user_settings_timezone_check
+  check (char_length(timezone) between 1 and 64);
+
+
+-- ========================================================================
+-- 20261020000031_ai_coach.sql
+-- ========================================================================
+
+-- JLIKA Gym — the AI Coach: an optional model that drafts a week and reviews
+-- what you logged, with nothing changing until you approve it.
+--
+-- It exists only when the server has ANTHROPIC_API_KEY, and only for accounts
+-- that opted in. Everything here is the paper trail that keeps that promise:
+--
+--   profiles.ai_coach_consented_at  When this account agreed to send its data.
+--                                   Null = never, or withdrawn. The app checks it
+--                                   before every request, not just on the page.
+--   ai_coach_intakes                The answers the plan is designed from.
+--   ai_coach_runs                   Every request to the model: what kind, which
+--                                   model, tokens, and why it failed if it did.
+--                                   Also what the daily cap counts.
+--   ai_coach_proposals              What came back: a drafted week, or a review.
+--   ai_coach_changes                A review's discrete changes, and what you
+--                                   decided about each. Rejected ones go back
+--                                   into the next review so they are not
+--                                   proposed again without new evidence.
+--   ai_coach_snapshots              The week exactly as it stood before an
+--                                   apply, so Revert can put it back.
+--
+-- Reverting rewrites program_days and program_exercises only. workout_sessions
+-- and set_logs are never touched: the log is what happened.
+
+-- ------------------------------------------------------------------ consent
+
+alter table public.profiles
+  add column if not exists ai_coach_consented_at timestamptz;
+
+comment on column public.profiles.ai_coach_consented_at is
+  'When this account opted in to the AI Coach. Null = not opted in (or withdrawn); nothing is sent to the model provider.';
+
+-- ------------------------------------------------------------------- intake
+
+create table if not exists public.ai_coach_intakes (
+  user_id uuid primary key references auth.users on delete cascade,
+  -- Validated by the app (lib/ai-coach/schemas.ts) before it is written.
+  answers jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.ai_coach_intakes enable row level security;
+
+drop policy if exists "ai_coach_intakes: own rows" on public.ai_coach_intakes;
+create policy "ai_coach_intakes: own rows"
+  on public.ai_coach_intakes for all
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+-- --------------------------------------------------------------------- runs
+--
+-- Readable by their owner, writable only through the two functions below.
+-- The daily cap counts these rows, so a direct insert/update/delete policy
+-- would let anyone with the publishable key reset their own cap.
+
+create table if not exists public.ai_coach_runs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  kind text not null check (kind in ('plan', 'refine', 'review')),
+  status text not null default 'running' check (status in ('running', 'succeeded', 'failed')),
+  model text not null,
+  input_tokens int check (input_tokens is null or input_tokens >= 0),
+  output_tokens int check (output_tokens is null or output_tokens >= 0),
+  cache_read_tokens int check (cache_read_tokens is null or cache_read_tokens >= 0),
+  -- Shown to the account owner as-is, so it never carries a stack trace.
+  error text,
+  created_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+create index if not exists ai_coach_runs_user_created_idx
+  on public.ai_coach_runs (user_id, created_at desc);
+
+alter table public.ai_coach_runs enable row level security;
+
+drop policy if exists "ai_coach_runs: read own" on public.ai_coach_runs;
+create policy "ai_coach_runs: read own"
+  on public.ai_coach_runs for select
+  using (user_id = (select auth.uid()));
+
+/**
+ * Opens a run if the caller is under the cap, and returns its id.
+ *
+ * SECURITY DEFINER because runs have no insert policy (see above). It only
+ * ever writes a row for auth.uid(). The cap comes from the server's
+ * AI_COACH_DAILY_LIMIT; calling this directly with a bigger number gains
+ * nothing, because only the server holds the key that makes a run cost money.
+ *
+ * Counts every run in the last 24 hours, failed ones included — a failure
+ * may still have been billed. A per-user advisory lock makes the count and
+ * the insert one step, so parallel requests cannot all slip under the cap.
+ */
+create or replace function public.ai_coach_start_run(p_kind text, p_model text, p_daily_limit int)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_used int;
+  v_id uuid;
+begin
+  if v_uid is null then
+    raise exception 'Not signed in.';
+  end if;
+  if p_kind not in ('plan', 'refine', 'review') then
+    raise exception 'Unknown run kind.';
+  end if;
+  if p_daily_limit is null or p_daily_limit < 1 then
+    raise exception 'ai_coach_daily_limit';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('ai_coach_runs:' || v_uid::text, 0));
+
+  -- A run the server never finished (killed at its time limit, say) would sit
+  -- at "running" forever. Close those out so the log tells the truth.
+  update public.ai_coach_runs
+     set status = 'failed',
+         error = 'Stopped before it finished.',
+         finished_at = now()
+   where user_id = v_uid
+     and status = 'running'
+     and created_at < now() - interval '10 minutes';
+
+  select count(*) into v_used
+    from public.ai_coach_runs
+   where user_id = v_uid
+     and created_at > now() - interval '24 hours';
+
+  if v_used >= p_daily_limit then
+    raise exception 'ai_coach_daily_limit';
+  end if;
+
+  insert into public.ai_coach_runs (user_id, kind, model)
+  values (v_uid, p_kind, left(coalesce(p_model, 'unknown'), 80))
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
+/**
+ * Closes one of the caller's own open runs. A closed run cannot be reopened or
+ * rewritten, and nothing here changes what the cap counts.
+ */
+create or replace function public.ai_coach_finish_run(
+  p_run uuid,
+  p_status text,
+  p_input_tokens int,
+  p_output_tokens int,
+  p_cache_read_tokens int,
+  p_error text
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in.';
+  end if;
+  if p_status not in ('succeeded', 'failed') then
+    raise exception 'A run finishes as succeeded or failed.';
+  end if;
+
+  update public.ai_coach_runs
+     set status = p_status,
+         input_tokens = greatest(p_input_tokens, 0),
+         output_tokens = greatest(p_output_tokens, 0),
+         cache_read_tokens = greatest(p_cache_read_tokens, 0),
+         error = left(p_error, 500),
+         finished_at = now()
+   where id = p_run
+     and user_id = auth.uid()
+     and status = 'running';
+end;
+$$;
+
+-- README rule: Supabase's default privileges grant EXECUTE to anon and
+-- authenticated; revoking from public does not undo that.
+revoke all on function public.ai_coach_start_run(text, text, int) from public;
+revoke all on function public.ai_coach_start_run(text, text, int) from anon;
+revoke all on function public.ai_coach_start_run(text, text, int) from authenticated;
+grant execute on function public.ai_coach_start_run(text, text, int) to authenticated;
+
+revoke all on function public.ai_coach_finish_run(uuid, text, int, int, int, text) from public;
+revoke all on function public.ai_coach_finish_run(uuid, text, int, int, int, text) from anon;
+revoke all on function public.ai_coach_finish_run(uuid, text, int, int, int, text) from authenticated;
+grant execute on function public.ai_coach_finish_run(uuid, text, int, int, int, text) to authenticated;
+
+-- ---------------------------------------------------------------- proposals
+
+create table if not exists public.ai_coach_proposals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  run_id uuid references public.ai_coach_runs on delete set null,
+  kind text not null check (kind in ('plan', 'review')),
+  status text not null default 'pending'
+    check (status in ('pending', 'applied', 'dismissed', 'superseded', 'reverted')),
+  summary text,
+  -- plan: the validated week. review: the advice notes and the fingerprint of
+  -- the week the changes were written against, to catch a plan edited since.
+  payload jsonb not null,
+  -- review: the week whose plan was read.
+  base_week_start date,
+  -- Where an accepted proposal was written.
+  applied_week_start date,
+  -- A refined plan points at the draft it replaced.
+  parent_id uuid references public.ai_coach_proposals on delete set null,
+  created_at timestamptz not null default now(),
+  decided_at timestamptz
+);
+
+create index if not exists ai_coach_proposals_user_created_idx
+  on public.ai_coach_proposals (user_id, created_at desc);
+
+alter table public.ai_coach_proposals enable row level security;
+
+drop policy if exists "ai_coach_proposals: own rows" on public.ai_coach_proposals;
+create policy "ai_coach_proposals: own rows"
+  on public.ai_coach_proposals for all
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+-- ------------------------------------------------------------------ changes
+
+create table if not exists public.ai_coach_changes (
+  id uuid primary key default gen_random_uuid(),
+  proposal_id uuid not null references public.ai_coach_proposals on delete cascade,
+  position smallint not null check (position >= 0),
+  type text not null check (type in (
+    'swap_exercise', 'add_exercise', 'remove_exercise',
+    'set_sets', 'set_rep_range', 'set_target_seconds', 'set_load',
+    'set_progression', 'set_superset', 'rename_day'
+  )),
+  -- The validated change, as the model proposed it.
+  change jsonb not null,
+  -- Rendered from the plan by the app, not taken from the model, so the
+  -- before → after the person ticks is the one that gets applied.
+  target_text text not null,
+  before_text text not null,
+  after_text text not null,
+  rationale text not null,
+  decision text not null default 'pending' check (decision in ('pending', 'accepted', 'rejected')),
+  decided_at timestamptz,
+  unique (proposal_id, position)
+);
+
+alter table public.ai_coach_changes enable row level security;
+
+-- Ownership through the proposal, like program_days through program_weeks.
+drop policy if exists "ai_coach_changes: through proposal" on public.ai_coach_changes;
+create policy "ai_coach_changes: through proposal"
+  on public.ai_coach_changes for all
+  using (exists (
+    select 1 from public.ai_coach_proposals p
+    where p.id = proposal_id and p.user_id = (select auth.uid())
+  ))
+  with check (exists (
+    select 1 from public.ai_coach_proposals p
+    where p.id = proposal_id and p.user_id = (select auth.uid())
+  ));
+
+-- ---------------------------------------------------------------- snapshots
+
+create table if not exists public.ai_coach_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  proposal_id uuid references public.ai_coach_proposals on delete set null,
+  week_start date not null,
+  -- {"week": null, "days": []} when there was no week yet; Revert then
+  -- removes the one the apply created.
+  snapshot jsonb not null,
+  created_at timestamptz not null default now(),
+  reverted_at timestamptz
+);
+
+create index if not exists ai_coach_snapshots_user_created_idx
+  on public.ai_coach_snapshots (user_id, created_at desc);
+
+alter table public.ai_coach_snapshots enable row level security;
+
+drop policy if exists "ai_coach_snapshots: own rows" on public.ai_coach_snapshots;
+create policy "ai_coach_snapshots: own rows"
+  on public.ai_coach_snapshots for all
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));

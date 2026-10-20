@@ -16,6 +16,7 @@ describe("isActivePath", () => {
 describe("titleForPath", () => {
   it("falls back to the nearest section for sub-routes", () => {
     expect(titleForPath("/session/abc").title).toBe("Live session");
+    expect(titleForPath("/session/abc/summary").title).toBe("Session summary");
   });
 
   it("does not let the root swallow unknown routes", () => {

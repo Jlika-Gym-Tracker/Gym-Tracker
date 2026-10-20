@@ -65,8 +65,12 @@ export function navGroups({ coaching = false, aiCoach = false } = {}): NavGroup[
   return coaching ? [...groups, COACH_GROUP] : groups;
 }
 
+/** A finished session's summary sits under /session but is not a live session. */
+const SUMMARY_TITLE = { title: "Session summary", sub: "Time · volume · new bests" };
+
 export function titleForPath(pathname: string) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (/^\/session\/[^/]+\/summary\/?$/.test(pathname)) return SUMMARY_TITLE;
   const base = Object.keys(PAGE_TITLES)
     .filter((p) => p !== "/" && pathname.startsWith(p))
     .sort((a, b) => b.length - a.length)[0];

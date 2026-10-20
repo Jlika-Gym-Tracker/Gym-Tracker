@@ -92,14 +92,135 @@ supabase/migrations/
 
 ## Writing a week
 
-The program is always yours — nothing is AI-generated. Four ways to fill a week:
+The program is always yours. Nothing is generated unless you switch on the
+optional [AI Coach](#ai-coach), and even then nothing lands without your
+approval. Ways to fill a week:
 
 | | |
 |---|---|
 | **Template** | Pick a split (3-day full body, 4-day upper/lower, 6-day PPL) and equipment; it fills a draft you edit. Fixed blueprints in `lib/program/templates.ts`, not generation — the same choice always gives the same week. |
 | **Paste** | Plain text like `1 Incline Dumbbell Press 3 x 8-12`, fuzzy-matched to the library with a review step. |
-| **Copy last week** | Duplicates the most recent week as a fresh draft. With *Step loads up* on (the default), each planned load moves up wherever last week cleared its rep range with reps to spare — the same rule the session screen shows as a hint. |
-| **Blank** | Build it by hand from the library. |
+| **Copy last week** | Duplicates the most recent week as a fresh draft. With *Step loads up* on (the default), every exercise runs its own [progression rule](#progression-rules) on what you logged — the same reading the session screen gives. |
+| **Import a week** | A `.jlika-week.json` file someone shared. It only fills days you have left empty, so it never overwrites your plan. |
+| **AI Coach** | Optional. Describe yourself in a short intake and review a proposed draft before it is saved. |
+| **Blank** | Build it by hand from the library, including movements of your own (a name and a muscle is enough). |
+
+Each exercise is logged one of three ways, set on the movement: **weight × reps**,
+**time held** (planks, hangs, carries — with an optional load), or **cardio**
+(minutes and distance). Exercises can be paired into **supersets** from the
+exercise's edit panel; the session runs them back to back and rests after the
+last one. **Share this week** downloads the routine — days, exercises, sets,
+reps, holds, supersets and rules, never your logs or loads — and **Print**
+opens a clean page the browser can save as a PDF.
+
+## Progression rules
+
+`lib/program/prescription.ts` decides each session's target from what was
+logged — a pure function, so fixing a mistyped set or switching rule takes
+effect at once. A day picks a rule and any exercise can override it:
+
+| Rule | Moves the load when… |
+|---|---|
+| **Double progression** (default) | every set reaches the top of the rep range — then up a step, reps back to the bottom. A range cleared at RPE ≥ 9.5 holds instead. |
+| **Linear** | every rep of every set was done. |
+| **Greyskull LP** | every set hit the target, with the last set to failure; doubling the target there earns a double jump. One miss resets 10 %. |
+| **Add time** | (timed holds) every set was held the full time — then +5 s. |
+| **Off** | never; loads stay where you set them. |
+
+Ticked sets short of the target, and planned sets never ticked, count as
+misses. Three sessions of misses in a row deload 10 % onto a loadable step
+(Greyskull: one). Bodyweight work progresses in reps, never in kilos. Each
+session is judged against the plan of the day it followed, not today's.
+Big lower-body lifts take a 5 kg (10 lb) step, everything else 2.5 kg (5 lb),
+unless the exercise sets its own. Loads round in the units you lift in.
+
+## Logging a session
+
+- **Pre-filled loads** come from the rule, else the plan, else last time; the
+  rule's verdict and reason sit on each exercise card.
+- **Effort per set** asks in RPE or RIR, or not at all (Profile → Data &
+  privacy). It is always stored as RPE (RIR = 10 − RPE), so switching never
+  rewrites a logged set.
+- **Rest timer**: starts on a tick when auto-rest is on, with −15 s / +15 s, a
+  chime and a buzz at zero, and (with notifications on) a push when the app is
+  in the background.
+- **Hold clock** for timed sets: counts up, chimes at the target, and logs the
+  time actually held.
+- **Keep screen awake** while a session is open (on by default).
+- **Weigh in first?** at the start of a session also records the day's
+  weigh-in, never overwriting one already logged.
+- **Records** compare against everything logged before, not just recent
+  sessions. Estimated 1RMs (Epley) refuse to guess past 12 reps; above that a
+  heavier bar is the record. The exercise drawer has a 1RM calculator.
+- **Finish** lands on a summary — duration, volume, new bests, what you
+  trained on the muscle map — with an optional "how did that feel?".
+
+## Progress and stats
+
+The Progress page adds a year-long **activity heatmap** (shaded by time
+trained), the **goal weight** line (Profile → Account) with changes coloured by
+whether they moved toward it, a **muscle map** (week / 30 days / all time; all
+sets or only hard ones), an **effort** card that always shows how much of your
+training was rated, and a per-exercise **estimated-1RM curve** that names the
+set each point came from. The muscle map is drawn from
+[MuscleMap](https://github.com/melihcolpan/MuscleMap) (MIT) — see
+`THIRD_PARTY_NOTICES.md`; `scripts/generate-body-paths.mjs` regenerates it.
+
+## Bringing your history
+
+Profile → Data & privacy → *Bring your history* reads a **Strong**, **Hevy**
+or **FitNotes** CSV export, or body weight from an **Apple Health** export
+(`export.xml` or the zip). Files are parsed in the browser; a review step
+matches each exercise name to your library and turns the rest into your own
+exercises. Re-importing the same file skips workouts already there, and
+imported weigh-ins never overwrite a day that already has one.
+
+## Notifications
+
+Optional web push: rest-timer alerts with the app in the background, and a
+reminder on training days you have not started by a chosen hour. Generate keys
+once with `npx web-push generate-vapid-keys` and set
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` and
+`SUPABASE_SECRET_KEY`; without them the settings say push isn't configured.
+iPhones need the app added to the home screen.
+
+A rest alert keeps one server function alive for the length of the rest, so
+`app/api/push/rest` asks for `maxDuration = 300` and rests over 280 s get the
+in-app chime only. On a host that allows longer functions, raise that limit
+together with `MAX_WAIT_MS` there and `MAX_PUSH_REST_MS` in
+`lib/push/rest-alert.ts`. The reminder needs a scheduler — see
+[Scheduled jobs](#scheduled-jobs).
+
+## AI Coach
+
+Optional, and absent unless `ANTHROPIC_API_KEY` is set on the server
+(`AI_COACH_MODEL` defaults to `claude-opus-5-5`; `AI_COACH_DAILY_LIMIT` caps
+runs per account per 24 hours, default 10). Each account opts in separately on
+a consent screen and can withdraw. It can **design a week** from a short intake
+and revise it in plain language, or **review** the last four weeks and propose
+discrete changes (swap, add, remove, sets, reps, hold time, load, rule,
+superset, rename), each with its reason — you tick the ones you want. Every
+apply snapshots the week first and one tap reverts it; it writes drafts only
+and never touches logged sessions or sets.
+
+What leaves the server, on the instance owner's key, only when you press a
+button that says so:
+
+- **Designing a week:** the intake answers; sex, age and height only if you
+  tick the box; the names of library movements that fit your equipment.
+- **A review:** the current plan; per exercise, sets hit, missed and skipped
+  against the plan, effort trend, sessions since it last improved and the last
+  three sessions' sets; planned days against sessions done; session length;
+  session ratings and notes (up to 12, trimmed); body-weight trend against the
+  goal weight; untrained muscles; changes you turned down in the last 90 days.
+- **Never:** database ids, email, name, avatar, photos, meal plans, crew or
+  coach data. Exercises go by slug, days by position, sessions by date. Typed
+  text is sent as data inside delimiters, never as instructions.
+
+Generation runs in a server action with `maxDuration = 300`; lower it together
+with `RUN_BUDGET_MS` in `app/actions/ai-coach.ts` on a host that caps lower.
+`AI_COACH_FIXTURE=1` (development only) walks the whole loop on canned answers
+without a key.
 
 The beginner template deliberately prescribes less than the load check's weekly
 set floor — that floor is tuned for an intermediate lifter in a deficit, and the
@@ -171,6 +292,9 @@ default privileges grant EXECUTE on new functions to both, and
 - Anything day-scoped (weigh-ins, photos, plans) is a `date`, never a
   timestamp, to avoid timezone drift.
 - No `any`.
+- Filter sessions, sets and weeks to the signed-in user explicitly. A coach's
+  RLS also lets them read their athletes' training, so a query that leans on
+  RLS alone can mix an athlete's rows into the coach's own screens.
 
 ## Build phases
 
@@ -182,10 +306,16 @@ default privileges grant EXECUTE on new functions to both, and
 6. **Profile, crew & settings** — five tabs, invite codes, sharing controls, export, account deletion ✅
 7. **Crew league** — seasons, scoring, standings, challenges, badges, nightly job ✅
 8. **Polish** — onboarding, skeletons, keyboard shortcuts, PWA, weekly email, smoke tests ✅
+9. **Training depth** — progression rules, timed/cardio logging, supersets, effort scales, heatmap, muscle map, history import, push, sharing, AI Coach ✅
+
+Phase 9's feature set was inspired by
+[openGym](https://github.com/alexpcosta/opengym). openGym is AGPL-3.0; none of
+its code, text or data is used here — every feature was written fresh for this
+codebase.
 
 ## Scheduled jobs
 
-Both are optional and degrade to a notice if the extensions are unavailable.
+All are optional and degrade to a notice if the extensions are unavailable.
 
 - **Nightly league scoring** (`recompute_league_scores`, 03:15 UTC) needs `pg_cron`.
 - **Sunday weekly review** (18:00 UTC) needs `pg_cron` and `pg_net`, plus:
@@ -195,3 +325,11 @@ Both are optional and degrade to a notice if the extensions are unavailable.
   ```
   and `CRON_SECRET`, `RESEND_API_KEY`, `SUPABASE_SECRET_KEY` in the app's env.
   Without `CRON_SECRET` the endpoint refuses to run at all.
+- **Workout-day reminder** (hourly) needs `pg_cron` and `pg_net`. Apply
+  `20261020000030_workout_reminder_cron.sql` on its own (it is left out of
+  `apply-all.sql`, like the weekly review) after:
+  ```sql
+  alter database postgres set app.workout_reminder_url = 'https://your-app/api/cron/workout-reminder';
+  ```
+  It reuses `app.cron_secret` / `CRON_SECRET`, and sends only to people who
+  turned the reminder on, at the hour they picked, in their own timezone.
