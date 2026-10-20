@@ -12,6 +12,7 @@ import {
 import type { WeekDetail } from "@/lib/program/queries";
 import type { LibraryExercise } from "@/lib/program/match";
 import type { MuscleLoad } from "@/lib/program/volume";
+import type { UnitSystem } from "@/lib/database.types";
 import { weekRangeLabel } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { HeroBackdrop } from "@/components/kit/hero-backdrop";
@@ -27,11 +28,13 @@ export function ProgramBuilder({
   library,
   load,
   hasEarlierWeek,
+  system,
 }: {
   week: WeekDetail;
   library: LibraryExercise[];
   load: MuscleLoad[];
   hasEarlierWeek: boolean;
+  system: UnitSystem;
 }) {
   const [showPaste, setShowPaste] = useState(false);
   const [editingWeek, setEditingWeek] = useState(false);
@@ -138,7 +141,7 @@ export function ProgramBuilder({
                   "flex cursor-pointer items-center gap-1.5 pl-1 font-mono text-[10px] tracking-[0.06em] uppercase",
                   hasEarlierWeek ? "text-fg-dim" : "pointer-events-none opacity-40",
                 )}
-                title="Steps each load up where last week cleared its rep range with reps to spare"
+                title="Runs each exercise's progression rule on what you logged: loads step up, hold, or deload"
               >
                 <input
                   type="checkbox"
@@ -205,6 +208,7 @@ export function ProgramBuilder({
                 day={day}
                 days={week.days}
                 weekStart={week.week_start}
+                system={system}
                 active={day.id === activeDayId}
                 onActivate={() => setActiveDayId(day.id)}
               />

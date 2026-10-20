@@ -15,7 +15,8 @@ import {
 } from "@/lib/program/templates";
 import { progressWeek, summariseProgression } from "@/lib/program/progression";
 import { getRecentSessions } from "@/lib/training/queries";
-import type { UnitSystem } from "@/lib/database.types";
+import type { Tracking, UnitSystem } from "@/lib/database.types";
+import { displayToKg } from "@/lib/units";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -316,22 +317,33 @@ export async function addExerciseToDay(
       perSide: formData.get("perSide") === "on",
     });
 
-    const { data: last } = await supabase
-      .from("program_exercises")
-      .select("position")
-      .eq("day_id", input.dayId)
-      .order("position", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const [{ data: last }, { data: exercise }] = await Promise.all([
+      supabase
+        .from("program_exercises")
+        .select("position")
+        .eq("day_id", input.dayId)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase.from("exercises").select("tracking").eq("id", input.exerciseId).maybeSingle(),
+    ]);
+
+    // A plank is not "3 × 8-12" and a treadmill is not three sets of anything:
+    // timed and cardio movements start from a sensible shape of their own.
+    const tracking = (exercise?.tracking ?? "reps") as Tracking;
+    const shape =
+      tracking === "time"
+        ? { target_sets: input.targetSets, rep_min: null, rep_max: null, target_seconds: 30 }
+        : tracking === "cardio"
+          ? { target_sets: 1, rep_min: null, rep_max: null, target_seconds: 20 * 60 }
+          : { target_sets: input.targetSets, rep_min: input.repMin, rep_max: input.repMax };
 
     const { error } = await supabase.from("program_exercises").insert({
       day_id: input.dayId,
       exercise_id: input.exerciseId,
       position: (last?.position ?? -1) + 1,
-      target_sets: input.targetSets,
-      rep_min: input.repMin,
-      rep_max: input.repMax,
       per_side: input.perSide,
+      ...shape,
     });
     if (error) throw error;
 
@@ -370,9 +382,15 @@ const updateSchema = z.object({
   repMax: z.coerce.number().int().min(1).max(100).nullable(),
   perSide: z.boolean(),
   note: z.string().trim().max(200).nullable(),
-  // The planned load. Null means "you decide on the day", which is how most
-  // accessory work is written.
-  targetWeightKg: z.coerce.number().min(0).max(1000).nullable(),
+  // The planned load, in the units the user reads. Null means "you decide on
+  // the day", which is how most accessory work is written.
+  targetWeight: z.coerce.number().min(0).max(2000).nullable(),
+  // Hold time for a timed movement, session length for cardio.
+  targetSeconds: z.coerce.number().int().min(1).max(14400).nullable(),
+  // Null follows the day's rule.
+  progression: z.enum(["off", "double", "linear", "greyskull", "time"]).nullable(),
+  // The step the rule adds, in display units. Null = the movement's default.
+  increment: z.coerce.number().positive().max(100).nullable(),
 });
 
 export async function updateProgramExercise(
@@ -381,6 +399,7 @@ export async function updateProgramExercise(
 ): Promise<ActionState> {
   try {
     const { supabase } = await requireUser();
+    const minutes = formData.get("targetMinutes");
     const raw = {
       id: formData.get("id"),
       targetSets: formData.get("targetSets"),
@@ -388,13 +407,24 @@ export async function updateProgramExercise(
       repMax: formData.get("repMax") || null,
       perSide: formData.get("perSide") === "on",
       note: (formData.get("note") as string)?.trim() || null,
-      targetWeightKg: formData.get("targetWeightKg") || null,
+      targetWeight: formData.get("targetWeight") || null,
+      // Cardio is planned in minutes; everything is stored in seconds.
+      targetSeconds: minutes
+        ? Math.round(Number(minutes) * 60)
+        : formData.get("targetSeconds") || null,
+      progression: formData.get("progression") || null,
+      increment: formData.get("increment") || null,
     };
     const input = updateSchema.parse(raw);
 
     if (input.repMin && input.repMax && input.repMax < input.repMin) {
       return { error: "The top of the rep range cannot be below the bottom." };
     }
+
+    const { data: profile } = await supabase.from("profiles").select("unit_system").maybeSingle();
+    const system = (profile?.unit_system ?? "metric") as UnitSystem;
+    const toKg = (value: number | null) =>
+      value == null ? null : Math.round(displayToKg(value, system) * 100) / 100;
 
     const { error } = await supabase
       .from("program_exercises")
@@ -404,7 +434,10 @@ export async function updateProgramExercise(
         rep_max: input.repMax,
         per_side: input.perSide,
         note: input.note,
-        target_weight_kg: input.targetWeightKg,
+        target_weight_kg: toKg(input.targetWeight),
+        target_seconds: input.targetSeconds,
+        progression: input.progression,
+        increment_kg: toKg(input.increment),
       })
       .eq("id", input.id);
     if (error) throw error;
@@ -438,6 +471,88 @@ export async function swapDays(dayA: string, dayB: string): Promise<ActionState>
       day_b: uuid.parse(dayB),
     });
     if (error) throw error;
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Joins an exercise to the one after it in a superset — or, if either is
+ * already in one, grows that superset. Supersets are a shared number on the
+ * rows of one day; the session runs rows with the same number back to back.
+ */
+export async function linkWithNext(rowId: string): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const id = uuid.parse(rowId);
+    const { data: row } = await supabase
+      .from("program_exercises")
+      .select("day_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!row) return { error: "That exercise is no longer in the plan." };
+
+    const { data: rows } = await supabase
+      .from("program_exercises")
+      .select("id, position, superset_group")
+      .eq("day_id", row.day_id)
+      .order("position");
+    const ordered = rows ?? [];
+    const at = ordered.findIndex((r) => r.id === id);
+    const self = ordered[at];
+    const next = ordered[at + 1];
+    if (!self || !next) return { error: "There is nothing after this one to pair it with." };
+
+    const used = new Set(ordered.map((r) => r.superset_group).filter((g): g is number => g != null));
+    const free = [1, 2, 3, 4, 5, 6, 7, 8, 9].find((g) => !used.has(g));
+    const group = self.superset_group ?? next.superset_group ?? free;
+    if (group == null) return { error: "A day can hold nine supersets at most." };
+
+    // If the next row was in a different superset, the two merge into one.
+    const merging = next.superset_group != null && next.superset_group !== group ? next.superset_group : null;
+    const ids = ordered
+      .filter((r) => r.id === self.id || r.id === next.id || (merging != null && r.superset_group === merging))
+      .map((r) => r.id);
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ superset_group: group })
+      .in("id", ids);
+    if (error) throw error;
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Takes an exercise out of its superset; a superset left with one member dissolves. */
+export async function unlinkSuperset(rowId: string): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const id = uuid.parse(rowId);
+    const { data: row } = await supabase
+      .from("program_exercises")
+      .select("day_id, superset_group")
+      .eq("id", id)
+      .maybeSingle();
+    if (!row || row.superset_group == null) return {};
+
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ superset_group: null })
+      .eq("id", id);
+    if (error) throw error;
+
+    const { data: rest } = await supabase
+      .from("program_exercises")
+      .select("id")
+      .eq("day_id", row.day_id)
+      .eq("superset_group", row.superset_group);
+    if ((rest ?? []).length === 1) {
+      await supabase.from("program_exercises").update({ superset_group: null }).eq("id", rest![0]!.id);
+    }
     refresh();
     return {};
   } catch (error) {
@@ -480,6 +595,7 @@ const daySchema = z.object({
   name: z.string().trim().min(1, "A day needs a name.").max(40),
   focusNote: z.string().trim().max(300).nullable(),
   isRest: z.boolean(),
+  progression: z.enum(["off", "double", "linear", "greyskull"]),
 });
 
 export async function updateDay(
@@ -493,10 +609,16 @@ export async function updateDay(
       name: formData.get("name"),
       focusNote: (formData.get("focusNote") as string)?.trim() || null,
       isRest: formData.get("isRest") === "on",
+      progression: formData.get("progression") ?? "double",
     });
     const { error } = await supabase
       .from("program_days")
-      .update({ name: input.name, focus_note: input.focusNote, is_rest: input.isRest })
+      .update({
+        name: input.name,
+        focus_note: input.focusNote,
+        is_rest: input.isRest,
+        progression: input.progression,
+      })
       .eq("id", input.id);
     if (error) throw error;
     refresh();

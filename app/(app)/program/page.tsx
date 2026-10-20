@@ -1,4 +1,6 @@
+import { createClient } from "@/lib/supabase/server";
 import { currentWeekStart, toDateString } from "@/lib/dates";
+import type { UnitSystem } from "@/lib/database.types";
 import { getWeekStartsOn } from "@/lib/settings/week";
 import { findPreviousWeek, getLibrary, getWeek, getWeekContaining } from "@/lib/program/queries";
 import { weeklyLoad } from "@/lib/program/volume";
@@ -15,10 +17,12 @@ export default async function ProgramPage({
   const startsOn = await getWeekStartsOn();
   const weekStart = explicit ?? currentWeekStart(new Date(), startsOn);
 
-  const [exact, library, previous] = await Promise.all([
+  const supabase = await createClient();
+  const [exact, library, previous, { data: profile }] = await Promise.all([
     getWeek(weekStart),
     getLibrary(),
     findPreviousWeek(weekStart),
+    supabase.from("profiles").select("unit_system").maybeSingle(),
   ]);
 
   // Weeks written before the start day was changed begin on a different
@@ -35,6 +39,7 @@ export default async function ProgramPage({
       library={library}
       load={weeklyLoad(week.days)}
       hasEarlierWeek={Boolean(previous)}
+      system={(profile?.unit_system ?? "metric") as UnitSystem}
     />
   );
 }

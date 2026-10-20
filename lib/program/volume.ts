@@ -38,6 +38,8 @@ export function weeklyLoad(days: DayWithExercises[]): MuscleLoad[] {
 
   for (const day of days) {
     for (const item of day.exercises) {
+      // Treadmill minutes are not working sets for the quads.
+      if (item.exercise.tracking === "cardio") continue;
       const group = MUSCLE_GROUPS.find((g) =>
         (g.muscles as readonly string[]).includes(item.exercise.primary_muscle),
       );
