@@ -268,6 +268,12 @@ describe("buildCatalog", () => {
     const catalog = buildCatalog(CATALOG, ["dumbbell"]);
     expect(new Set(catalog.map((e) => e.equipment))).toEqual(new Set(["dumbbell", "body_only"]));
   });
+  it("leaves the long tail of the library out of the prompt", () => {
+    const tail = { ...PLANK, id: "00000000-0000-4000-9000-000000000001", slug: "plate-pinch", offered: false };
+    const catalog = buildCatalog([...CATALOG, tail]);
+    expect(catalog.map((e) => e.slug)).not.toContain("plate-pinch");
+    expect(catalog).toHaveLength(CATALOG.length);
+  });
   it("renders one compact line per movement", () => {
     expect(catalogText([PLANK])).toBe("plank | Plank | abdominals | body_only | time");
   });
