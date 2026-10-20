@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { getPersonalBests, getSession } from "@/lib/training/queries";
+import { getSession } from "@/lib/training/queries";
+import { getBestsBefore, isOwnSession } from "@/lib/training/history-queries";
+import { monthOf, sessionDay } from "@/lib/training/history";
 import { sessionRecords } from "@/lib/training/records";
 import { bestSet, totalVolume } from "@/lib/training/e1rm";
-import type { BodyFigure, UnitSystem } from "@/lib/database.types";
+import type { BodyFigure, EffortScale, UnitSystem } from "@/lib/database.types";
 import { muscleLoad } from "@/lib/training/muscle-load";
 import { MusclePreview } from "@/components/stats/muscle-preview";
 import {
@@ -19,11 +21,17 @@ import {
 } from "@/lib/units";
 import { Card, Eyebrow, StatCard } from "@/components/kit/card";
 import { SessionRating } from "@/components/session/session-rating";
+import { EditableSets } from "@/components/history/edit-sets";
+import { DeleteWorkout } from "@/components/history/delete-workout";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 /**
  * The screen a finished session lands on: how long, how much, what was a
  * record, and one tap on how it felt. Records are judged against everything
  * logged before this session, never against itself.
+ *
+ * Also where an old session is opened from History, so its owner can fix a
+ * set or delete it here.
  */
 export default async function SessionSummaryPage({
   params,
@@ -32,9 +40,11 @@ export default async function SessionSummaryPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: profile }, session] = await Promise.all([
+  const [{ data: profile }, { data: settings }, session, own] = await Promise.all([
     supabase.from("profiles").select("unit_system, body_figure").maybeSingle(),
+    supabase.from("user_settings").select("effort_scale").maybeSingle(),
     getSession(id),
+    isOwnSession(id),
   ]);
   if (!session) notFound();
   if (!session.ended_at) redirect(`/session/${session.id}`);
@@ -57,8 +67,11 @@ export default async function SessionSummaryPage({
     }))
     .filter((e) => e.sets.length > 0);
 
-  const bests = await getPersonalBests(
+  // Only what started before this session: opened from History months later,
+  // a session keeps the records it set at the time.
+  const bests = await getBestsBefore(
     done.map((d) => d.ex.exercise.id),
+    session.started_at,
     { excludeSessionId: session.id },
   );
   const records = sessionRecords(
@@ -103,7 +116,14 @@ export default async function SessionSummaryPage({
           label="Records"
           value={String(records.length)}
           tone={records.length ? "accent" : "dim"}
-          delta={records.length ? "New bests today" : "No new bests — that's most days"}
+          delta={
+            records.length
+              ? // Opened from History, "today" would be wrong.
+                sessionDay(session.started_at) === sessionDay(new Date().toISOString())
+                ? "New bests today"
+                : "New bests that day"
+              : "No new bests — that's most days"
+          }
         />
       </div>
 
@@ -128,8 +148,24 @@ export default async function SessionSummaryPage({
         </Card>
       ) : null}
 
-      <Card className="flex flex-col gap-1">
-        <Eyebrow className="mb-2">What you did</Eyebrow>
+      <WhatYouDid
+        editable={
+          own
+            ? {
+                exercises: session.exercises
+                  .filter((ex) => ex.sets.length > 0)
+                  .map((ex) => ({
+                    id: ex.exercise.id,
+                    name: ex.exercise.name,
+                    tracking: ex.exercise.tracking ?? "reps",
+                    sets: ex.sets,
+                  })),
+                system,
+                effort: (settings?.effort_scale ?? "rpe") as EffortScale,
+              }
+            : null
+        }
+      >
         {done.length === 0 ? (
           <p className="text-[13px] text-fg-dim">No sets were ticked off in this session.</p>
         ) : (
@@ -172,7 +208,7 @@ export default async function SessionSummaryPage({
             );
           })
         )}
-      </Card>
+      </WhatYouDid>
 
       {done.length ? (
         <Card>
@@ -210,7 +246,36 @@ export default async function SessionSummaryPage({
         >
           See your progress
         </Link>
+        <Link
+          href={`/history?month=${monthOf(parseISO(session.started_at))}&day=${sessionDay(session.started_at)}`}
+          className="inline-flex items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-[22px] py-3 text-sm font-semibold text-fg-2 hover:bg-hover"
+        >
+          <NavSpinner />
+          All workouts
+        </Link>
       </div>
+
+      {own ? <DeleteWorkout sessionId={session.id} /> : null}
     </div>
+  );
+}
+
+/**
+ * The list of what was done. Its owner gets an Edit sets mode around it; a
+ * coach reading an athlete's session gets the list alone.
+ */
+function WhatYouDid({
+  editable,
+  children,
+}: {
+  editable: Omit<React.ComponentProps<typeof EditableSets>, "children"> | null;
+  children: React.ReactNode;
+}) {
+  if (editable) return <EditableSets {...editable}>{children}</EditableSets>;
+  return (
+    <Card className="flex flex-col gap-1">
+      <Eyebrow className="mb-2">What you did</Eyebrow>
+      {children}
+    </Card>
   );
 }

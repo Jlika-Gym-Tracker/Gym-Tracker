@@ -221,6 +221,9 @@ const workoutSchema = z
       .array(z.object({ exerciseId: z.uuid(), sets: z.array(setSchema).min(1).max(2000) }))
       .min(1)
       .max(300),
+    // Only a JLIKA backup has these; the apps' exports never do.
+    rating: z.number().int().min(1).max(3).nullable().optional(),
+    bodyweightKg: z.number().min(20).max(400).nullable().optional(),
   })
   .refine((w) => new Date(w.endedAt) > new Date(w.startedAt), "A session has to end after it starts.");
 
@@ -284,6 +287,8 @@ export async function importWorkoutBatch(workouts: WorkoutPayload[]): Promise<Re
           notes: w.notes,
           started_at: w.startedAt,
           ended_at: w.endedAt,
+          rating: w.rating ?? null,
+          bodyweight_kg: w.bodyweightKg ?? null,
         })),
       )
       .select("id, started_at");

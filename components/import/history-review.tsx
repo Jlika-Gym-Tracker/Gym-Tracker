@@ -7,18 +7,19 @@ import {
   createImportExercises,
   findLoggedStarts,
   getImportLibrary,
+  importBodyWeights,
   importWorkoutBatch,
   type ExerciseSpec,
   type ImportLibraryExercise,
 } from "@/app/actions/import";
 import { AUTO_MATCH_THRESHOLD, findCandidates, type MatchCandidate } from "@/lib/program/match";
-import { parseHistoryCsv } from "@/lib/import/workouts";
+import { parseHistoryFile } from "@/lib/import/backup";
 import { chunk, chunkPayloads, minuteKey, sessionTimes, toPayloads } from "@/lib/import/batches";
 import {
   EQUIPMENT, EQUIPMENT_LABELS, guessEquipment, guessMuscle, guessTracking,
   MUSCLES, MUSCLE_LABELS, TRACKING, TRACKING_LABELS,
 } from "@/lib/import/guess";
-import { FORMAT_LABELS, type ExerciseSummary } from "@/lib/import/types";
+import { exerciseKey, FORMAT_LABELS, type ExerciseSummary } from "@/lib/import/types";
 import type { Equipment, Muscle, Tracking, UnitSystem } from "@/lib/database.types";
 import { useReportActivity } from "@/lib/activity";
 import { Message, Segmented } from "@/components/profile/controls";
@@ -34,6 +35,8 @@ type Choice =
 type Row = {
   key: string;
   summary: ExerciseSummary;
+  /** The name to show: a backup's library movement goes by its name here. */
+  label: string;
   candidates: MatchCandidate[];
   /** Confident enough to take without asking; otherwise the default is to create it. */
   auto: boolean;
@@ -43,20 +46,69 @@ type Row = {
 type Run =
   | { state: "idle" }
   | { state: "running"; done: number; total: number; label: string }
-  | { state: "finished"; imported: number; skipped: number; sets: number; created: number }
+  | {
+      state: "finished";
+      imported: number;
+      skipped: number;
+      sets: number;
+      created: number;
+      weights: { added: number; filled: number; kept: number } | null;
+    }
   | { state: "failed"; error: string; imported: number };
 
-const keyOf = (name: string) => name.toLowerCase();
 const count = (n: number) => n.toLocaleString();
 const SELECT =
   "w-full min-w-0 rounded-[10px] border border-line bg-surface px-2.5 py-2 text-[12.5px] text-fg-2 outline-none focus:border-line-hi disabled:opacity-60";
+/** Weigh-ins a call: a thousand days is about 60 KB. */
+const WEIGHTS_PER_CALL = 1000;
 
 function createGuess(summary: ExerciseSummary): Choice {
+  // A backup knows how its own exercises were set up; nothing to guess.
+  if (summary.ref?.kind === "own") {
+    const { primaryMuscle: muscle, equipment, tracking } = summary.ref;
+    return { kind: "create", muscle, equipment, tracking };
+  }
   return {
     kind: "create",
     muscle: guessMuscle(summary.name, summary.category),
     equipment: guessEquipment(summary.name),
     tracking: guessTracking(summary),
+  };
+}
+
+/**
+ * A backup's exercise, found again: a library movement by id, then by slug;
+ * one of your own by its name among your own. Not found, your own is added
+ * back as it was, and a library movement this server doesn't have is left out
+ * until you pick what to file it under.
+ */
+function backupRow(summary: ExerciseSummary, library: ImportLibraryExercise[]): Row | null {
+  const ref = summary.ref;
+  if (!ref) return null;
+  const key = exerciseKey(summary);
+  if (ref.kind === "library") {
+    const found =
+      library.find((e) => e.id === ref.id) ?? (ref.slug ? library.find((e) => e.slug === ref.slug) : undefined);
+    const label = found?.name ?? summary.name;
+    const near = findCandidates(label, library, 4).filter((c) => c.exercise.id !== found?.id);
+    return {
+      key,
+      summary,
+      label,
+      candidates: found ? [{ exercise: found, score: 1 }, ...near.slice(0, 3)] : near,
+      auto: !!found,
+      fallback: found ? { kind: "match", exerciseId: found.id } : { kind: "skip" },
+    };
+  }
+  const name = ref.name.trim().toLowerCase();
+  const own = library.find((e) => e.own && e.name.trim().toLowerCase() === name);
+  return {
+    key,
+    summary,
+    label: summary.name,
+    candidates: own ? [{ exercise: own, score: 1 }] : findCandidates(summary.name, library, 4),
+    auto: !!own,
+    fallback: own ? { kind: "match", exerciseId: own.id } : createGuess(summary),
   };
 }
 
@@ -74,7 +126,7 @@ export function HistoryReview({
   const [units, setUnits] = useState<UnitSystem>(system);
   // Re-read when the lifter says which unit an unlabelled file is in; parsing
   // is quick next to the read itself, and it keeps one conversion path.
-  const parsed = useMemo(() => parseHistoryCsv(text, { assumeUnits: units }), [text, units]);
+  const parsed = useMemo(() => parseHistoryFile(text, { assumeUnits: units }), [text, units]);
   const history = parsed.ok ? parsed.history : null;
 
   const [library, setLibrary] = useState<ImportLibraryExercise[] | null>(null);
@@ -122,12 +174,15 @@ export function HistoryReview({
   const rows = useMemo<Row[]>(() => {
     if (!history || !library) return [];
     return history.exercises.map((summary) => {
+      const restored = backupRow(summary, library);
+      if (restored) return restored;
       const candidates = findCandidates(summary.name, library, 4);
       const best = candidates[0];
       const auto = !!best && best.score >= AUTO_MATCH_THRESHOLD;
       return {
-        key: keyOf(summary.name),
+        key: exerciseKey(summary),
         summary,
+        label: summary.name,
         candidates,
         auto,
         fallback: auto ? { kind: "match", exerciseId: best.exercise.id } : createGuess(summary),
@@ -162,7 +217,7 @@ export function HistoryReview({
     return history.workouts.filter((w, i) => {
       if (logged?.has(startKeys[i]!)) return false;
       return w.exercises.some((e) => {
-        const row = rowByKey.get(keyOf(e.name));
+        const row = rowByKey.get(exerciseKey(e));
         return row ? (choices[row.key] ?? row.fallback).kind !== "skip" : false;
       });
     }).length;
@@ -181,6 +236,9 @@ export function HistoryReview({
     );
   }
   const h = parsed.history;
+  const backup = h.format === "jlika";
+  const weighIns = h.bodyWeights ?? [];
+  const missing = rows.filter((r) => r.summary.ref?.kind === "library" && !r.auto).length;
 
   async function start() {
     if (!library) return;
@@ -191,7 +249,8 @@ export function HistoryReview({
       const specs: ExerciseSpec[] = [];
       for (const row of rows) {
         const choice = choiceFor(row);
-        if (choice.kind === "create") {
+        // A backup run for its weigh-ins alone has no workouts to file under them.
+        if (choice.kind === "create" && toImport > 0) {
           specs.push({
             name: row.summary.name,
             primaryMuscle: choice.muscle,
@@ -209,8 +268,8 @@ export function HistoryReview({
         created += result.created;
       }
 
-      const resolve = (name: string) => {
-        const row = rowByKey.get(keyOf(name));
+      const resolve = (_name: string, key: string) => {
+        const row = rowByKey.get(key);
         if (!row) return null;
         const choice = choiceFor(row);
         if (choice.kind === "match") return choice.exerciseId;
@@ -218,7 +277,8 @@ export function HistoryReview({
         return null;
       };
       const app = FORMAT_LABELS[h.format].replace(/ \(.*\)$/, "");
-      const all = toPayloads(h.workouts, resolve, `${app} workout`);
+      // A backup's untitled sessions were untitled in this app too; keep them so.
+      const all = toPayloads(h.workouts, resolve, backup ? null : `${app} workout`);
       // Already-logged workouts aren't even sent; the server checks again anyway.
       const payloads = all.filter((p) => !logged?.has(minuteKey(p.startedAt)));
       let skipped = all.length - payloads.length;
@@ -237,7 +297,26 @@ export function HistoryReview({
         sets += result.sets;
         sent += batch.length;
       }
-      setRun({ state: "finished", imported, skipped, sets, created });
+
+      // A backup's weigh-ins, after its workouts. A day that already has a
+      // weight keeps it; the server checks every day again.
+      let weights: { added: number; filled: number; kept: number } | null = null;
+      if (weighIns.length) {
+        weights = { added: 0, filled: 0, kept: 0 };
+        for (const part of chunk(weighIns, WEIGHTS_PER_CALL)) {
+          const done = weights.added + weights.filled + weights.kept;
+          setRun({ state: "running", done, total: weighIns.length, label: `Weigh-ins · ${count(done)} of ${count(weighIns.length)}` });
+          const result = await importBodyWeights(part);
+          if (result.error !== undefined) {
+            setRun({ state: "failed", error: result.error, imported });
+            return;
+          }
+          weights.added += result.added;
+          weights.filled += result.filled;
+          weights.kept += result.kept;
+        }
+      }
+      setRun({ state: "finished", imported, skipped, sets, created, weights });
     } catch (error) {
       setRun({
         state: "failed",
@@ -265,9 +344,15 @@ export function HistoryReview({
         />
       </dl>
 
-      {h.workouts.length === 0 ? (
+      {h.workouts.length === 0 && !(backup && weighIns.length) ? (
         <div className="mt-3">
-          <Message error="Not a single set could be read from this file. The rows below say why." />
+          <Message
+            error={
+              backup
+                ? "This backup has no ticked-off sets or weigh-ins to bring back."
+                : "Not a single set could be read from this file. The rows below say why."
+            }
+          />
         </div>
       ) : null}
 
@@ -289,6 +374,26 @@ export function HistoryReview({
         ) : null}
         {h.workouts.some((w) => w.durationS == null) ? (
           <li>Sessions without a recorded length are saved as an hour long.</li>
+        ) : null}
+        {h.untickedSkipped ? (
+          <li>{count(h.untickedSkipped)} sets that were never ticked off are left out, as they are everywhere else.</li>
+        ) : null}
+        {backup ? (
+          <li>
+            Your own exercises are matched by name, or added back to your library as they were. Library ones are
+            found by the id they have here.
+          </li>
+        ) : null}
+        {weighIns.length ? (
+          <li>
+            {count(weighIns.length)} {weighIns.length === 1 ? "weigh-in" : "weigh-ins"} — a day you&apos;ve already
+            logged a weight for keeps yours.
+          </li>
+        ) : null}
+        {h.ignored?.length ? (
+          <li>
+            Left alone, not restored: {h.ignored.join(", ")}.
+          </li>
         ) : null}
       </ul>
 
@@ -316,7 +421,8 @@ export function HistoryReview({
           <span className="ml-auto font-mono text-[10.5px] text-fg-dim uppercase">
             <span className="text-accent-2">{rows.filter((r) => r.auto).length} matched</span>
             {" · "}
-            {rows.filter((r) => !r.auto).length} new
+            {rows.filter((r) => !r.auto).length - missing} new
+            {missing ? <span className="text-warn"> · {missing} not in this library</span> : null}
           </span>
         ) : null}
       </div>
@@ -351,7 +457,7 @@ export function HistoryReview({
                     <X className="mt-0.5 size-3.5 flex-none text-fg-dim" strokeWidth={2.5} />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-semibold">{row.summary.name}</div>
+                    <div className="truncate text-[13px] font-semibold">{row.label}</div>
                     <div className="font-mono text-[10.5px] text-fg-dim">
                       {count(row.summary.sets)} sets · {count(row.summary.workouts)} workouts
                       {row.summary.category ? ` · ${row.summary.category}` : ""}
@@ -362,7 +468,7 @@ export function HistoryReview({
                 <select
                   value={value}
                   disabled={running || finished}
-                  aria-label={`What to file ${row.summary.name} under`}
+                  aria-label={`What to file ${row.label} under`}
                   onChange={(e) => {
                     const next = e.target.value;
                     setChoices((prev) => ({
@@ -428,7 +534,15 @@ export function HistoryReview({
         <details className="mt-4 rounded-[12px] border border-line bg-surface-2 px-3 py-2.5">
           <summary className="flex cursor-pointer items-center gap-2 text-[12.5px] font-semibold text-fg-2">
             <AlertTriangle className="size-3.5 flex-none text-warn" strokeWidth={2} />
-            {count(h.issueCount)} {h.issueCount === 1 ? "row needs" : "rows need"} a look
+            {count(h.issueCount)}{" "}
+            {backup
+              ? h.issueCount === 1
+                ? "entry needs"
+                : "entries need"
+              : h.issueCount === 1
+                ? "row needs"
+                : "rows need"}{" "}
+            a look
           </summary>
           <ul className="mt-2 flex flex-col gap-1 text-[12px] leading-[1.5] text-fg-soft">
             {h.issues.map((issue) => (
@@ -455,13 +569,19 @@ export function HistoryReview({
         ) : null}
         {run.state === "finished" ? (
           <Message
-            notice={
-              run.imported === 0
-                ? "Nothing new to import — every workout in this file is already in your log."
+            notice={(
+              (run.imported === 0
+                ? h.workouts.length
+                  ? "No new workouts — every one in this file is already in your log."
+                  : ""
                 : `Imported ${count(run.imported)} workouts and ${count(run.sets)} sets` +
                   (run.created ? `, and added ${count(run.created)} exercises to your library` : "") +
-                  (run.skipped ? `. ${count(run.skipped)} were already logged and left alone.` : ".")
-            }
+                  (run.skipped ? `. ${count(run.skipped)} were already logged and left alone.` : ".")) +
+              (run.weights
+                ? ` ${count(run.weights.added + run.weights.filled)} weigh-ins added` +
+                  (run.weights.kept ? `; ${count(run.weights.kept)} days already had your weight and kept it.` : ".")
+                : "")
+            ).trim()}
           />
         ) : null}
 
@@ -477,11 +597,16 @@ export function HistoryReview({
           ) : (
             <RunButton
               running={running}
-              disabled={!library || toImport === 0}
+              disabled={!library || (toImport === 0 && weighIns.length === 0)}
               onClick={() => void start()}
               runningLabel="Importing…"
             >
-              {toImport === 0 ? "Nothing new to import" : `Import ${count(toImport)} workouts`}
+              {toImport === 0
+                ? weighIns.length
+                  ? `Import ${count(weighIns.length)} weigh-ins`
+                  : "Nothing new to import"
+                : `Import ${count(toImport)} workouts` +
+                  (weighIns.length ? ` and ${count(weighIns.length)} weigh-ins` : "")}
             </RunButton>
           )}
           {!running && !finished ? (

@@ -1,4 +1,4 @@
-import type { ImportedWorkout, LocalDateTime, WorkoutPayload } from "./types";
+import { exerciseKey, type ImportedWorkout, type LocalDateTime, type WorkoutPayload } from "./types";
 
 /**
  * Turning parsed workouts into what the server action receives: real instants,
@@ -31,7 +31,10 @@ export function minuteKey(instant: string | Date): string {
   return new Date(instant).toISOString().slice(0, 16);
 }
 
-export function sessionTimes(workout: Pick<ImportedWorkout, "start" | "durationS">) {
+export function sessionTimes(workout: Pick<ImportedWorkout, "start" | "durationS" | "exact">) {
+  // A backup knows the real instants; rebuilding them from the wall clock
+  // could land an hour out on the night the clocks change.
+  if (workout.exact) return { ...workout.exact };
   const started = localToDate(workout.start);
   const duration =
     workout.durationS && workout.durationS > 0 && workout.durationS <= MAX_DURATION_S
@@ -45,16 +48,19 @@ export function sessionTimes(workout: Pick<ImportedWorkout, "start" | "durationS
  * chose to skip it) and drops workouts left with nothing in them. Workouts the
  * file gives no name (FitNotes never does) get `fallbackTitle`, so the session
  * list says where they came from rather than a bare "Session".
+ *
+ * `resolve` gets the name as written and the key the review step filed it
+ * under (see exerciseKey).
  */
 export function toPayloads(
   workouts: ImportedWorkout[],
-  resolve: (exerciseName: string) => string | null,
+  resolve: (exerciseName: string, key: string) => string | null,
   fallbackTitle: string | null = null,
 ): WorkoutPayload[] {
   const payloads: WorkoutPayload[] = [];
   for (const workout of workouts) {
     const exercises = workout.exercises
-      .map((e) => ({ exerciseId: resolve(e.name), sets: e.sets }))
+      .map((e) => ({ exerciseId: resolve(e.name, exerciseKey(e)), sets: e.sets }))
       .filter((e): e is { exerciseId: string; sets: typeof e.sets } => e.exerciseId !== null && e.sets.length > 0);
     if (exercises.length === 0) continue;
     payloads.push({
@@ -62,6 +68,8 @@ export function toPayloads(
       title: (workout.title ?? fallbackTitle)?.slice(0, 120) ?? null,
       notes: workout.notes?.slice(0, 2000) ?? null,
       exercises,
+      ...(workout.rating != null ? { rating: workout.rating } : {}),
+      ...(workout.bodyweightKg != null ? { bodyweightKg: workout.bodyweightKg } : {}),
     });
   }
   return payloads;

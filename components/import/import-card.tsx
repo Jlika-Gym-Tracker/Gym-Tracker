@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import type { UnitSystem } from "@/lib/database.types";
 import { scanHealthExport, type BodyMassScan } from "@/lib/import/apple-health";
+import { readBackupFromZip } from "@/lib/import/backup";
 import { Card } from "@/components/kit/card";
 import { Message } from "@/components/profile/controls";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,15 @@ export function ImportCard({ system }: { system: UnitSystem }) {
       const headText = new TextDecoder().decode(head).replace(/^﻿/, "").trimStart();
       const isXml = /\.xml$/i.test(file.name) || headText.startsWith("<");
 
+      // This app's own export ZIP carries its JSON beside the photos.
+      if (isZip) {
+        const backup = await readBackupFromZip(file);
+        if (backup != null) {
+          setStage({ kind: "history", fileName: file.name, text: backup });
+          return;
+        }
+      }
+
       if (isZip || isXml) {
         const scan = await scanHealthExport(file, (progress) =>
           setStage({ kind: "reading", fileName: file.name, progress }),
@@ -49,7 +59,10 @@ export function ImportCard({ system }: { system: UnitSystem }) {
       }
 
       if (file.size > MAX_CSV_BYTES) {
-        setStage({ kind: "idle", error: "That file is too big to be a workout export. Choose the CSV the app exported." });
+        setStage({
+          kind: "idle",
+          error: "That file is too big to be a workout export. Choose the CSV the app exported, or this app's JSON backup.",
+        });
         return;
       }
       setStage({ kind: "history", fileName: file.name, text: await file.text() });
@@ -82,13 +95,15 @@ export function ImportCard({ system }: { system: UnitSystem }) {
             <strong className="font-semibold text-fg-2">Hevy</strong> or{" "}
             <strong className="font-semibold text-fg-2">FitNotes</strong> exports, or body weight from an{" "}
             <strong className="font-semibold text-fg-2">Apple Health</strong> export (the export.zip, or the
-            export.xml inside it). You&apos;ll check every exercise before anything is saved.
+            export.xml inside it). To restore a <strong className="font-semibold text-fg-2">JLIKA backup</strong>,
+            choose the JSON or ZIP from Export your data — workouts, your own exercises and weigh-ins come back,
+            and nothing already logged is doubled. You&apos;ll check every exercise before anything is saved.
           </p>
 
           <input
             ref={input}
             type="file"
-            accept=".csv,.txt,.xml,.zip,text/csv,application/zip,text/xml,application/xml"
+            accept=".csv,.txt,.xml,.zip,.json,text/csv,application/zip,text/xml,application/xml,application/json"
             className="sr-only"
             tabIndex={-1}
             aria-hidden

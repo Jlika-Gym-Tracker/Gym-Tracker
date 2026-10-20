@@ -1,0 +1,134 @@
+{
+  "exported_at": "2026-10-19T08:00:00.000Z",
+  "app": "JLIKA Gym",
+  "schema_note": "Weights are kilograms, lengths centimetres, dates are calendar dates in the account's local sense.",
+  "account": { "id": "11111111-1111-4111-8111-111111111111", "email": "lifter@example.com" },
+  "profile": { "id": "11111111-1111-4111-8111-111111111111", "display_name": "Lifter", "unit_system": "metric" },
+  "user_settings": { "user_id": "11111111-1111-4111-8111-111111111111", "week_starts_on": 1 },
+  "sharing_prefs": null,
+  "program_weeks": [{ "id": "w1", "user_id": "11111111-1111-4111-8111-111111111111", "week_start": "2026-10-12" }],
+  "program_days": [],
+  "custom_exercises": [
+    {
+      "id": "cccccccc-0000-4000-8000-000000000001",
+      "owner_id": "11111111-1111-4111-8111-111111111111",
+      "slug": "u-11111111-landmine-press",
+      "name": "Landmine  Press",
+      "primary_muscle": "shoulders",
+      "equipment": "barbell",
+      "tracking": "reps"
+    }
+  ],
+  "workout_sessions": [
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "user_id": "11111111-1111-4111-8111-111111111111",
+      "day_id": null,
+      "title": null,
+      "started_at": "2026-10-14T17:30:20.512+00:00",
+      "ended_at": null,
+      "bodyweight_kg": null,
+      "notes": null,
+      "rating": null
+    },
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "user_id": "11111111-1111-4111-8111-111111111111",
+      "day_id": "dddddddd-0000-4000-8000-000000000001",
+      "title": "Push",
+      "started_at": "2026-10-07T17:02:11.123+00:00",
+      "ended_at": "2026-10-07T18:07:11.123+00:00",
+      "bodyweight_kg": "81.50",
+      "notes": "Shoulder felt fine",
+      "rating": 2
+    },
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "user_id": "11111111-1111-4111-8111-111111111111",
+      "title": "Nothing ticked",
+      "started_at": "2026-10-16T17:00:00+00:00",
+      "ended_at": "2026-10-16T17:40:00+00:00"
+    },
+    {
+      "id": "eeeeeeee-0000-4000-8000-000000000001",
+      "user_id": "99999999-9999-4999-8999-999999999999",
+      "title": "An athlete's legs day",
+      "started_at": "2026-10-08T07:00:00+00:00",
+      "ended_at": "2026-10-08T08:00:00+00:00"
+    },
+    { "id": "aaaaaaaa-0000-4000-8000-000000000009", "user_id": "11111111-1111-4111-8111-111111111111", "started_at": "not a date" }
+  ],
+  "set_logs": [
+    {
+      "id": "s1", "session_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "exercise_id": "bbbbbbbb-0000-4000-8000-000000000001", "set_index": 1,
+      "weight_kg": 100, "reps": 5, "rpe": 8.5, "duration_s": null, "distance_m": null,
+      "is_complete": true, "logged_at": "2026-10-07T17:12:00+00:00"
+    },
+    {
+      "id": "s2", "session_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "exercise_id": "bbbbbbbb-0000-4000-8000-000000000001", "set_index": 0,
+      "weight_kg": "97.50", "reps": 5, "rpe": null, "duration_s": null, "distance_m": null,
+      "is_complete": true, "logged_at": "2026-10-07T17:08:00+00:00"
+    },
+    {
+      "id": "s3", "session_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "exercise_id": "bbbbbbbb-0000-4000-8000-000000000001", "set_index": 2,
+      "weight_kg": 100, "reps": 4, "rpe": null, "duration_s": null, "distance_m": null,
+      "is_complete": false, "logged_at": "2026-10-07T17:02:11+00:00"
+    },
+    {
+      "id": "s4", "session_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "exercise_id": "cccccccc-0000-4000-8000-000000000001", "set_index": 0,
+      "weight_kg": 40, "reps": 10, "rpe": 0, "duration_s": null, "distance_m": null,
+      "is_complete": true, "logged_at": "2026-10-07T17:30:00+00:00"
+    },
+    {
+      "id": "s5", "session_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "exercise_id": "cccccccc-0000-4000-8000-000000000001", "set_index": 1,
+      "weight_kg": 40, "reps": 9000, "rpe": null, "duration_s": null, "distance_m": null,
+      "is_complete": true, "logged_at": "2026-10-07T17:33:00+00:00"
+    },
+    {
+      "id": "s6", "session_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "exercise_id": "b2b2b2b2-0000-4000-8000-000000000002", "set_index": 0,
+      "weight_kg": null, "reps": null, "rpe": null, "duration_s": 75, "distance_m": null,
+      "is_complete": true, "logged_at": "2026-10-14T17:40:00+00:00"
+    },
+    {
+      "id": "s7", "session_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "exercise_id": "b2b2b2b2-0000-4000-8000-000000000002", "set_index": 1,
+      "weight_kg": null, "reps": null, "rpe": null, "duration_s": null, "distance_m": null,
+      "is_complete": true, "logged_at": "2026-10-14T17:42:00+00:00"
+    },
+    {
+      "id": "s8", "session_id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "exercise_id": "bbbbbbbb-0000-4000-8000-000000000001", "set_index": 0,
+      "weight_kg": 60, "reps": null, "rpe": null, "duration_s": null, "distance_m": null,
+      "is_complete": false, "logged_at": "2026-10-16T17:00:00+00:00"
+    },
+    {
+      "id": "s9", "session_id": "eeeeeeee-0000-4000-8000-000000000001",
+      "exercise_id": "bbbbbbbb-0000-4000-8000-000000000001", "set_index": 0,
+      "weight_kg": 140, "reps": 5, "rpe": null, "duration_s": null, "distance_m": null,
+      "is_complete": true, "logged_at": "2026-10-08T07:10:00+00:00"
+    },
+    {
+      "id": "s10", "session_id": "ffffffff-0000-4000-8000-000000000000",
+      "exercise_id": "bbbbbbbb-0000-4000-8000-000000000001", "set_index": 0,
+      "weight_kg": 50, "reps": 5, "is_complete": true
+    }
+  ],
+  "body_metrics": [
+    { "id": "m1", "user_id": "11111111-1111-4111-8111-111111111111", "measured_on": "2026-10-07", "weight_kg": "81.50", "waist_cm": null },
+    { "id": "m2", "user_id": "11111111-1111-4111-8111-111111111111", "measured_on": "2026-10-01", "weight_kg": 82.1, "waist_cm": 86 },
+    { "id": "m3", "user_id": "11111111-1111-4111-8111-111111111111", "measured_on": "2026-10-03", "weight_kg": null, "waist_cm": 85.5 },
+    { "id": "m4", "user_id": "99999999-9999-4999-8999-999999999999", "measured_on": "2026-10-05", "weight_kg": 70 }
+  ],
+  "progress_photos": [{ "id": "p1", "taken_on": "2026-10-01", "pose": "front" }],
+  "meal_plans": [{ "id": "mp1" }],
+  "meal_plan_entries": [],
+  "grocery_items": [],
+  "user_excludes": [],
+  "crew_links": [{ "id": "cl1" }]
+}

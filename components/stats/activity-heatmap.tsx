@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { weekDayNames, type WeekStartDay } from "@/lib/dates";
 import type { UnitSystem } from "@/lib/database.types";
@@ -8,6 +9,7 @@ import type { ActivityDay, ActivityLevel, ActivityYear } from "@/lib/training/ac
 import { formatVolume, weightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/kit/card";
+import { NavSpinner } from "@/components/shell/nav-spinner";
 
 /** The accent mixed into the card surface at 25 / 45 / 70 / 100 %. */
 const LEVEL_FILL: Record<ActivityLevel, string> = {
@@ -208,6 +210,14 @@ function DayLine({ day, volume }: { day: ActivityDay; volume: (kg: number) => st
           {session.volumeKg > 0 ? `, ${volume(session.volumeKg)}` : ""}
         </span>
       ))}
+      {/* History files sessions by the same start day, so this lands on them. */}
+      <Link
+        href={`/history?month=${day.date.slice(0, 7)}&day=${day.date}`}
+        className="ml-2 inline-flex items-center gap-1 font-mono text-[11px] font-semibold whitespace-nowrap text-accent uppercase hover:text-accent-hi"
+      >
+        <NavSpinner className="size-3" />
+        Open in history →
+      </Link>
     </>
   );
 }
