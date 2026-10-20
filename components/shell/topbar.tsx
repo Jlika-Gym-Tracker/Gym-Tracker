@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronLeft, History, LogOut, Search, Settings, Trophy, Users } from "lucide-react";
+import { ChevronLeft, History, LogOut, Search, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { endNavigation, startNavigation } from "@/lib/activity";
 import { titleForPath } from "@/lib/nav";
@@ -31,6 +31,7 @@ export function Topbar({
   goalLabel,
   streakWeeks,
   coaching = false,
+  admin = false,
 }: {
   displayName: string;
   avatarUrl: string | null;
@@ -38,6 +39,8 @@ export function Topbar({
   /** Weeks in a row with a finished session (lib/training/streak.ts). */
   streakWeeks: number;
   coaching?: boolean;
+  /** Signed in with an ADMIN_EMAILS address; the route checks again. */
+  admin?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -144,6 +147,12 @@ export function Topbar({
               <DropdownMenuItem render={<Link href="/coach" />} className="py-2.5 lg:hidden">
                 <Users className="size-4" />
                 My athletes
+              </DropdownMenuItem>
+            ) : null}
+            {admin ? (
+              <DropdownMenuItem render={<Link href="/admin" />} className="py-2.5 lg:hidden">
+                <ShieldCheck className="size-4" />
+                Admin
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuSeparator className="lg:hidden" />

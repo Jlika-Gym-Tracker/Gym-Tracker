@@ -13,6 +13,12 @@ export const COACH_GROUP: NavGroup = {
   items: [{ href: "/coach", label: "My athletes" }],
 };
 
+/** Only shown to operators on ADMIN_EMAILS; the route checks again itself. */
+export const ADMIN_GROUP: NavGroup = {
+  title: "Operator",
+  items: [{ href: "/admin", label: "Admin" }],
+};
+
 /** Only shown when the server has an Anthropic key (lib/ai-coach/config.ts). */
 export const AI_COACH_ITEM: NavItem = { href: "/ai-coach", label: "AI Coach" };
 
@@ -54,17 +60,18 @@ export const PAGE_TITLES: Record<string, { title: string; sub: string }> = {
   "/coach": { title: "Coaching", sub: "Athletes · programs · invites" },
   "/ai-coach": { title: "AI Coach", sub: "Optional · you approve every change" },
   "/history": { title: "History", sub: "Every session · month by month" },
+  "/admin": { title: "Admin", sub: "Accounts · signup · no training data" },
 };
 
 /**
  * The sidebar's groups for this account and server: AI Coach joins Train when
  * the server has a key, Coach is added for accounts that coach.
  */
-export function navGroups({ coaching = false, aiCoach = false } = {}): NavGroup[] {
+export function navGroups({ coaching = false, aiCoach = false, admin = false } = {}): NavGroup[] {
   const groups = NAV_GROUPS.map((group) =>
     aiCoach && group.title === "Train" ? { ...group, items: [...group.items, AI_COACH_ITEM] } : group,
   );
-  return coaching ? [...groups, COACH_GROUP] : groups;
+  return [...groups, ...(coaching ? [COACH_GROUP] : []), ...(admin ? [ADMIN_GROUP] : [])];
 }
 
 /** A finished session's summary sits under /session but is not a live session. */

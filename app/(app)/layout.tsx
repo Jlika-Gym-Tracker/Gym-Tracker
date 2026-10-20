@@ -9,6 +9,7 @@ import { getWeekStartsOn } from "@/lib/settings/week";
 import { weekStreak, weightSummary } from "@/lib/training/streak";
 import type { UnitSystem } from "@/lib/database.types";
 import { AccentSync } from "@/components/shell/accent-sync";
+import { isAdmin } from "@/lib/admin/access";
 
 export default async function AppLayout({
   children,
@@ -79,6 +80,8 @@ export default async function AppLayout({
 
   // No key on the server, no AI Coach anywhere: not in the nav, not routable.
   const aiCoach = isAiCoachAvailable();
+  // Only decides whether the link shows; /admin verifies the email itself.
+  const admin = isAdmin(user.email);
 
   return (
     <div className="flex min-h-svh bg-bg text-fg">
@@ -89,6 +92,7 @@ export default async function AppLayout({
         summary={summary}
         coaching={profile?.coaching_enabled ?? false}
         aiCoach={aiCoach}
+        admin={admin}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
@@ -97,6 +101,7 @@ export default async function AppLayout({
           goalLabel={goalLine({ goal })}
           streakWeeks={streakWeeks}
           coaching={profile?.coaching_enabled ?? false}
+          admin={admin}
         />
         {/* Bottom padding on phones clears the fixed tab bar (or the live
             session's bar, which is the same height) plus the home indicator. */}
