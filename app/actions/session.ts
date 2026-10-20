@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getRecentSessions } from "@/lib/training/queries";
 import { prescribe } from "@/lib/program/prescription";
+import { monthOf } from "@/lib/training/history";
 import type { UnitSystem } from "@/lib/database.types";
 
 
@@ -31,6 +33,44 @@ function refresh(sessionId?: string) {
   revalidatePath("/session");
   revalidatePath("/");
 }
+
+type Client = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * The session a set belongs to, if that session is the caller's own.
+ *
+ * RLS already refuses writes to anyone else's sets, but a refused update or
+ * delete matches no rows and reports success, so the screen would say "saved"
+ * when nothing was. Asking first turns that into an error the lifter sees, and
+ * tells the caller whether the session is still open.
+ */
+async function ownSetSession(supabase: Client, userId: string, setId: string) {
+  const { data, error } = await supabase
+    .from("set_logs")
+    .select("session_id, session:workout_sessions!inner ( user_id, ended_at )")
+    .eq("id", setId)
+    .eq("session.user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  // lib/database.types.ts declares no Relationships, so the embed cannot be inferred.
+  const session = data.session as unknown as { ended_at: string | null };
+  return { sessionId: data.session_id, finished: session.ended_at != null };
+}
+
+/**
+ * After an edit to a finished session, everything that reads the log is out
+ * of date — its summary, History, Progress, and the targets the progression
+ * rules set from it. A live session's own screen is left alone, as before: it
+ * holds the optimistic state and re-rendering it on every set would only
+ * fight the typing.
+ */
+function refreshAfterEdit(owner: { finished: boolean }) {
+  if (owner.finished) revalidatePath("/", "layout");
+  else refresh();
+}
+
+const NOT_YOURS = "That set isn't in your log any more. Reload the page.";
 
 /**
  * Starts (or resumes) a session for a program day.
@@ -143,6 +183,9 @@ const setSchema = z.object({
 /**
  * Writes one set row. Called on blur and on ticking the checkbox; the client
  * holds the optimistic state, so this only has to be correct, not instant.
+ *
+ * Also how a finished session is corrected from its summary. Only your own
+ * sets, open session or finished.
  */
 export async function saveSet(input: {
   id: string;
@@ -154,8 +197,10 @@ export async function saveSet(input: {
   isComplete: boolean;
 }): Promise<ActionState> {
   try {
-    const { supabase } = await requireUser();
+    const { supabase, user } = await requireUser();
     const parsed = setSchema.parse(input);
+    const owner = await ownSetSession(supabase, user.id, parsed.id);
+    if (!owner) return { error: NOT_YOURS };
 
     // Completing a set with nothing in it is almost always a misclick. Reps,
     // a held time or a distance — whichever the movement is logged in.
@@ -177,11 +222,15 @@ export async function saveSet(input: {
         duration_s: parsed.durationS,
         distance_m: parsed.distanceM,
         is_complete: parsed.isComplete,
-        logged_at: new Date().toISOString(),
+        // Stamped only while the session runs. Progression and "last time"
+        // read the log in logged_at order, so fixing a typo in March must not
+        // make March's set look like today's.
+        ...(owner.finished ? {} : { logged_at: new Date().toISOString() }),
       })
-      .eq("id", parsed.id);
+      .eq("id", parsed.id)
+      .eq("session_id", owner.sessionId);
     if (error) throw error;
-    refresh();
+    refreshAfterEdit(owner);
     return {};
   } catch (error) {
     return fail(error);
@@ -218,12 +267,20 @@ export async function addSet(sessionId: string, exerciseId: string): Promise<Act
   }
 }
 
+/** Removes one of your own sets, from a session in progress or a finished one. */
 export async function removeSet(setId: string): Promise<ActionState> {
   try {
-    const { supabase } = await requireUser();
-    const { error } = await supabase.from("set_logs").delete().eq("id", uuid.parse(setId));
+    const { supabase, user } = await requireUser();
+    const id = uuid.parse(setId);
+    const owner = await ownSetSession(supabase, user.id, id);
+    if (!owner) return { error: NOT_YOURS };
+    const { error } = await supabase
+      .from("set_logs")
+      .delete()
+      .eq("id", id)
+      .eq("session_id", owner.sessionId);
     if (error) throw error;
-    refresh();
+    refreshAfterEdit(owner);
     return {};
   } catch (error) {
     return fail(error);
@@ -320,6 +377,41 @@ export async function discardSession(
     return fail(error);
   }
   redirect("/");
+}
+
+/**
+ * Deletes a finished workout of your own, with every set in it (set_logs
+ * cascade), and returns to that month in History. A session still running is
+ * discarded from the session screen instead.
+ */
+export async function deleteSession(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  let month: string;
+  try {
+    const { supabase, user } = await requireUser();
+    const sessionId = uuid.parse(formData.get("sessionId"));
+
+    // Filtered to the owner explicitly: a coach can read an athlete's session,
+    // and the delete must not lean on RLS alone to say no.
+    const { data: deleted, error } = await supabase
+      .from("workout_sessions")
+      .delete()
+      .eq("id", sessionId)
+      .eq("user_id", user.id)
+      .not("ended_at", "is", null)
+      .select("started_at");
+    if (error) throw error;
+    const session = deleted?.[0];
+    if (!session) return { error: "Only a finished workout of your own can be deleted." };
+    month = monthOf(parseISO(session.started_at));
+
+    revalidatePath("/", "layout");
+  } catch (error) {
+    return fail(error);
+  }
+  redirect(`/history?month=${month}`);
 }
 
 const ratingSchema = z.object({
