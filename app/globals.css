@@ -84,6 +84,30 @@
   --sidebar-ring: var(--border-sel);
 }
 
+/*
+  Accent colours (Profile → Account → Appearance; lib/theme/accent.ts). Lime is
+  the default and keeps the hand-tuned values above. The others set only the
+  accent and derive every tint from it, mixed into the page background in the
+  same proportions the lime ones sit at, so each palette reads the same way.
+*/
+:root[data-accent="orange"] { --accent: #ffb35c; }
+:root[data-accent="yellow"] { --accent: #ffd84d; }
+:root[data-accent="coral"] { --accent: #ff9a85; }
+:root[data-accent="pink"] { --accent: #ff9ccf; }
+:root[data-accent="violet"] { --accent: #bfadff; }
+:root[data-accent="sky"] { --accent: #78ccff; }
+:root[data-accent="mint"] { --accent: #66e8c6; }
+
+:root[data-accent]:not([data-accent="lime"]) {
+  --accent-hi: color-mix(in oklab, var(--accent) 72%, white);
+  --accent-soft: color-mix(in oklab, var(--accent) 8%, var(--bg));
+  --accent-2: color-mix(in oklab, var(--accent) 58%, var(--bg));
+  --accent-deep: color-mix(in oklab, var(--accent) 32%, var(--bg));
+  --border-hi: color-mix(in oklab, var(--accent) 20%, var(--bg));
+  --border-sel: color-mix(in oklab, var(--accent) 38%, var(--bg));
+  --done: color-mix(in oklab, var(--accent) 6%, var(--bg));
+}
+
 /* The app is dark-only; `.dark` exists so shadcn primitives that gate on it behave. */
 .dark { color-scheme: dark; }
 

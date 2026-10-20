@@ -9,7 +9,7 @@ import { kgToDisplay, trimNumber, weightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/kit/card";
 import { MarkedLineChart } from "@/components/charts/line-chart";
-import { limeRamp } from "./ramp";
+import { accentRamp } from "./ramp";
 
 /**
  * A dot's shade from the effort of the set behind it: brightest at failure,
@@ -17,7 +17,7 @@ import { limeRamp } from "./ramp";
  */
 function effortShade(rpe: number | null): string | null {
   const rir = rirOf(rpe);
-  return rir == null ? null : limeRamp(1 - rir / 5);
+  return rir == null ? null : accentRamp(1 - rir / 5);
 }
 
 export function LiftProgressCard({

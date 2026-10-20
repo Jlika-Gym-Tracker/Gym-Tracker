@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { addDays } from "date-fns";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { displayToCm, displayToKg } from "@/lib/units";
+import { ACCENTS, ACCENT_COOKIE, type Accent } from "@/lib/theme/accent";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -216,6 +218,41 @@ export async function setRestSeconds(seconds: number): Promise<ActionState> {
   } catch (error) {
     return fail(error);
   }
+}
+
+/**
+ * The account's accent colour. Saved on the profile so it follows the account
+ * to every device, and mirrored into a cookie so the next page load paints in
+ * it straight away (see ACCENT_BOOT_SCRIPT).
+ */
+export async function setAccent(accent: string): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const value = z.enum(ACCENTS.map((a) => a.key) as [Accent, ...Accent[]]).parse(accent);
+    const { error } = await supabase.from("profiles").update({ accent: value }).eq("id", user.id);
+    if (error) throw error;
+    (await cookies()).set(ACCENT_COOKIE, value, { path: "/", maxAge: 31536000, sameSite: "lax" });
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Signs this account out on every device — phones left at the gym included.
+ * Supabase revokes every refresh token for the user; each device drops out the
+ * next time its access token needs renewing, within the hour at most.
+ */
+export async function signOutEverywhere(): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const { error } = await supabase.auth.signOut({ scope: "global" });
+    if (error) throw error;
+  } catch (error) {
+    return fail(error);
+  }
+  redirect("/login");
 }
 
 /** Which scale the effort column asks in. Stored sets stay RPE either way. */

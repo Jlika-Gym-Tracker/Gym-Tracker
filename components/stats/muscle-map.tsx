@@ -9,7 +9,7 @@ import {
 } from "@/lib/training/muscle-load";
 import { trimNumber } from "@/lib/units";
 import { cn } from "@/lib/utils";
-import { limeRamp } from "./ramp";
+import { accentRamp } from "./ramp";
 
 const UNWORKED = "#2a3033";
 const SILHOUETTE = "#1b2022";
@@ -18,7 +18,7 @@ const HAIR = "#121517";
 /** A muscle's fill: grey with no work, then deep to bright lime against the busiest muscle. */
 export function muscleFill(sets: number | undefined, peak: number): string {
   if (!sets || sets <= 0 || peak <= 0) return UNWORKED;
-  return limeRamp(sets / peak);
+  return accentRamp(sets / peak);
 }
 
 function setsLabel(sets: number) {
@@ -97,7 +97,7 @@ function Body({
         ))}
       </g>
       {view.regions.map(([muscle, paths]) => (
-        <g key={muscle} fill={muscleFill(load[muscle], peak)}>
+        <g key={muscle} style={{ fill: muscleFill(load[muscle], peak) }}>
           {/* Hover names the muscle on desktop; the caption covers screen readers. */}
           <title>{`${MUSCLE_LABEL[muscle]} · ${setsLabel(load[muscle] ?? 0)}`}</title>
           {paths.map((d, i) => (

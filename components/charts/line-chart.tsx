@@ -28,7 +28,7 @@ const AXIS = {
 
 const TOOLTIP_STYLE = {
   background: "#0b0d0e",
-  border: "1px solid #2c3a14",
+  border: "1px solid var(--border-hi)",
   borderRadius: 10,
   fontSize: 12,
   fontFamily: "var(--font-archivo), sans-serif",
@@ -60,8 +60,8 @@ export function TrendChart({
       <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: -18 }}>
         <defs>
           <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#c9f24d" stopOpacity={0.18} />
-            <stop offset="100%" stopColor="#c9f24d" stopOpacity={0} />
+            <stop offset="0%" style={{ stopColor: "var(--accent)", stopOpacity: 0.18 }} />
+            <stop offset="100%" style={{ stopColor: "var(--accent)", stopOpacity: 0 }} />
           </linearGradient>
         </defs>
         <CartesianGrid stroke="#1d2124" vertical={false} />
@@ -80,18 +80,18 @@ export function TrendChart({
           contentStyle={TOOLTIP_STYLE}
           labelStyle={{ color: "#7f8a84", fontSize: 10 }}
           formatter={(value) => [`${value ?? "—"}${unit ? ` ${unit}` : ""}`, ""]}
-          cursor={{ stroke: "#2c3a14" }}
+          cursor={{ stroke: "var(--border-hi)" }}
         />
         {reference ? (
           <ReferenceLine
             y={reference.value}
-            stroke="#7d9440"
+            stroke="var(--accent-2)"
             strokeDasharray="4 4"
             ifOverflow="extendDomain"
             label={{
               value: reference.label,
               position: "insideTopRight",
-              fill: "#7d9440",
+              fill: "var(--accent-2)",
               fontSize: 10,
               fontFamily: AXIS.fontFamily,
             }}
@@ -100,7 +100,7 @@ export function TrendChart({
         <Area
           type="monotone"
           dataKey={dataKey}
-          stroke="#c9f24d"
+          stroke="var(--accent)"
           strokeWidth={2}
           fill="url(#trendFill)"
           dot={false}
@@ -129,7 +129,7 @@ export function DualLineChart({
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
           labelStyle={{ color: "#7f8a84", fontSize: 10 }}
-          cursor={{ stroke: "#2c3a14" }}
+          cursor={{ stroke: "var(--border-hi)" }}
         />
         {series.map((s) => (
           <Line
@@ -195,7 +195,7 @@ export function MarkedLineChart<T extends SeriesPoint>({
   const radius = data.length > 80 ? 2.25 : data.length > 30 ? 2.75 : 3.5;
   const renderDot = ({ cx, cy, index, payload }: DotItemDotProps) => {
     if (cx == null || cy == null) return null;
-    const fill = markFill ? markFill(payload as T) : "#c9f24d";
+    const fill = markFill ? markFill(payload as T) : "var(--accent)";
     return (
       <circle
         key={`mark-${index}`}
@@ -203,7 +203,7 @@ export function MarkedLineChart<T extends SeriesPoint>({
         cy={cy}
         r={radius}
         fill={fill ?? "#101214"}
-        stroke="#c9f24d"
+        stroke="var(--accent)"
         strokeWidth={fill ? 0 : 1.5}
       />
     );
@@ -223,15 +223,15 @@ export function MarkedLineChart<T extends SeriesPoint>({
           domain={domain ?? ["auto", "auto"]}
           allowDecimals={false}
         />
-        <Tooltip content={renderTooltip} cursor={{ stroke: "#2c3a14" }} />
+        <Tooltip content={renderTooltip} cursor={{ stroke: "var(--border-hi)" }} />
         <Line
           type="monotone"
           dataKey={dataKey}
-          stroke="#c9f24d"
+          stroke="var(--accent)"
           strokeOpacity={0.55}
           strokeWidth={1.6}
           dot={renderDot}
-          activeDot={{ r: 5, fill: "#dcff77", stroke: "#0b0d0e", strokeWidth: 2 }}
+          activeDot={{ r: 5, fill: "var(--accent-hi)", stroke: "#0b0d0e", strokeWidth: 2 }}
           isAnimationActive={false}
           connectNulls
         />

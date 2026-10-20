@@ -8,6 +8,7 @@ import { isAiCoachAvailable } from "@/lib/ai-coach/config";
 import { getWeekStartsOn } from "@/lib/settings/week";
 import { weekStreak, weightSummary } from "@/lib/training/streak";
 import type { UnitSystem } from "@/lib/database.types";
+import { AccentSync } from "@/components/shell/accent-sync";
 
 export default async function AppLayout({
   children,
@@ -26,7 +27,7 @@ export default async function AppLayout({
     await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name, avatar_url, goal, unit_system, onboarded_at, coaching_enabled, goal_weight_kg")
+        .select("display_name, avatar_url, goal, unit_system, onboarded_at, coaching_enabled, goal_weight_kg, accent")
         .eq("id", user.id)
         .maybeSingle(),
       // Two years of session dates is plenty for any streak worth showing.
@@ -103,6 +104,7 @@ export default async function AppLayout({
           {children}
         </main>
       </div>
+      <AccentSync accent={profile?.accent ?? "lime"} />
       <MobileNav aiCoach={aiCoach} />
     </div>
   );

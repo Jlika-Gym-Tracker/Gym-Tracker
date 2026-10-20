@@ -271,7 +271,7 @@ export function DayCard({
               type="checkbox"
               name="isRest"
               defaultChecked={day.is_rest}
-              className="size-4 accent-[#c9f24d]"
+              className="size-4 accent-[var(--accent)]"
             />
             Rest day
             {day.exercises.length > 0 ? (
@@ -439,7 +439,7 @@ export function DayCard({
                 className="w-full rounded-[8px] border border-line bg-surface px-2.5 py-2 text-[12.5px] outline-none focus:border-line-hi"
               />
               <label className="flex min-h-11 items-center gap-2 text-[12px] text-fg-muted">
-                <input type="checkbox" name="perSide" defaultChecked={item.per_side} className="size-4 accent-[#c9f24d]" />
+                <input type="checkbox" name="perSide" defaultChecked={item.per_side} className="size-4 accent-[var(--accent)]" />
                 Per side
               </label>
               <div className="flex items-center gap-2">

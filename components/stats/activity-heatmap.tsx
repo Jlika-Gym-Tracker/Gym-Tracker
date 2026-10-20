@@ -9,13 +9,13 @@ import { formatVolume, weightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/kit/card";
 
-/** Lime mixed into the card surface at 25 / 45 / 70 / 100 %. */
+/** The accent mixed into the card surface at 25 / 45 / 70 / 100 %. */
 const LEVEL_FILL: Record<ActivityLevel, string> = {
   0: "#171b1d",
-  1: "#3e4a22",
-  2: "#63772e",
-  3: "#92af3c",
-  4: "#c9f24d",
+  1: "color-mix(in oklab, var(--accent) 25%, #171b1d)",
+  2: "color-mix(in oklab, var(--accent) 45%, #171b1d)",
+  3: "color-mix(in oklab, var(--accent) 70%, #171b1d)",
+  4: "var(--accent)",
 };
 
 const CELL = 11;

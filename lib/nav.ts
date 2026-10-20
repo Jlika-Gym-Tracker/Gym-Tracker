@@ -49,7 +49,7 @@ export const PAGE_TITLES: Record<string, { title: string; sub: string }> = {
   },
   "/nutrition": { title: "Nutrition", sub: "Fat loss · meal plan · groceries" },
   "/league": { title: "Crew league", sub: "Consistency · transformation" },
-  "/profile": { title: "Profile & settings", sub: "Account · targets · food · crew" },
+  "/profile": { title: "Profile & settings", sub: "Account · training · targets · crew" },
   "/coach": { title: "Coaching", sub: "Athletes · programs · invites" },
   "/ai-coach": { title: "AI Coach", sub: "Optional · you approve every change" },
 };

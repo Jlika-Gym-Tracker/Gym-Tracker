@@ -243,13 +243,13 @@ export function ProgressScreen({
                 data={strengthSeries}
                 height={130}
                 series={[
-                  { key: "strength", color: "#c9f24d", name: "Est. 1RM avg" },
+                  { key: "strength", color: "var(--accent)", name: "Est. 1RM avg" },
                   { key: "bodyweight", color: "#4a5560", dashed: true, name: "Bodyweight" },
                 ]}
               />
               <ChartLegend
                 items={[
-                  { name: "Est. 1RM avg", color: "#c9f24d" },
+                  { name: "Est. 1RM avg", color: "var(--accent)" },
                   { name: "Bodyweight", color: "#4a5560" },
                 ]}
               />

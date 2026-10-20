@@ -56,6 +56,7 @@ export type Database = {
           gym_name: string | null;
           goal_weight_kg: number | null;
           body_figure: BodyFigure;
+          accent: string;
           created_at: string;
           ai_coach_consented_at: string | null;
         };
@@ -79,6 +80,7 @@ export type Database = {
           gym_name?: string | null;
           goal_weight_kg?: number | null;
           body_figure?: BodyFigure;
+          accent?: string;
           created_at?: string;
           ai_coach_consented_at?: string | null;
         };
@@ -102,6 +104,7 @@ export type Database = {
           gym_name?: string | null;
           goal_weight_kg?: number | null;
           body_figure?: BodyFigure;
+          accent?: string;
           created_at?: string;
           ai_coach_consented_at?: string | null;
         };

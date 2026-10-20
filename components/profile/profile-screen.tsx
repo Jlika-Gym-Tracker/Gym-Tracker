@@ -10,7 +10,9 @@ import {
   removeCrewLink,
   saveAccount,
   saveTargets,
+  setAccent,
   setEffortScale,
+  signOutEverywhere,
   setRestSeconds,
   setWeekStartsOn,
   toggleSetting,
@@ -26,6 +28,7 @@ import type {
 } from "@/lib/database.types";
 import { cmToDisplay, kgToDisplay, lengthUnit, trimNumber, weightUnit } from "@/lib/units";
 import { EFFORT_DESCRIPTION } from "@/lib/training/effort";
+import { ACCENTS } from "@/lib/theme/accent";
 import { DAY_NAMES, weekDayNames, WEEK_START_OPTIONS, type WeekStartDay } from "@/lib/dates";
 import { GOAL_LABELS } from "@/lib/profile";
 import { Card } from "@/components/kit/card";
@@ -40,7 +43,7 @@ import { Loader2 } from "lucide-react";
 import { ImportCard } from "@/components/import/import-card";
 import { NotificationsCard } from "./notifications-card";
 
-const TABS = ["Account", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
+const TABS = ["Account", "Training", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProfileScreen({
@@ -115,6 +118,7 @@ export function ProfileScreen({
       </div>
 
       {tab === "Account" ? <AccountTab profile={profile} system={system} /> : null}
+      {tab === "Training" ? <TrainingTab settings={settings} /> : null}
       {tab === "Targets" ? (
         <TargetsTab profile={profile} settings={settings} targets={targets} />
       ) : null}
@@ -135,6 +139,47 @@ export function ProfileScreen({
   );
 }
 
+/** The accent colour. Saves on tap and repaints at once; the surfaces stay dark. */
+function AppearanceCard({ accent }: { accent: string }) {
+  const [current, setCurrent] = useState(accent);
+  const save = useAction();
+  return (
+    <Card className="max-w-[720px]">
+      <h2 className="text-[15px] font-bold">Appearance</h2>
+      <p className="mt-1 mb-3.5 text-[12.5px] leading-[1.5] text-fg-soft">
+        Your highlight colour, on every device you sign in on. The app stays dark.
+      </p>
+      <div role="radiogroup" aria-label="Accent colour" className="flex flex-wrap gap-2.5">
+        {ACCENTS.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            role="radio"
+            aria-checked={current === option.key}
+            aria-label={option.label}
+            title={option.label}
+            disabled={save.pending}
+            onClick={() => {
+              setCurrent(option.key);
+              // Repaint now; the server save and cookie follow.
+              const root = document.documentElement;
+              if (option.key === "lime") root.removeAttribute("data-accent");
+              else root.setAttribute("data-accent", option.key);
+              save.run(() => setAccent(option.key));
+            }}
+            className={cn(
+              "flex size-11 items-center justify-center rounded-full border-2 transition-transform disabled:opacity-60",
+              current === option.key ? "scale-105 border-fg" : "border-transparent hover:scale-105",
+            )}
+          >
+            <span className="size-8 rounded-full" style={{ background: option.hex }} />
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function AccountTab({ profile, system }: { profile: Profile; system: UnitSystem }) {
   const [state, save] = useActionState(saveAccount, {} as ActionState);
   const [unit, setUnit] = useState<UnitSystem>(system);
@@ -142,6 +187,7 @@ function AccountTab({ profile, system }: { profile: Profile; system: UnitSystem 
   const [activity, setActivity] = useState(Number(profile.activity_factor));
 
   return (
+    <div className="flex flex-col gap-[18px]">
     <Card>
       <form action={save} className="flex max-w-[720px] flex-col gap-4">
         <div className="grid gap-3.5 sm:grid-cols-2">
@@ -260,6 +306,8 @@ function AccountTab({ profile, system }: { profile: Profile; system: UnitSystem 
         </ActionButton>
       </form>
     </Card>
+    <AppearanceCard accent={profile.accent ?? "lime"} />
+    </div>
   );
 }
 
@@ -694,15 +742,18 @@ function CrewTab({
   );
 }
 
-function DataTab({ settings, system }: { settings: UserSettings; system: UnitSystem }) {
-  const [deleteState, remove] = useActionState(deleteAccount, {} as ActionState);
+/**
+ * Everything that changes how a workout behaves, in one place — it used to sit
+ * under "Data & privacy", which is not where anyone looks for a rest timer.
+ */
+function TrainingTab({ settings }: { settings: UserSettings }) {
   const [rest, setRest] = useState(settings.default_rest_seconds);
   const [effort, setEffort] = useState<EffortScale>(settings.effort_scale ?? "rpe");
 
   return (
     <div className="grid gap-[18px] lg:grid-cols-2">
       <Card>
-        <h2 className="mb-1 text-[15px] font-bold">Session</h2>
+        <h2 className="mb-1 text-[15px] font-bold">During a workout</h2>
         <Slider
           name="restSeconds" label="Default rest" value={rest} min={30} max={300} step={15}
           suffix="seconds"
@@ -762,8 +813,20 @@ function DataTab({ settings, system }: { settings: UserSettings; system: UnitSys
         </div>
       </Card>
 
+      <NotificationsCard settings={settings} />
+    </div>
+  );
+}
+
+function DataTab({ settings, system }: { settings: UserSettings; system: UnitSystem }) {
+  const [deleteState, remove] = useActionState(deleteAccount, {} as ActionState);
+  const signOutAll = useAction();
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  return (
+    <div className="grid gap-[18px] lg:grid-cols-2">
       <Card>
-        <h2 className="mb-1 text-[15px] font-bold">Photos &amp; notifications</h2>
+        <h2 className="mb-1 text-[15px] font-bold">Photos &amp; email</h2>
         <Toggle
           label="Blur photo thumbnails"
           description="Thumbnails stay blurred until you hover or tap."
@@ -787,8 +850,6 @@ function DataTab({ settings, system }: { settings: UserSettings; system: UnitSys
           onChange={(v) => toggleSetting("notify_unpublished_week", v)}
         />
       </Card>
-
-      <NotificationsCard settings={settings} />
 
       <Card>
         <h2 className="text-[15px] font-bold">Export your data</h2>
@@ -814,6 +875,31 @@ function DataTab({ settings, system }: { settings: UserSettings; system: UnitSys
       </Card>
 
       <ImportCard system={system} />
+
+      <Card>
+        <h2 className="text-[15px] font-bold">Sign out everywhere</h2>
+        <p className="mt-1 mb-3.5 text-[12.5px] leading-[1.5] text-fg-soft">
+          Lost a phone, or signed in on a gym computer? This ends every session of this
+          account on every device, this one included. Your data stays as it is.
+        </p>
+        <button
+          type="button"
+          disabled={signOutAll.pending}
+          aria-busy={signOutAll.pending || undefined}
+          onClick={() => {
+            if (!window.confirm("Sign out of this account on every device?")) return;
+            signOutAll.run(async () => {
+              const result = await signOutEverywhere();
+              setSignOutError(result?.error ?? null);
+            });
+          }}
+          className="flex w-fit items-center gap-1.5 rounded-[11px] border border-stroke bg-ghost px-4 py-3 text-[13px] font-semibold text-fg-2 hover:bg-hover disabled:opacity-60"
+        >
+          {signOutAll.pending ? <Loader2 className="size-3.5 animate-spin" strokeWidth={2} /> : null}
+          Sign out everywhere
+        </button>
+        {signOutError ? <p className="mt-2 text-[12px] text-danger">{signOutError}</p> : null}
+      </Card>
 
       <Card className="border-danger-border">
         <h2 className="text-[15px] font-bold text-danger">Danger zone</h2>

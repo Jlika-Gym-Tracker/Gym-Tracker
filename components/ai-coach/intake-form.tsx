@@ -196,7 +196,7 @@ export function IntakeForm({
           type="checkbox"
           checked={intake.shareBodyDetails}
           onChange={(e) => set("shareBodyDetails", e.target.checked)}
-          className="mt-0.5 size-4 flex-none accent-[#c9f24d]"
+          className="mt-0.5 size-4 flex-none accent-[var(--accent)]"
         />
         <span className="text-[12.5px] leading-[1.5] text-fg-muted">
           Let the coach use my sex, age and height from my profile.

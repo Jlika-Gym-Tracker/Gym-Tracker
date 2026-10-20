@@ -151,7 +151,7 @@ export function ProgramBuilder({
                   type="checkbox"
                   checked={progressLoads}
                   onChange={(e) => setProgressLoads(e.target.checked)}
-                  className="size-3 accent-[#c9f24d]"
+                  className="size-3 accent-[var(--accent)]"
                 />
                 Step loads up
               </label>
