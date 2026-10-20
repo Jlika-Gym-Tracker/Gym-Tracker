@@ -68,6 +68,9 @@ export default async function ProfilePage() {
     notify_unpublished_week: true,
     meals_per_day: 4,
     week_starts_on: 1,
+    keep_awake: true,
+    rest_sound: true,
+    effort_scale: "rpe",
   };
 
   const resolvedSharing: SharingPrefs = sharing ?? {

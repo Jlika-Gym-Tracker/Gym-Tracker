@@ -10,6 +10,7 @@ import {
   removeCrewLink,
   saveAccount,
   saveTargets,
+  setEffortScale,
   setRestSeconds,
   setWeekStartsOn,
   toggleSetting,
@@ -21,9 +22,10 @@ import { COMMON_ALLERGENS, COMMON_PREFERENCES } from "@/lib/nutrition/excludes";
 import type { Targets } from "@/lib/nutrition/targets";
 import { ACTIVITY_LEVELS } from "@/lib/nutrition/targets";
 import type {
-  CrewInvite, CrewMember, Profile, SharingPrefs, UnitSystem, UserSettings,
+  CrewInvite, CrewMember, EffortScale, Profile, SharingPrefs, UnitSystem, UserSettings,
 } from "@/lib/database.types";
-import { cmToDisplay, lengthUnit, trimNumber } from "@/lib/units";
+import { cmToDisplay, kgToDisplay, lengthUnit, trimNumber, weightUnit } from "@/lib/units";
+import { EFFORT_DESCRIPTION } from "@/lib/training/effort";
 import { DAY_NAMES, weekDayNames, WEEK_START_OPTIONS, type WeekStartDay } from "@/lib/dates";
 import { GOAL_LABELS } from "@/lib/profile";
 import { Card } from "@/components/kit/card";
@@ -156,6 +158,20 @@ function AccountTab({ profile, system }: { profile: Profile; system: UnitSystem 
             defaultValue={
               profile.height_cm ? trimNumber(cmToDisplay(Number(profile.height_cm), unit)) : ""
             }
+          />
+          <Field
+            // Keyed on the unit so switching kg ↔ lb re-renders the value converted.
+            key={`goal-${unit}`}
+            label={`Goal weight (${weightUnit(unit)})`}
+            name="goalWeight"
+            inputMode="decimal"
+            placeholder="No goal"
+            defaultValue={
+              profile.goal_weight_kg
+                ? trimNumber(kgToDisplay(Number(profile.goal_weight_kg), unit))
+                : ""
+            }
+            hint="Draws a target line on your weight chart. Leave blank for none."
           />
           <div>
             <span className="eyebrow mb-1.5 block">Sex</span>
@@ -679,6 +695,7 @@ function CrewTab({
 function DataTab({ settings }: { settings: UserSettings }) {
   const [deleteState, remove] = useActionState(deleteAccount, {} as ActionState);
   const [rest, setRest] = useState(settings.default_rest_seconds);
+  const [effort, setEffort] = useState<EffortScale>(settings.effort_scale ?? "rpe");
 
   return (
     <div className="grid gap-[18px] lg:grid-cols-2">
@@ -706,10 +723,41 @@ function DataTab({ settings }: { settings: UserSettings }) {
         />
         <Toggle
           label="Show estimated 1RM"
-          description="Adds an Epley estimate beside your best set."
+          description="Adds an Epley estimate beside your best set. Never guessed from more than 12 reps."
           checked={settings.show_e1rm}
           onChange={(v) => toggleSetting("show_e1rm", v)}
         />
+        <Toggle
+          label="Keep the screen awake"
+          description="Stops your phone locking between sets while a session is open. Released the moment you finish."
+          checked={settings.keep_awake ?? true}
+          onChange={(v) => toggleSetting("keep_awake", v)}
+        />
+        <Toggle
+          label="Sound when rest is over"
+          description="A short beep, plus a buzz on phones that can."
+          checked={settings.rest_sound ?? true}
+          onChange={(v) => toggleSetting("rest_sound", v)}
+        />
+        <div className="py-2.5">
+          <span className="eyebrow mb-2 block">Effort per set</span>
+          <Segmented
+            label="Effort per set"
+            value={effort}
+            onChange={(next) => {
+              setEffort(next);
+              void setEffortScale(next);
+            }}
+            options={[
+              { value: "off" as const, label: "Off" },
+              { value: "rpe" as const, label: "RPE" },
+              { value: "rir" as const, label: "RIR" },
+            ]}
+          />
+          <p className="mt-2 text-[11.5px] leading-[1.5] text-fg-dim">
+            {EFFORT_DESCRIPTION[effort]} Switching never changes a set you already logged.
+          </p>
+        </div>
       </Card>
 
       <Card>

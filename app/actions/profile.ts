@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { addDays } from "date-fns";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { displayToCm } from "@/lib/units";
+import { displayToCm, displayToKg } from "@/lib/units";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -37,6 +37,8 @@ const accountSchema = z.object({
   unitSystem,
   goal: z.enum(["cut", "bulk", "recomp", "strength", "health"]),
   activityFactor: z.coerce.number().min(1.2).max(2),
+  // In display units; converted to kg below. Blank clears the goal.
+  goalWeight: z.union([z.literal(""), z.coerce.number().min(20).max(880)]).transform((v) => (v === "" ? null : v)),
 });
 
 export async function saveAccount(
@@ -53,11 +55,18 @@ export async function saveAccount(
       unitSystem: formData.get("unitSystem"),
       goal: formData.get("goal"),
       activityFactor: formData.get("activityFactor"),
+      goalWeight: formData.get("goalWeight") ?? "",
     });
 
     // Heights arrive in whatever the user is looking at; kg/cm go to the table.
     const heightCm =
       input.height == null ? null : displayToCm(input.height, input.unitSystem);
+
+    const goalWeightKg =
+      input.goalWeight == null ? null : displayToKg(input.goalWeight, input.unitSystem);
+    if (goalWeightKg != null && (goalWeightKg <= 20 || goalWeightKg >= 400)) {
+      return { error: "That goal weight is outside what the app can store." };
+    }
 
     const { error } = await supabase
       .from("profiles")
@@ -69,6 +78,7 @@ export async function saveAccount(
         unit_system: input.unitSystem,
         goal: input.goal,
         activity_factor: input.activityFactor,
+        goal_weight_kg: goalWeightKg == null ? null : Math.round(goalWeightKg * 100) / 100,
       })
       .eq("id", user.id);
     if (error) throw error;
@@ -166,6 +176,7 @@ const settingsToggleSchema = z.object({
   key: z.enum([
     "auto_rest", "keyboard_shortcuts", "show_e1rm", "blur_thumbnails",
     "strip_exif", "notify_weighin", "notify_unpublished_week",
+    "keep_awake", "rest_sound",
   ]),
   value: z.boolean(),
 });
@@ -199,6 +210,22 @@ export async function setRestSeconds(seconds: number): Promise<ActionState> {
     const { error } = await supabase
       .from("user_settings")
       .upsert({ user_id: user.id, default_rest_seconds: value }, { onConflict: "user_id" });
+    if (error) throw error;
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Which scale the effort column asks in. Stored sets stay RPE either way. */
+export async function setEffortScale(scale: string): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const value = z.enum(["off", "rpe", "rir"]).parse(scale);
+    const { error } = await supabase
+      .from("user_settings")
+      .upsert({ user_id: user.id, effort_scale: value }, { onConflict: "user_id" });
     if (error) throw error;
     refresh();
     return {};

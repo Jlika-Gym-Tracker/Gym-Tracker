@@ -14,6 +14,13 @@ export type Goal = "cut" | "bulk" | "recomp" | "strength" | "health";
 export type Sex = "male" | "female" | "other";
 export type UnitSystem = "metric" | "imperial";
 export type WeekStatus = "draft" | "published" | "archived";
+/** How a movement is logged: weight × reps, a held duration, or cardio. */
+export type Tracking = "reps" | "time" | "cardio";
+/** A day-level progression rule. `time` only exists per exercise, for timed holds. */
+export type DayProgression = "off" | "double" | "linear" | "greyskull";
+export type ProgressionPolicy = DayProgression | "time";
+export type EffortScale = "off" | "rpe" | "rir";
+export type BodyFigure = "male" | "female";
 
 export type Muscle =
   | "chest" | "lats" | "middle_back" | "lower_back" | "traps" | "shoulders"
@@ -47,6 +54,8 @@ export type Database = {
           avatar_url: string | null;
           coaching_enabled: boolean;
           gym_name: string | null;
+          goal_weight_kg: number | null;
+          body_figure: BodyFigure;
           created_at: string;
         };
         Insert: {
@@ -67,6 +76,8 @@ export type Database = {
           avatar_url?: string | null;
           coaching_enabled?: boolean;
           gym_name?: string | null;
+          goal_weight_kg?: number | null;
+          body_figure?: BodyFigure;
           created_at?: string;
         };
         Update: {
@@ -87,6 +98,8 @@ export type Database = {
           avatar_url?: string | null;
           coaching_enabled?: boolean;
           gym_name?: string | null;
+          goal_weight_kg?: number | null;
+          body_figure?: BodyFigure;
           created_at?: string;
         };
         Relationships: [];
@@ -107,6 +120,7 @@ export type Database = {
           cues: string[];
           how_to: string[];
           common_mistake: string | null;
+          tracking: Tracking;
           created_at: string;
         };
         Insert: {
@@ -124,6 +138,7 @@ export type Database = {
           cues?: string[];
           how_to?: string[];
           common_mistake?: string | null;
+          tracking?: Tracking;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["exercises"]["Insert"]>;
@@ -161,6 +176,7 @@ export type Database = {
           name: string;
           focus_note: string | null;
           is_rest: boolean;
+          progression: DayProgression;
         };
         Insert: {
           id?: string;
@@ -169,6 +185,7 @@ export type Database = {
           name: string;
           focus_note?: string | null;
           is_rest?: boolean;
+          progression?: DayProgression;
         };
         Update: Partial<Database["public"]["Tables"]["program_days"]["Insert"]>;
         Relationships: [];
@@ -185,6 +202,10 @@ export type Database = {
           per_side: boolean;
           note: string | null;
           target_weight_kg: number | null;
+          superset_group: number | null;
+          target_seconds: number | null;
+          progression: ProgressionPolicy | null;
+          increment_kg: number | null;
         };
         Insert: {
           id?: string;
@@ -197,6 +218,10 @@ export type Database = {
           per_side?: boolean;
           note?: string | null;
           target_weight_kg?: number | null;
+          superset_group?: number | null;
+          target_seconds?: number | null;
+          progression?: ProgressionPolicy | null;
+          increment_kg?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["program_exercises"]["Insert"]>;
         Relationships: [];
@@ -211,6 +236,7 @@ export type Database = {
           ended_at: string | null;
           bodyweight_kg: number | null;
           notes: string | null;
+          rating: number | null;
         };
         Insert: {
           id?: string;
@@ -221,6 +247,7 @@ export type Database = {
           ended_at?: string | null;
           bodyweight_kg?: number | null;
           notes?: string | null;
+          rating?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["workout_sessions"]["Insert"]>;
         Relationships: [];
@@ -234,6 +261,8 @@ export type Database = {
           weight_kg: number | null;
           reps: number | null;
           rpe: number | null;
+          duration_s: number | null;
+          distance_m: number | null;
           is_complete: boolean;
           logged_at: string;
         };
@@ -245,6 +274,8 @@ export type Database = {
           weight_kg?: number | null;
           reps?: number | null;
           rpe?: number | null;
+          duration_s?: number | null;
+          distance_m?: number | null;
           is_complete?: boolean;
           logged_at?: string;
         };
@@ -384,6 +415,7 @@ export type Database = {
           blur_thumbnails: boolean; strip_exif: boolean; notify_weighin: boolean;
           notify_unpublished_week: boolean; meals_per_day: number;
           week_starts_on: number;
+          keep_awake: boolean; rest_sound: boolean; effort_scale: EffortScale;
         };
         Insert: {
           user_id: string; training_days?: number[]; default_rest_seconds?: number;
@@ -393,6 +425,7 @@ export type Database = {
           blur_thumbnails?: boolean; strip_exif?: boolean; notify_weighin?: boolean;
           notify_unpublished_week?: boolean; meals_per_day?: number;
           week_starts_on?: number;
+          keep_awake?: boolean; rest_sound?: boolean; effort_scale?: EffortScale;
         };
         Update: Partial<Database["public"]["Tables"]["user_settings"]["Insert"]>;
         Relationships: [];
