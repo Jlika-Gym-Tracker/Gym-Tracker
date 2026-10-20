@@ -7,13 +7,16 @@
  * on every other row.
  */
 
-export type ImportFormat = "strong" | "hevy" | "fitnotes-android" | "fitnotes-ios";
+import type { Equipment, Muscle, Tracking } from "@/lib/database.types";
+
+export type ImportFormat = "strong" | "hevy" | "fitnotes-android" | "fitnotes-ios" | "jlika";
 
 export const FORMAT_LABELS: Record<ImportFormat, string> = {
   strong: "Strong",
   hevy: "Hevy",
   "fitnotes-android": "FitNotes (Android)",
   "fitnotes-ios": "FitNotes (iOS)",
+  jlika: "JLIKA backup",
 };
 
 /**
@@ -40,6 +43,12 @@ export type ImportedSet = {
 export type ImportedExercise = {
   /** As written in the file, first spelling seen. */
   name: string;
+  /**
+   * What ties this exercise to its summary, when the name alone can't: a
+   * backup refers to exercises by id, and two of them can share a name.
+   * Absent for the CSV formats, which go by name (see exerciseKey).
+   */
+  key?: string;
   sets: ImportedSet[];
 };
 
@@ -52,11 +61,38 @@ export type ImportedWorkout = {
   title: string | null;
   notes: string | null;
   exercises: ImportedExercise[];
+  /**
+   * The real instants, when the file has them (a JLIKA backup does). Used
+   * as-is rather than rebuilt from the wall-clock `start`, so a restored
+   * session starts at exactly the moment the original did.
+   */
+  exact?: { startedAt: string; endedAt: string };
+  /** How the session felt, 1–3, from a JLIKA backup. */
+  rating?: number | null;
+  /** The bodyweight typed at the start of the session, from a JLIKA backup. */
+  bodyweightKg?: number | null;
 };
+
+/**
+ * Where a backup's exercise lives. Library movements are found again by id,
+ * then by slug; your own are found by name or added back to your library.
+ */
+export type ExerciseRef =
+  | { kind: "library"; id: string; slug: string | null }
+  | { kind: "own"; name: string; primaryMuscle: Muscle; equipment: Equipment; tracking: Tracking };
+
+/** The key a summary and its workouts' exercises share. */
+export function exerciseKey(exercise: { name: string; key?: string }): string {
+  return exercise.key ?? exercise.name.toLowerCase();
+}
 
 /** One distinct exercise name in the file, with what the review step needs to know about it. */
 export type ExerciseSummary = {
   name: string;
+  /** See ImportedExercise.key. */
+  key?: string;
+  /** Set for a JLIKA backup: where the exercise is, so it is matched rather than guessed. */
+  ref?: ExerciseRef;
   /** FitNotes' category column ("Chest", "Legs"…); null elsewhere. */
   category: string | null;
   sets: number;
@@ -89,6 +125,12 @@ export type ParsedHistory = {
   unitsStated: boolean;
   from: string | null;
   to: string | null;
+  /** A JLIKA backup's weigh-ins, one per day. */
+  bodyWeights?: BodyWeightEntry[];
+  /** Sets a JLIKA backup has but never ticked off. Nothing reads those, so they stay out. */
+  untickedSkipped?: number;
+  /** What a JLIKA backup holds that this import leaves alone, in words for the review step. */
+  ignored?: string[];
 };
 
 export type ParseResult =
@@ -102,6 +144,9 @@ export type WorkoutPayload = {
   title: string | null;
   notes: string | null;
   exercises: { exerciseId: string; sets: ImportedSet[] }[];
+  /** Only a JLIKA backup carries these. */
+  rating?: number | null;
+  bodyweightKg?: number | null;
 };
 
 export type BodyWeightEntry = {
