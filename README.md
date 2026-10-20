@@ -70,7 +70,8 @@ Regenerate the exercise seed (and its test fixture) from free-exercise-db:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json -o /tmp/fedb.json
-node scripts/generate-exercise-seed.mjs
+node scripts/generate-exercise-seed.mjs          # the curated, featured movements (0003)
+node scripts/generate-exercise-seed.mjs --full   # the rest of the dataset (0033)
 ```
 
 ## Layout
@@ -98,7 +99,7 @@ approval. Ways to fill a week:
 
 | | |
 |---|---|
-| **Template** | Pick a split (3-day full body, 4-day upper/lower, 6-day PPL) and equipment; it fills a draft you edit. Fixed blueprints in `lib/program/templates.ts`, not generation — the same choice always gives the same week. |
+| **Template** | Pick a split (3-day full body, 4-day upper/lower, 6-day PPL, 5×5 linear, Greyskull LP) and equipment; it fills a draft you edit. The strength templates also set their [progression rule](#progression-rules) on every day. Fixed blueprints in `lib/program/templates.ts`, not generation — the same choice always gives the same week. |
 | **Paste** | Plain text like `1 Incline Dumbbell Press 3 x 8-12`, fuzzy-matched to the library with a review step. |
 | **Copy last week** | Duplicates the most recent week as a fresh draft. With *Step loads up* on (the default), every exercise runs its own [progression rule](#progression-rules) on what you logged — the same reading the session screen gives. |
 | **Import a week** | A `.jlika-week.json` file someone shared. It only fills days you have left empty, so it never overwrites your plan. |
@@ -138,9 +139,11 @@ unless the exercise sets its own. Loads round in the units you lift in.
 
 - **Pre-filled loads** come from the rule, else the plan, else last time; the
   rule's verdict and reason sit on each exercise card.
-- **Effort per set** asks in RPE or RIR, or not at all (Profile → Data &
-  privacy). It is always stored as RPE (RIR = 10 − RPE), so switching never
-  rewrites a logged set.
+- **Effort per set** asks in RPE or RIR, or not at all (Profile → Training).
+  It is always stored as RPE (RIR = 10 − RPE), so switching never rewrites a
+  logged set.
+- **Last time** sits on each exercise card — last session's sets, so the
+  number to beat is beside the rows. Cardio shows its speed (km/h or mph).
 - **Rest timer**: starts on a tick when auto-rest is on, with −15 s / +15 s, a
   chime and a buzz at zero, and (with notifications on) a push when the app is
   in the background.
@@ -154,6 +157,24 @@ unless the exercise sets its own. Loads round in the units you lift in.
   heavier bar is the record. The exercise drawer has a 1RM calculator.
 - **Finish** lands on a summary — duration, volume, new bests, what you
   trained on the muscle map — with an optional "how did that feel?".
+- **Train something else** on Today opens the session picker — another day of
+  the week, or freestyle — without touching the plan.
+
+## History and the exercise library
+
+- **History** (`/history?month=yyyy-MM&day=yyyy-MM-dd`) is every finished
+  session, a month at a time on a calendar. Each opens its summary, where a
+  workout can be **edited** (fix a set, untick or remove one) or **deleted**.
+  Progression derives from the log, so a fix corrects future targets too.
+  Tapping a trained day on the Progress heatmap lands here.
+- **Exercises** (`/exercises`, and search from the top bar) is the whole
+  free-exercise-db library: ~80 curated **featured** movements (with aliases
+  for the paste parser) and ~675 more behind them, stretches left out. Featured
+  rows and your own win close calls in every matcher — paste, import, search —
+  so "Bench Press" still lands on the curated bench. Each exercise has a page
+  with how-to, muscles, your best set, estimated-1RM curve, last sessions, a
+  1RM calculator and "Add to a day". Your own exercises can be edited, and
+  removed: deleted if never logged, otherwise archived so history keeps them.
 
 ## Progress and stats
 
@@ -169,8 +190,9 @@ set each point came from. The muscle map is drawn from
 ## Bringing your history
 
 Profile → Data & privacy → *Bring your history* reads a **Strong**, **Hevy**
-or **FitNotes** CSV export, or body weight from an **Apple Health** export
-(`export.xml` or the zip). Files are parsed in the browser; a review step
+or **FitNotes** CSV export, body weight from an **Apple Health** export
+(`export.xml` or the zip), or this app's own backup (the export JSON or ZIP),
+which restores workouts and weigh-ins. Files are parsed in the browser; a review step
 matches each exercise name to your library and turns the rest into your own
 exercises. Re-importing the same file skips workouts already there, and
 imported weigh-ins never overwrite a day that already has one.
@@ -207,7 +229,8 @@ What leaves the server, on the instance owner's key, only when you press a
 button that says so:
 
 - **Designing a week:** the intake answers; sex, age and height only if you
-  tick the box; the names of library movements that fit your equipment.
+  tick the box; the featured library movements that fit your equipment, plus
+  your own exercises.
 - **A review:** the current plan; per exercise, sets hit, missed and skipped
   against the plan, effort trend, sessions since it last improved and the last
   three sessions' sets; planned days against sessions done; session length;
@@ -225,6 +248,33 @@ without a key.
 The beginner template deliberately prescribes less than the load check's weekly
 set floor — that floor is tuned for an intermediate lifter in a deficit, and the
 UI says so rather than showing an unexplained warning.
+
+## Appearance
+
+Profile → Account → *Appearance* picks one of eight accent colours. Lime is the
+default and the brand; the rest derive their tints from the accent with
+`color-mix`, and all are light enough for the dark button label (held to 8:1
+contrast by a test). The surfaces stay dark — this is a dark-only design. The
+choice is saved on the profile and in a cookie a tiny `<head>` script applies
+before first paint.
+
+## Operator dashboard
+
+Optional. Accounts whose verified email is in `ADMIN_EMAILS` (comma-separated)
+get `/admin`; for everyone else, or with the variable unset, it does not exist.
+It needs `SUPABASE_SECRET_KEY`.
+
+It shows **account-level facts only**: totals, who has a session open right
+now, and per account the email, signup and last sign-in dates, finished-session
+count and last training date. It **never** shows weights, sets, exercises,
+weigh-ins, photos, nutrition or notes — the boundary is the return columns of
+three `service_role`-only SQL functions, and `lib/admin/boundary.test.ts` fails
+if dashboard code reads anything else. From it an operator can disable or
+re-enable an account (banned and signed out everywhere; workouts untouched) and
+switch signup to **invite-only**, generating and revoking codes. Invite-only is
+enforced by a trigger on `auth.users`, so a direct `signUp` with the
+publishable key cannot get around it; first-time Google sign-ins are refused
+while it is on.
 
 ## Today's meals
 
@@ -299,7 +349,7 @@ default privileges grant EXECUTE on new functions to both, and
 ## Build phases
 
 1. **Foundation** — scaffold, tokens, app shell, Supabase clients, auth, `profiles` + RLS ✅
-2. **Program** — weeks/days/exercises, 71-movement seeded library, drag-reorder builder, paste parser with a review step, publish, copy last week ✅
+2. **Program** — weeks/days/exercises, a curated seeded library (now ~80 featured of ~750), drag-reorder builder, paste parser with a review step, publish, copy last week ✅
 3. **Session logging** — live set rows, rest and elapsed timers, running volume, exercise drawer, progression hints ✅
 4. **Body progress** — private photos, comparison slider, measurements, weight and strength trends ✅
 5. **Nutrition** — TDEE targets, meal plan, swaps, grocery list, hard allergy filters ✅
@@ -307,8 +357,9 @@ default privileges grant EXECUTE on new functions to both, and
 7. **Crew league** — seasons, scoring, standings, challenges, badges, nightly job ✅
 8. **Polish** — onboarding, skeletons, keyboard shortcuts, PWA, weekly email, smoke tests ✅
 9. **Training depth** — progression rules, timed/cardio logging, supersets, effort scales, heatmap, muscle map, history import, push, sharing, AI Coach ✅
+10. **Library, history & operations** — full exercise library and pages, workout history with editing, backup restore, week streak, strength templates, accent colours, operator dashboard and invite-only signup ✅
 
-Phase 9's feature set was inspired by
+Phases 9 and 10 were inspired by
 [openGym](https://github.com/alexpcosta/opengym). openGym is AGPL-3.0; none of
 its code, text or data is used here — every feature was written fresh for this
 codebase.
