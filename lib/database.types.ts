@@ -125,6 +125,8 @@ export type Database = {
           common_mistake: string | null;
           tracking: Tracking;
           created_at: string;
+          featured: boolean;
+          archived_at: string | null;
         };
         Insert: {
           id?: string;
@@ -143,6 +145,8 @@ export type Database = {
           common_mistake?: string | null;
           tracking?: Tracking;
           created_at?: string;
+          featured?: boolean;
+          archived_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["exercises"]["Insert"]>;
         Relationships: [];

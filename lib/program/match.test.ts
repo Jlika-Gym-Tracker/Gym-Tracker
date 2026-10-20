@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { parseProgramText } from "./parse";
-import { AUTO_MATCH_THRESHOLD, findCandidates, matchExercises, scoreExercise } from "./match";
+import {
+  AUTO_MATCH_THRESHOLD,
+  findCandidates,
+  matchExercises,
+  scoreExercise,
+  searchLibrary,
+  type LibraryExercise,
+} from "./match";
 import { SEEDED_LIBRARY } from "./__fixtures__/library";
+import { FULL_LIBRARY_SAMPLE } from "./__fixtures__/full-library-sample";
+
+/** The curated rows plus the long-tail rows that compete hardest with them. */
+const FULL_LIBRARY = [...SEEDED_LIBRARY, ...FULL_LIBRARY_SAMPLE];
+const matchOne = (name: string, library: LibraryExercise[] = FULL_LIBRARY) =>
+  matchExercises([{ name }], library)[0]!;
 
 /** Every distinct movement name as it appears in the user's program PDF. */
 const PROGRAM_NAMES = [
@@ -83,5 +96,104 @@ describe("candidates for the review step", () => {
   it("returns candidates sorted by score", () => {
     const scores = findCandidates("Lat Pulldown", SEEDED_LIBRARY).map((c) => c.score);
     expect([...scores].sort((a, b) => b - a)).toEqual(scores);
+  });
+});
+
+describe("with the whole free-exercise-db library present", () => {
+  it("lands the user's own program on exactly the rows it found before", () => {
+    const before = matchExercises(PROGRAM_NAMES.map((name) => ({ name })), SEEDED_LIBRARY);
+    const after = matchExercises(PROGRAM_NAMES.map((name) => ({ name })), FULL_LIBRARY);
+    expect(after.map((m) => m.matched?.name)).toEqual(before.map((m) => m.matched?.name));
+    expect(after.every((m) => m.matched?.featured)).toBe(true);
+  });
+
+  it.each([
+    ["Bench Press", "Barbell Bench Press - Medium Grip"],
+    ["Squat", "Barbell Squat"],
+    ["RDL", "Romanian Deadlift"],
+    ["Lat Pulldown", "Wide-Grip Lat Pulldown"],
+    ["Deadlift", "Barbell Deadlift"],
+    ["Overhead Press", "Standing Military Press"],
+    ["Pull Up", "Pullups"],
+    ["Leg Curl", "Lying Leg Curls"],
+    ["Lateral Raise", "Side Lateral Raise"],
+    ["Hammer Curl", "Hammer Curls"],
+    ["Hip Thrust", "Barbell Glute Bridge"],
+    ["Front Squat", "Front Barbell Squat"],
+    ["Dips", "Dips - Triceps Version"],
+    ["Push Up", "Pushups"],
+    ["Incline Bench Press", "Barbell Incline Bench Press - Medium Grip"],
+    ["Upright Row", "Upright Barbell Row"],
+  ])("still matches %s to the curated %s", (name, curated) => {
+    expect(matchOne(name).matched?.name).toBe(curated);
+  });
+
+  it("gives a near-tie to the featured row, not the long tail", () => {
+    // Each of these scores at least as well against a long-tail row as against
+    // the curated one; alphabetical order alone would pick the long-tail row.
+    for (const name of ["Lunges", "Shoulder Press", "Calf Raise"]) {
+      const { matched, candidates } = matchOne(name);
+      expect(matched?.featured, name).toBe(true);
+      const best = candidates.find((c) => c.exercise === matched)!.score;
+      expect(candidates.some((c) => !c.exercise.featured && c.score >= best), name).toBe(true);
+    }
+  });
+
+  it("lets a specific name reach its specific movement", () => {
+    expect(matchOne("Sumo Deadlift").matched?.name).toBe("Sumo Deadlift");
+    expect(matchOne("Goblet Squat").matched?.name).toBe("Goblet Squat");
+    expect(matchOne("Close Grip Bench Press").matched?.name).toBe("Close-Grip Barbell Bench Press");
+  });
+
+  it("asks rather than guesses when the long tail ties with itself", () => {
+    const { matched, candidates } = matchOne("Shrug");
+    expect(matched).toBeNull();
+    expect(candidates.map((c) => c.exercise.name)).toEqual(
+      expect.arrayContaining(["Barbell Shrug", "Cable Shrugs"]),
+    );
+  });
+
+  it("prefers your own movement over a long-tail row of the same name", () => {
+    const own: LibraryExercise = {
+      ...FULL_LIBRARY_SAMPLE.find((e) => e.name === "Sit-Up")!,
+      id: "00000000-0000-4000-a000-000000000000",
+      slug: "u-12345678-sit-up",
+      owner_id: "12345678-0000-4000-8000-000000000000",
+    };
+    expect(matchOne("Sit Up", [...FULL_LIBRARY, own]).matched?.id).toBe(own.id);
+  });
+
+  it("keeps the raw score, so the threshold means what it did", () => {
+    const [top] = findCandidates("Shoulder Press", FULL_LIBRARY);
+    expect(top!.exercise.featured).toBe(true);
+    expect(top!.score).toBeCloseTo(0.8, 2);
+  });
+});
+
+describe("searching the library as you type", () => {
+  it("finds movements from a half-typed word, curated ones first", () => {
+    const results = searchLibrary("benc", FULL_LIBRARY);
+    expect(results.length).toBeGreaterThan(5);
+    expect(results.every((e) => [e.name, ...e.aliases].some((n) => /bench/i.test(n)))).toBe(true);
+    const firstTail = results.findIndex((e) => !e.featured);
+    expect(firstTail).toBeGreaterThan(0);
+    expect(results.slice(firstTail).some((e) => e.featured)).toBe(false);
+  });
+
+  it("puts an exact name first, wherever it lives", () => {
+    expect(searchLibrary("goblet squat", FULL_LIBRARY)[0]!.name).toBe("Goblet Squat");
+    expect(searchLibrary("squat", FULL_LIBRARY)[0]!.name).toBe("Barbell Squat");
+  });
+
+  it("folds shorthand and reads aliases", () => {
+    const [first] = searchLibrary("db press", FULL_LIBRARY);
+    expect(first!.featured).toBe(true);
+    expect(first!.name).toMatch(/Dumbbell.*Press/);
+    expect(searchLibrary("skull", FULL_LIBRARY)[0]!.name).toBe("Lying Triceps Press");
+  });
+
+  it("returns the library as given when nothing is typed, and respects the limit", () => {
+    expect(searchLibrary("  ", FULL_LIBRARY)).toEqual(FULL_LIBRARY);
+    expect(searchLibrary("curl", FULL_LIBRARY, 3)).toHaveLength(3);
   });
 });
