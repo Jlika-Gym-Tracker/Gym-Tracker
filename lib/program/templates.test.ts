@@ -104,6 +104,13 @@ describe("template catalogue", () => {
     }
   });
 
+  it("gives the strength programs their own progression rule", () => {
+    expect(findTemplate("strength-5x5")?.progression).toBe("linear");
+    expect(findTemplate("greyskull-lp")?.progression).toBe("greyskull");
+    // Everything else keeps the default, double progression.
+    expect(findTemplate("upper-lower-4")?.progression).toBeUndefined();
+  });
+
   it("finds a template by slug and nothing by a bad one", () => {
     expect(findTemplate("upper-lower-4")?.name).toBe("4-day upper / lower");
     expect(findTemplate("nope")).toBeUndefined();

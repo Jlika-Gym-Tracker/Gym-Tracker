@@ -836,6 +836,8 @@ export async function applyTemplate(
         name: d.name,
         focus_note: d.focusNote,
         is_rest: false,
+        // A strength template is its rule as much as its exercises.
+        progression: template.progression ?? "double",
       })),
       ...[0, 1, 2, 3, 4, 5, 6]
         .filter((i) => !trainingIndexes.has(i))

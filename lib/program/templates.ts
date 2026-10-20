@@ -12,6 +12,7 @@
  * of dumbbells, or nothing at all.
  */
 
+import type { DayProgression } from "@/lib/database.types";
 import type { LibraryExercise } from "./match";
 
 export type EquipmentProfile = "full_gym" | "dumbbells" | "bodyweight";
@@ -76,6 +77,11 @@ export type ProgramTemplate = {
    * mistake.
    */
   belowFloorByDesign?: boolean;
+  /**
+   * The progression rule every day of the week runs (lib/program/policies.ts).
+   * Omitted means the default, double progression through each rep range.
+   */
+  progression?: DayProgression;
   days: TemplateDay[];
 };
 
@@ -322,7 +328,125 @@ const PPL_6: ProgramTemplate = {
   }),
 };
 
-export const TEMPLATES: ProgramTemplate[] = [FULL_BODY_3, UPPER_LOWER_4, PPL_6];
+const SQUAT = ["barbell-squat", "leg-press", "split-squat-with-dumbbells", "dumbbell-lunges"];
+const BENCH = ["barbell-bench-press-medium-grip", "dumbbell-bench-press", "pushups"];
+const ROW = ["bent-over-barbell-row", "one-arm-dumbbell-row", "pullups"];
+const PRESS = ["standing-military-press", "dumbbell-shoulder-press", "dips-triceps-version"];
+const PULL_UP = ["chin-up", "pullups", "one-arm-dumbbell-row"];
+const HINGE = ["barbell-deadlift", "romanian-deadlift", "barbell-glute-bridge"];
+
+/**
+ * The classic barbell 5×5: two workouts, A and B, three days a week, every lift
+ * five sets of five. It runs the linear rule — every rep of every set and the
+ * bar goes up next time; three sessions of misses and it deloads 10 %. The
+ * deadlift gets a single set because five heavy sets of it would bury the
+ * squat two days later.
+ *
+ * Fixed weeks here, so the A/B alternation is A·B·A; copy the week and swap
+ * the first and last day to get B·A·B the week after.
+ */
+const STRENGTH_5X5: ProgramTemplate = {
+  slug: "strength-5x5",
+  name: "5×5 linear strength",
+  level: "beginner",
+  daysPerWeek: 3,
+  summary: "Squat every session, alternating bench + row with press + deadlift.",
+  bestFor:
+    "Getting strong on the big barbell lifts fast. Add weight every session until you can't, then the rule deloads for you.",
+  // Five big lifts and nothing else: far under the hypertrophy floors, on purpose.
+  belowFloorByDesign: true,
+  progression: "linear",
+  days: [
+    {
+      dayIndex: 0,
+      name: "Workout A",
+      focusNote: "Five sets of five, same weight. Rest 3–5 minutes between heavy sets.",
+      slots: [
+        { label: "Squat", candidates: SQUAT, sets: 5, repMin: 5, repMax: 5 },
+        { label: "Bench press", candidates: BENCH, sets: 5, repMin: 5, repMax: 5 },
+        { label: "Row", candidates: ROW, sets: 5, repMin: 5, repMax: 5 },
+      ],
+    },
+    {
+      dayIndex: 2,
+      name: "Workout B",
+      focusNote: "One working set of deadlifts — make it count.",
+      slots: [
+        { label: "Squat", candidates: SQUAT, sets: 5, repMin: 5, repMax: 5 },
+        { label: "Overhead press", candidates: PRESS, sets: 5, repMin: 5, repMax: 5 },
+        { label: "Deadlift", candidates: HINGE, sets: 1, repMin: 5, repMax: 5 },
+      ],
+    },
+    {
+      dayIndex: 4,
+      name: "Workout A",
+      focusNote: "Same as Monday, a little heavier.",
+      slots: [
+        { label: "Squat", candidates: SQUAT, sets: 5, repMin: 5, repMax: 5 },
+        { label: "Bench press", candidates: BENCH, sets: 5, repMin: 5, repMax: 5 },
+        { label: "Row", candidates: ROW, sets: 5, repMin: 5, repMax: 5 },
+      ],
+    },
+  ],
+};
+
+/**
+ * Greyskull LP: two straight sets of five and a last set taken as far as it
+ * will go. Beat five on that set and the bar goes up; double the target and it
+ * jumps twice; miss and it resets 10 %. The Greyskull rule reads the last set,
+ * so each lift is written as three sets of 5.
+ */
+const GREYSKULL_LP: ProgramTemplate = {
+  slug: "greyskull-lp",
+  name: "Greyskull LP",
+  level: "beginner",
+  daysPerWeek: 3,
+  summary: "Bench or press, rows or chins, squats or deadlifts — last set as many as you can.",
+  bestFor:
+    "A simple strength program with a little more volume up top, and a reset that never lets a stall drag on.",
+  belowFloorByDesign: true,
+  progression: "greyskull",
+  days: [
+    {
+      dayIndex: 0,
+      name: "Day A",
+      focusNote: "2 × 5, then the last set for as many clean reps as you can.",
+      slots: [
+        { label: "Bench press", candidates: BENCH, sets: 3, repMin: 5, repMax: 5 },
+        { label: "Row", candidates: ROW, sets: 3, repMin: 5, repMax: 5 },
+        { label: "Squat", candidates: SQUAT, sets: 3, repMin: 5, repMax: 5 },
+      ],
+    },
+    {
+      dayIndex: 2,
+      name: "Day B",
+      focusNote: "Last set to a hard stop — that one decides the next jump.",
+      slots: [
+        { label: "Overhead press", candidates: PRESS, sets: 3, repMin: 5, repMax: 5 },
+        { label: "Chin-up", candidates: PULL_UP, sets: 3, repMin: 5, repMax: 5 },
+        { label: "Deadlift", candidates: HINGE, sets: 1, repMin: 5, repMax: 5 },
+      ],
+    },
+    {
+      dayIndex: 4,
+      name: "Day A",
+      focusNote: "Same lifts as Monday; the rule has already moved the weights.",
+      slots: [
+        { label: "Bench press", candidates: BENCH, sets: 3, repMin: 5, repMax: 5 },
+        { label: "Row", candidates: ROW, sets: 3, repMin: 5, repMax: 5 },
+        { label: "Squat", candidates: SQUAT, sets: 3, repMin: 5, repMax: 5 },
+      ],
+    },
+  ],
+};
+
+export const TEMPLATES: ProgramTemplate[] = [
+  FULL_BODY_3,
+  UPPER_LOWER_4,
+  PPL_6,
+  STRENGTH_5X5,
+  GREYSKULL_LP,
+];
 
 export function findTemplate(slug: string): ProgramTemplate | undefined {
   return TEMPLATES.find((t) => t.slug === slug);
