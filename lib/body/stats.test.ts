@@ -5,7 +5,9 @@ import {
   goalProgressPct,
   indexToStart,
   latest,
+  remainingToGoal,
   rollingAverage,
+  weightDirection,
   type Metric,
 } from "./stats";
 
@@ -107,5 +109,52 @@ describe("indexToStart", () => {
 
   it("survives a series that starts at zero", () => {
     expect(indexToStart([0, 0])).toEqual([100, 100]);
+  });
+});
+
+describe("weightDirection", () => {
+  const cut = { goal: "cut" as const, goalWeightKg: null };
+
+  it("with a goal weight, judges by whether you ended closer to it", () => {
+    const toward75 = { goal: "cut" as const, goalWeightKg: 75 };
+    expect(weightDirection({ fromKg: 80, toKg: 78, ...toward75 })).toBe("toward");
+    expect(weightDirection({ fromKg: 80, toKg: 82, ...toward75 })).toBe("away");
+  });
+
+  it("lets a goal weight overrule the stated goal", () => {
+    // Someone on a 'cut' who set a goal above their weight wants to gain.
+    expect(weightDirection({ fromKg: 60, toKg: 62, goal: "cut", goalWeightKg: 65 })).toBe("toward");
+    expect(weightDirection({ fromKg: 60, toKg: 58, goal: "bulk", goalWeightKg: 55 })).toBe("toward");
+  });
+
+  it("counts a small overshoot as progress and a big one as not", () => {
+    const goal = { goal: "cut" as const, goalWeightKg: 75 };
+    expect(weightDirection({ fromKg: 80, toKg: 74, ...goal })).toBe("toward");
+    expect(weightDirection({ fromKg: 80, toKg: 69, ...goal })).toBe("away");
+  });
+
+  it("without a goal weight, gaining is good only on a bulk", () => {
+    expect(weightDirection({ fromKg: 80, toKg: 82, goal: "bulk", goalWeightKg: null })).toBe("toward");
+    expect(weightDirection({ fromKg: 80, toKg: 78, goal: "bulk", goalWeightKg: null })).toBe("away");
+    expect(weightDirection({ fromKg: 80, toKg: 78, ...cut })).toBe("toward");
+    expect(weightDirection({ fromKg: 80, toKg: 78, goal: "health", goalWeightKg: null })).toBe("toward");
+    expect(weightDirection({ fromKg: 80, toKg: 82, goal: "recomp", goalWeightKg: null })).toBe("away");
+  });
+
+  it("calls no change neither", () => {
+    expect(weightDirection({ fromKg: 80, toKg: 80, ...cut })).toBe("none");
+    expect(weightDirection({ fromKg: 75, toKg: 75, goal: "cut", goalWeightKg: 75 })).toBe("none");
+  });
+});
+
+describe("remainingToGoal", () => {
+  it("says how much is left and which way", () => {
+    expect(remainingToGoal(80, 75)).toEqual({ kg: 5, to: "lose" });
+    expect(remainingToGoal(60, 65)).toEqual({ kg: 5, to: "gain" });
+  });
+
+  it("calls it reached inside a day's water swing", () => {
+    expect(remainingToGoal(75.1, 75)).toBeNull();
+    expect(remainingToGoal(75, 75)).toBeNull();
   });
 });
