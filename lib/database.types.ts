@@ -665,6 +665,28 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["ai_coach_snapshots"]["Insert"]>;
         Relationships: [];
       };
+      // Operator dashboard (20261020000034_admin.sql). No user role can read
+      // either table; only the server's secret key and definer functions.
+      app_settings: {
+        Row: { id: number; invite_only: boolean; updated_at: string; updated_by: string | null };
+        Insert: { id?: number; invite_only?: boolean; updated_at?: string; updated_by?: string | null };
+        Update: Partial<Database["public"]["Tables"]["app_settings"]["Insert"]>;
+        Relationships: [];
+      };
+      signup_invites: {
+        Row: {
+          code: string; max_uses: number; uses: number; expires_at: string | null;
+          note: string | null; created_by: string | null; created_at: string;
+          last_used_at: string | null; revoked_at: string | null;
+        };
+        Insert: {
+          code: string; max_uses?: number; uses?: number; expires_at?: string | null;
+          note?: string | null; created_by?: string | null; created_at?: string;
+          last_used_at?: string | null; revoked_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["signup_invites"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -759,6 +781,43 @@ export type Database = {
         };
         Returns: undefined;
       };
+      // Operator dashboard: service_role only, except signup_invite_required.
+      signup_invite_required: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      admin_overview: {
+        Args: { p_week_start: string };
+        Returns: {
+          accounts: number;
+          active_7d: number;
+          active_30d: number;
+          sessions_this_week: number;
+          disabled: number;
+        }[];
+      };
+      admin_accounts: {
+        Args: { p_search: string | null; p_limit: number; p_offset: number };
+        Returns: {
+          user_id: string;
+          email: string | null;
+          created_at: string;
+          last_sign_in_at: string | null;
+          disabled: boolean;
+          finished_sessions: number;
+          last_trained_at: string | null;
+          open_session_since: string | null;
+          total: number;
+        }[];
+      };
+      admin_training_now: {
+        Args: Record<string, never>;
+        Returns: { email: string | null; started_at: string }[];
+      };
+      admin_end_sessions: {
+        Args: { p_user: string };
+        Returns: number;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
@@ -819,3 +878,7 @@ export type AiCoachRun = Tables<"ai_coach_runs">;
 export type AiCoachProposal = Tables<"ai_coach_proposals">;
 export type AiCoachChange = Tables<"ai_coach_changes">;
 export type AiCoachSnapshot = Tables<"ai_coach_snapshots">;
+
+// Operator dashboard (20261020000034_admin.sql)
+export type AppSettings = Tables<"app_settings">;
+export type SignupInvite = Tables<"signup_invites">;
