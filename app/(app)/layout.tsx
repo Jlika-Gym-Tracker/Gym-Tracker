@@ -4,6 +4,7 @@ import { Sidebar, type SidebarSummary } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
 import { MobileNav } from "@/components/shell/mobile-nav";
 import { goalLabel, goalLine } from "@/lib/profile";
+import { isAiCoachAvailable } from "@/lib/ai-coach/config";
 
 export default async function AppLayout({
   children,
@@ -40,6 +41,9 @@ export default async function AppLayout({
     progress: 0,
   };
 
+  // No key on the server, no AI Coach anywhere: not in the nav, not routable.
+  const aiCoach = isAiCoachAvailable();
+
   return (
     <div className="flex min-h-svh bg-bg text-fg">
       <Sidebar
@@ -48,6 +52,7 @@ export default async function AppLayout({
         goalLine={goalLine({ goal })}
         summary={summary}
         coaching={profile?.coaching_enabled ?? false}
+        aiCoach={aiCoach}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
@@ -63,7 +68,7 @@ export default async function AppLayout({
           {children}
         </main>
       </div>
-      <MobileNav />
+      <MobileNav aiCoach={aiCoach} />
     </div>
   );
 }
