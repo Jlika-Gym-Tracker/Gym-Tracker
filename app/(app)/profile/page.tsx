@@ -71,6 +71,10 @@ export default async function ProfilePage() {
     keep_awake: true,
     rest_sound: true,
     effort_scale: "rpe",
+    notify_workout_day: false,
+    reminder_hour: 18,
+    timezone: "UTC",
+    rest_push: true,
   };
 
   const resolvedSharing: SharingPrefs = sharing ?? {
