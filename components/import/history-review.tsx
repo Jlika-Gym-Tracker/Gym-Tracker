@@ -98,18 +98,22 @@ export function HistoryReview({
     () => history?.workouts.map((w) => minuteKey(sessionTimes(w).startedAt)) ?? [],
     [history],
   );
-  const firstStart = startKeys.length ? [...startKeys].sort()[0]! : null;
-  const lastStart = startKeys.length ? [...startKeys].sort().at(-1)! : null;
+  const [firstStart, lastStart] = useMemo(() => {
+    if (startKeys.length === 0) return [null, null];
+    const sorted = [...startKeys].sort();
+    return [sorted[0]!, sorted.at(-1)!];
+  }, [startKeys]);
 
   const [logged, setLogged] = useState<Set<string> | null>(null);
   useEffect(() => {
     if (!firstStart || !lastStart) return;
     let live = true;
+    // If the check fails the count just isn't shown; the server skips
+    // already-logged workouts on its own either way.
+    const settle = (starts: string[]) => live && setLogged(new Set(starts));
     findLoggedStarts(`${firstStart}:00.000Z`, `${lastStart}:00.000Z`)
-      .then((result) => {
-        if (live && result.error === undefined) setLogged(new Set(result.starts));
-      })
-      .catch(() => {});
+      .then((result) => settle(result.error === undefined ? result.starts : []))
+      .catch(() => settle([]));
     return () => {
       live = false;
     };
@@ -213,7 +217,8 @@ export function HistoryReview({
         if (choice.kind === "create") return createdIds[row.summary.name] ?? null;
         return null;
       };
-      const all = toPayloads(h.workouts, resolve);
+      const app = FORMAT_LABELS[h.format].replace(/ \(.*\)$/, "");
+      const all = toPayloads(h.workouts, resolve, `${app} workout`);
       // Already-logged workouts aren't even sent; the server checks again anyway.
       const payloads = all.filter((p) => !logged?.has(minuteKey(p.startedAt)));
       let skipped = all.length - payloads.length;
@@ -260,8 +265,14 @@ export function HistoryReview({
         />
       </dl>
 
+      {h.workouts.length === 0 ? (
+        <div className="mt-3">
+          <Message error="Not a single set could be read from this file. The rows below say why." />
+        </div>
+      ) : null}
+
       <ul className="mt-3 flex flex-col gap-1 text-[12px] leading-[1.5] text-fg-soft">
-        {alreadyLogged == null ? (
+        {h.workouts.length === 0 ? null : alreadyLogged == null ? (
           <li>Checking which of these you already have…</li>
         ) : alreadyLogged > 0 ? (
           <li>

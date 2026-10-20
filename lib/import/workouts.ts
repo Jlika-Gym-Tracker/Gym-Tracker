@@ -102,7 +102,8 @@ export function parseHistoryCsv(text: string, options: ParseOptions): ParseResul
     const kind = classifyRow(cell(cols.setOrder), cell(cols.setType));
     if (kind === "not-a-set") continue;
 
-    const name = cell(cols.exercise).replace(/\s+/g, " ");
+    // Capped so a pasted paragraph in the name column can't become a library entry.
+    const name = cell(cols.exercise).replace(/\s+/g, " ").slice(0, 120);
     if (!name) {
       issue(row, "has no exercise name — skipped.");
       continue;

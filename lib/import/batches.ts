@@ -42,11 +42,14 @@ export function sessionTimes(workout: Pick<ImportedWorkout, "start" | "durationS
 
 /**
  * Resolves each exercise to a library id through `resolve` (null = the lifter
- * chose to skip it) and drops workouts left with nothing in them.
+ * chose to skip it) and drops workouts left with nothing in them. Workouts the
+ * file gives no name (FitNotes never does) get `fallbackTitle`, so the session
+ * list says where they came from rather than a bare "Session".
  */
 export function toPayloads(
   workouts: ImportedWorkout[],
   resolve: (exerciseName: string) => string | null,
+  fallbackTitle: string | null = null,
 ): WorkoutPayload[] {
   const payloads: WorkoutPayload[] = [];
   for (const workout of workouts) {
@@ -56,7 +59,7 @@ export function toPayloads(
     if (exercises.length === 0) continue;
     payloads.push({
       ...sessionTimes(workout),
-      title: workout.title?.slice(0, 120) ?? null,
+      title: (workout.title ?? fallbackTitle)?.slice(0, 120) ?? null,
       notes: workout.notes?.slice(0, 2000) ?? null,
       exercises,
     });

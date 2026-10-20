@@ -10,11 +10,13 @@ const MAX_WAIT_MS = 10 * 60_000;
  * Hosting constraint: this function stays alive for the whole rest. It answers
  * at once, then `after()` keeps the invocation running until the rest is over
  * so it can send the push — up to ten minutes, plus a moment to send. That
- * needs a host that lets a function live that long: a plain `next start` Node
- * server has no limit; on Vercel it needs Fluid compute (Pro allows 800 s,
- * Hobby caps at 300 s, so rests longer than about five minutes would go
- * unannounced there). Each reschedule leaves the earlier invocation sleeping
- * until its own end time, when it finds itself replaced and exits.
+ * needs a host that lets one function invocation live that long. A plain
+ * `next start` Node server has no such limit. On a serverless host the plan's
+ * function duration cap must reach 630 s (on Vercel that means Fluid compute on
+ * a plan that allows it); under a lower cap the wait is cut short and longer
+ * rests end without a push. Each reschedule leaves the earlier invocation
+ * sleeping until its own end time, when it finds itself replaced and exits —
+ * billed time, which is the price of not running a separate job queue.
  */
 export const maxDuration = 630;
 

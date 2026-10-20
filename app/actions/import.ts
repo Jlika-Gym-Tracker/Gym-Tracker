@@ -104,7 +104,7 @@ export async function findLoggedStarts(from: string, to: string): Promise<Result
 }
 
 const exerciseSpecSchema = z.object({
-  name: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(120),
   primaryMuscle: z.enum(MUSCLES),
   equipment: z.enum(EQUIPMENT),
   tracking: z.enum(TRACKING),
@@ -217,9 +217,10 @@ const workoutSchema = z
     title: z.string().max(120).nullable(),
     notes: z.string().max(2000).nullable(),
     exercises: z
-      .array(z.object({ exerciseId: z.uuid(), sets: z.array(setSchema).min(1).max(300) }))
+      // Generous on purpose: the batch's set total below is the real bound.
+      .array(z.object({ exerciseId: z.uuid(), sets: z.array(setSchema).min(1).max(2000) }))
       .min(1)
-      .max(80),
+      .max(300),
   })
   .refine((w) => new Date(w.endedAt) > new Date(w.startedAt), "A session has to end after it starts.");
 

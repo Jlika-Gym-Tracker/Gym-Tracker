@@ -58,6 +58,16 @@ describe("toPayloads", () => {
     expect(payloads).toHaveLength(1);
     expect(payloads[0]!.exercises).toEqual([{ exerciseId: "ex-1", sets: [set] }]);
   });
+
+  it("names an untitled workout after the app it came from", () => {
+    const [untitled, titled] = toPayloads(
+      [workout({ title: null }), workout({ start: { date: "2024-03-08", time: "18:00" } })],
+      () => "ex-1",
+      "FitNotes workout",
+    );
+    expect(untitled!.title).toBe("FitNotes workout");
+    expect(titled!.title).toBe("Push");
+  });
 });
 
 describe("chunkPayloads", () => {
