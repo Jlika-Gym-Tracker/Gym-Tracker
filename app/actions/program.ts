@@ -14,7 +14,8 @@ import {
   type EquipmentProfile,
 } from "@/lib/program/templates";
 import { progressWeek, summariseProgression } from "@/lib/program/progression";
-import type { CompletedSet } from "@/lib/training/e1rm";
+import { getRecentSessions } from "@/lib/training/queries";
+import type { UnitSystem } from "@/lib/database.types";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -193,44 +194,35 @@ export async function copyLastWeek(
 
     const applyProgression = formData.get("applyProgression") === "on";
 
-    // Completed sets from the source week, per exercise, for the progression rule.
-    const setsByExercise = new Map<string, CompletedSet[]>();
+    // Each exercise's own rule, judged on everything logged up to the end of
+    // the week being copied — the same reading the session screen gives.
+    const sourceEnd = toDateString(addDays(parseISO(source.week_start), 7));
+    const items = source.days.flatMap((day) =>
+      day.exercises.map((item) => ({
+        key: item.id,
+        exerciseId: item.exercise.id,
+        exerciseName: item.exercise.name,
+        tracking: item.exercise.tracking ?? "reps",
+        primaryMuscle: item.exercise.primary_muscle,
+        equipment: item.exercise.equipment,
+        dayPolicy: day.progression,
+        plan: item,
+      })),
+    );
+
+    let outcomes: ReturnType<typeof progressWeek> = [];
     if (applyProgression) {
-      const sourceEnd = toDateString(addDays(parseISO(source.week_start), 7));
-      const { data: logs } = await supabase
-        .from("set_logs")
-        .select("exercise_id, weight_kg, reps, rpe, session:workout_sessions!inner ( started_at )")
-        .eq("is_complete", true)
-        .gte("logged_at", source.week_start)
-        .lt("logged_at", sourceEnd);
-
-      for (const row of logs ?? []) {
-        const list = setsByExercise.get(row.exercise_id) ?? [];
-        list.push({
-          weight_kg: row.weight_kg == null ? null : Number(row.weight_kg),
-          reps: row.reps,
-          rpe: row.rpe == null ? null : Number(row.rpe),
-        });
-        setsByExercise.set(row.exercise_id, list);
-      }
+      const [{ data: profile }, historyByExercise] = await Promise.all([
+        supabase.from("profiles").select("unit_system").maybeSingle(),
+        getRecentSessions([...new Set(items.map((i) => i.exerciseId))], { before: sourceEnd }),
+      ]);
+      outcomes = progressWeek({
+        exercises: items,
+        historyByExercise,
+        system: (profile?.unit_system ?? "metric") as UnitSystem,
+      });
     }
-
-    const outcomes = applyProgression
-      ? progressWeek({
-          exercises: source.days.flatMap((day) =>
-            day.exercises.map((item) => ({
-              exerciseId: item.exercise.id,
-              exerciseName: item.exercise.name,
-              repMin: item.rep_min,
-              repMax: item.rep_max,
-              targetWeightKg:
-                item.target_weight_kg == null ? null : Number(item.target_weight_kg),
-            })),
-          ),
-          setsByExercise,
-        })
-      : [];
-    const nextLoadByExercise = new Map(outcomes.map((o) => [o.exerciseId, o.nextKg]));
+    const outcomeByItem = new Map(outcomes.map((o) => [o.key, o]));
 
     const weekId = await ensureWeek(weekStart, source.label);
 
@@ -256,6 +248,7 @@ export async function copyLastWeek(
           name: d.name,
           focus_note: d.focus_note,
           is_rest: d.is_rest,
+          progression: d.progression,
         })),
       )
       .select("id, day_index");
@@ -263,19 +256,24 @@ export async function copyLastWeek(
 
     const dayIdByIndex = new Map(newDays.map((d) => [d.day_index, d.id]));
     const rows = source.days.flatMap((day) =>
-      day.exercises.map((item) => ({
-        day_id: dayIdByIndex.get(day.day_index)!,
-        exercise_id: item.exercise.id,
-        position: item.position,
-        target_sets: item.target_sets,
-        rep_min: item.rep_min,
-        rep_max: item.rep_max,
-        per_side: item.per_side,
-        note: item.note,
-        target_weight_kg: applyProgression
-          ? (nextLoadByExercise.get(item.exercise.id) ?? item.target_weight_kg)
-          : item.target_weight_kg,
-      })),
+      day.exercises.map((item) => {
+        const outcome = outcomeByItem.get(item.id);
+        return {
+          day_id: dayIdByIndex.get(day.day_index)!,
+          exercise_id: item.exercise.id,
+          position: item.position,
+          target_sets: item.target_sets,
+          rep_min: item.rep_min,
+          rep_max: item.rep_max,
+          per_side: item.per_side,
+          note: item.note,
+          superset_group: item.superset_group,
+          progression: item.progression,
+          increment_kg: item.increment_kg,
+          target_weight_kg: outcome ? outcome.nextKg : item.target_weight_kg,
+          target_seconds: outcome?.nextSeconds ?? item.target_seconds,
+        };
+      }),
     );
     if (rows.length) {
       const { error } = await supabase.from("program_exercises").insert(rows);

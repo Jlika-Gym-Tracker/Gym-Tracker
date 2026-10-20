@@ -22,9 +22,12 @@ const TABS = [
   { href: "/nutrition", label: "Food", icon: Utensils },
 ] as const;
 
-/** A live session owns the bottom of the screen with its own bar. */
+/**
+ * A live session owns the bottom of the screen with its own bar. Its finish
+ * summary (/session/:id/summary) is an ordinary page and keeps the tab bar.
+ */
 export function isFocusedSession(pathname: string) {
-  return /^\/session\/[^/]+/.test(pathname);
+  return /^\/session\/[^/]+\/?$/.test(pathname);
 }
 
 export function MobileNav() {

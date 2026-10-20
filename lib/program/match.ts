@@ -15,6 +15,10 @@ export type LibraryExercise = {
   primary_muscle: string;
   equipment: string;
   image_start_url: string | null;
+  /** How it is logged. Optional so callers holding older rows still type-check. */
+  tracking?: "reps" | "time" | "cardio";
+  /** Set on the user's own movements; null for the shared library. */
+  owner_id?: string | null;
 };
 
 export type MatchCandidate = { exercise: LibraryExercise; score: number };

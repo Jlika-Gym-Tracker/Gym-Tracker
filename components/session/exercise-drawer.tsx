@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import type { SessionExercise } from "@/lib/training/queries";
+import type { PersonalBest, SessionExercise } from "@/lib/training/queries";
 import type { UnitSystem } from "@/lib/database.types";
-import { formatWeight } from "@/lib/units";
-import { estimateOneRepMax } from "@/lib/training/e1rm";
+import { formatDuration, formatWeight, trimNumber, weightUnit } from "@/lib/units";
+import { E1RM_REP_CAP, estimateOneRepMax } from "@/lib/training/e1rm";
 import { Portal } from "@/components/kit/portal";
 
 export type DrawerData = {
   exercise: SessionExercise["exercise"];
   plan: SessionExercise["plan"];
-  best: { weight_kg: number | null; reps: number | null } | null;
+  best: PersonalBest | null;
 };
 
 const MUSCLE_LABEL: Record<string, string> = {
@@ -47,17 +47,19 @@ export function ExerciseDrawer({
 
   if (!data) return null;
   const { exercise, plan, best } = data;
+  const tracking = exercise.tracking ?? "reps";
 
   const target = plan
-    ? plan.rep_min == null
-      ? `${plan.target_sets} sets`
-      : `${plan.target_sets} × ${plan.rep_min}${plan.rep_max && plan.rep_max !== plan.rep_min ? `-${plan.rep_max}` : ""}`
+    ? tracking !== "reps" && plan.target_seconds
+      ? `${plan.target_sets} × ${tracking === "cardio" ? `${Math.round(plan.target_seconds / 60)} min` : `${plan.target_seconds}s`}`
+      : plan.rep_min == null
+        ? `${plan.target_sets} sets`
+        : `${plan.target_sets} × ${plan.rep_min}${plan.rep_max && plan.rep_max !== plan.rep_min ? `-${plan.rep_max}` : ""}`
     : "—";
 
+  const top = best?.bestSet ?? null;
   const e1rm =
-    best?.weight_kg && best.reps
-      ? estimateOneRepMax(Number(best.weight_kg), best.reps)
-      : null;
+    top?.weight_kg && top.reps ? estimateOneRepMax(Number(top.weight_kg), top.reps) : 0;
 
   const muscles = [exercise.primary_muscle, ...(exercise.secondary_muscles ?? [])]
     .map((m) => MUSCLE_LABEL[m] ?? m)
@@ -112,19 +114,28 @@ export function ExerciseDrawer({
 
           <div className="my-5 flex gap-2.5">
             <Tile label="Today" value={target} />
-            <Tile
-              label="Best set"
-              value={
-                best?.weight_kg && best.reps
-                  ? `${formatWeight(best.weight_kg, system)} × ${best.reps}`
-                  : "—"
-              }
-            />
-            <Tile
-              label="Est. 1RM"
-              value={e1rm ? formatWeight(e1rm, system, 0) : "—"}
-            />
+            {tracking === "time" ? (
+              <Tile
+                label="Longest hold"
+                value={best?.longestS ? formatDuration(best.longestS) : "—"}
+              />
+            ) : tracking === "reps" ? (
+              <>
+                <Tile
+                  label="Best set"
+                  value={top?.weight_kg && top.reps ? `${formatWeight(top.weight_kg, system)} × ${top.reps}` : "—"}
+                />
+                {/* An estimate names its source: 140 × 1 and 100 × 10 are
+                    very different claims about the same number. */}
+                <Tile
+                  label="Est. 1RM"
+                  value={e1rm > 0 ? formatWeight(e1rm, system, 0) : "—"}
+                />
+              </>
+            ) : null}
           </div>
+
+          {tracking === "reps" ? <OneRepMaxCalculator system={system} /> : null}
 
           {exercise.how_to?.length ? (
             <>
@@ -193,6 +204,58 @@ function Tile({ label, value }: { label: string; value: string }) {
     <div className="flex-1 rounded-xl border border-line bg-surface p-3.5">
       <div className="eyebrow">{label}</div>
       <div className="mt-1.5 font-mono text-base font-extrabold">{value}</div>
+    </div>
+  );
+}
+
+/**
+ * "What would this set make my max?" — for a set you have not done yet, or one
+ * from another app. Refuses past the rep cap, like every other estimate here.
+ */
+function OneRepMaxCalculator({ system }: { system: UnitSystem }) {
+  const [weight, setWeight] = useState("");
+  const [reps, setReps] = useState("");
+  const unit = weightUnit(system);
+  const w = Number(weight.replace(",", "."));
+  const r = Math.round(Number(reps));
+  const tooMany = r > E1RM_REP_CAP;
+  // Display units in, display units out: Epley is linear in the load.
+  const estimate = w > 0 && r > 0 ? estimateOneRepMax(w, r) : 0;
+
+  const field =
+    "w-full min-w-0 rounded-[10px] border border-line bg-surface px-3 py-2.5 font-mono text-base outline-none focus:border-line-hi sm:text-[13px]";
+
+  return (
+    <div className="mb-6 rounded-[14px] border border-line bg-surface p-4">
+      <div className="eyebrow mb-3">1RM calculator</div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <label className="block">
+          <span className="mb-1 block font-mono text-[10px] text-fg-dim uppercase">{unit}</span>
+          <input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="100" className={field} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block font-mono text-[10px] text-fg-dim uppercase">Reps</span>
+          <input inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="5" className={field} />
+        </label>
+      </div>
+      <p className="mt-3 text-[12.5px] leading-[1.5] text-fg-muted">
+        {tooMany
+          ? `Past ${E1RM_REP_CAP} reps an estimate says more about endurance than strength — no guess.`
+          : estimate > 0
+            ? (
+                <>
+                  Estimated max{" "}
+                  <span className="font-mono font-bold text-accent">
+                    {trimNumber(estimate, 1)} {unit}
+                  </span>
+                  {" · "}
+                  {[90, 80, 70]
+                    .map((pct) => `${pct}% ${trimNumber((estimate * pct) / 100, 1)}`)
+                    .join(" · ")}
+                </>
+              )
+            : "Type a weight and the reps you got (or think you would)."}
+      </p>
     </div>
   );
 }

@@ -12,32 +12,99 @@ import {
   type ActionState,
 } from "@/app/actions/session";
 import type { SessionDetail, SessionExercise } from "@/lib/training/queries";
-import type { UnitSystem } from "@/lib/database.types";
+import type { EffortScale, Tracking, UnitSystem } from "@/lib/database.types";
 import { bestSet, setOneRepMax, totalVolume } from "@/lib/training/e1rm";
-import { formatVolume, weightUnit } from "@/lib/units";
+import { formatVolume, kgToDisplay, distanceUnit, trimNumber, weightUnit } from "@/lib/units";
+import { EFFORT_LABEL } from "@/lib/training/effort";
+import { POLICY_SHORT } from "@/lib/program/policies";
 import { ExerciseThumb } from "@/components/program/exercise-thumb";
 import { cn } from "@/lib/utils";
 import { Portal } from "@/components/kit/portal";
 import { useAction } from "@/lib/use-action";
-import { ElapsedClock, RestTimer, useRestTimer } from "./timers";
-import { SET_GRID, SetRow, draftToPayload, toDraft, type SetDraft } from "./set-row";
+import { useWakeLock } from "@/lib/wake-lock";
+import { chime, primeAudio } from "@/lib/sound";
+import { ElapsedClock, RestTimer, useRestTimer, useTicker, type RestTimerState } from "./timers";
+import {
+  SetRow,
+  draftToPayload,
+  missingForTick,
+  setGrid,
+  toDraft,
+  type RowMode,
+  type SetDraft,
+} from "./set-row";
 import { ExerciseDrawer, type DrawerData } from "./exercise-drawer";
 import { SidePanel, type SidePanelData } from "./side-panel";
 import { ActionButton } from "@/components/kit/action-button";
 
+export type SessionSettings = {
+  restSeconds: number;
+  /** Start the rest timer when a set is ticked off. */
+  autoRest: boolean;
+  shortcuts: boolean;
+  /** Show an estimated 1RM on each card. */
+  showE1rm: boolean;
+  keepAwake: boolean;
+  restSound: boolean;
+  effortScale: EffortScale;
+};
+
+/** A timed set being held right now. */
+type Work = { setId: string; exerciseId: string; startedAt: number; target: number | null };
+
+/** Cards in display order: a movement alone, or a superset done back to back. */
+type Block =
+  | { kind: "single"; ex: SessionExercise }
+  | { kind: "superset"; letter: string; members: SessionExercise[] };
+
+function trackingOf(ex: SessionExercise): Tracking {
+  return ex.exercise.tracking ?? "reps";
+}
+
+/**
+ * Groups exercises that share a superset number, placed where the first of
+ * them sits. Letters follow order of appearance so the first superset of the
+ * day is always A, whatever number the builder stored.
+ */
+function toBlocks(exercises: SessionExercise[]): Block[] {
+  const blocks: Block[] = [];
+  const byGroup = new Map<number, Extract<Block, { kind: "superset" }>>();
+  for (const ex of exercises) {
+    const group = ex.plan?.superset_group;
+    if (group == null) {
+      blocks.push({ kind: "single", ex });
+      continue;
+    }
+    const existing = byGroup.get(group);
+    if (existing) {
+      existing.members.push(ex);
+      continue;
+    }
+    const block = {
+      kind: "superset" as const,
+      letter: String.fromCharCode(65 + byGroup.size),
+      members: [ex],
+    };
+    byGroup.set(group, block);
+    blocks.push(block);
+  }
+  // A "superset" of one is just an exercise.
+  return blocks.map((b) =>
+    b.kind === "superset" && b.members.length === 1 ? { kind: "single", ex: b.members[0]! } : b,
+  );
+}
+
 export function SessionScreen({
   session,
   system,
-  restSeconds,
+  settings,
   panels,
-  shortcutsEnabled = true,
 }: {
   session: SessionDetail;
   system: UnitSystem;
-  restSeconds: number;
-  /** Per-exercise history and progression hint, computed on the server. */
+  settings: SessionSettings;
+  /** Per-exercise history, bests and prescription, computed on the server. */
   panels: Record<string, SidePanelData>;
-  shortcutsEnabled?: boolean;
 }) {
   const unit = weightUnit(system);
   // Adding a set changes the list, so a repeated tap must not repeat the
@@ -48,80 +115,145 @@ export function SessionScreen({
     session.exercises[0]?.exercise.id ?? null,
   );
   const [error, setError] = useState<string | null>(null);
-  const rest = useRestTimer(restSeconds);
+  const rest = useRestTimer(settings.restSeconds, { sound: settings.restSound });
+  useWakeLock(settings.keepAwake);
 
   const [finishState, finish] = useActionState(finishSession, {} as ActionState);
   const [discardState, discard] = useActionState(discardSession, {} as ActionState);
+
+  const modeFor = useCallback(
+    (ex: SessionExercise): RowMode => ({
+      tracking: trackingOf(ex),
+      effort: settings.effortScale,
+      system,
+    }),
+    [settings.effortScale, system],
+  );
 
   // Optimistic set state, keyed by set-log id. The server is the source of
   // truth; this only keeps typing and ticking from feeling laggy.
   const [drafts, setDrafts] = useState<Record<string, SetDraft>>(() => {
     const initial: Record<string, SetDraft> = {};
     for (const ex of session.exercises) {
-      for (const set of ex.sets) initial[set.id] = toDraft(set, system);
+      for (const set of ex.sets) initial[set.id] = toDraft(set, modeFor(ex));
     }
     return initial;
   });
 
-  const draftFor = useCallback(
-    (id: string, fallback: SetDraft) => drafts[id] ?? fallback,
-    [drafts],
+  const draftOf = useCallback(
+    (ex: SessionExercise, set: SessionExercise["sets"][number]) =>
+      drafts[set.id] ?? toDraft(set, modeFor(ex)),
+    [drafts, modeFor],
   );
 
   // Awaited rather than fired into a transition, so the row that started the
   // write is the one that shows a spinner — and only that row.
   const commit = useCallback(
-    async (id: string, draft: SetDraft) => {
+    async (ex: SessionExercise, id: string, draft: SetDraft) => {
       setError(null);
-      const result = await saveSet({ id, ...draftToPayload(draft, system) });
+      const result = await saveSet({ id, ...draftToPayload(draft, modeFor(ex)) });
       if (result.error) setError(result.error);
     },
-    [system],
+    [modeFor],
   );
 
-  async function toggle(id: string, draft: SetDraft) {
+  const blocks = useMemo(() => toBlocks(session.exercises), [session.exercises]);
+
+  /**
+   * Rest comes after a superset, not inside it: ticking set 2 of the first
+   * movement goes straight to set 2 of the next. Once nothing later in the
+   * group has that set still to do, the rest starts.
+   */
+  function restsAfter(ex: SessionExercise, setIndex: number) {
+    const group = ex.plan?.superset_group;
+    if (group == null) return true;
+    const members = session.exercises.filter((e) => e.plan?.superset_group === group);
+    const later = members.slice(members.findIndex((m) => m.exercise.id === ex.exercise.id) + 1);
+    return !later.some((m) => {
+      const set = m.sets[setIndex];
+      return set != null && !draftOf(m, set).isComplete;
+    });
+  }
+
+  async function complete(ex: SessionExercise, setId: string, setIndex: number, next: SetDraft) {
+    setDrafts((prev) => ({ ...prev, [setId]: next }));
+    if (next.isComplete && settings.autoRest && restsAfter(ex, setIndex)) rest.start();
+    await commit(ex, setId, next);
+  }
+
+  async function toggle(ex: SessionExercise, setId: string, setIndex: number, draft: SetDraft) {
     const next = { ...draft, isComplete: !draft.isComplete };
-    if (next.isComplete && !next.reps.trim()) {
-      setError("Add reps before ticking the set off.");
-      return;
+    if (next.isComplete) {
+      const missing = missingForTick(next, trackingOf(ex));
+      if (missing) {
+        setError(missing);
+        return;
+      }
     }
-    setDrafts((prev) => ({ ...prev, [id]: next }));
-    if (next.isComplete) rest.start();
-    await commit(id, next);
+    await complete(ex, setId, setIndex, next);
+  }
+
+  // ---- the work clock for timed sets: counts up, chimes at the target, and
+  // "stop" logs the time actually held and ticks the set.
+  const [work, setWork] = useState<Work | null>(null);
+  const workChimed = useRef(false);
+  useTicker(work != null);
+  const workElapsed = work ? Math.max(0, Math.floor((Date.now() - work.startedAt) / 1000)) : 0;
+
+  useEffect(() => {
+    if (!work || work.target == null || workChimed.current || workElapsed < work.target) return;
+    workChimed.current = true;
+    if (settings.restSound) chime();
+  }, [work, workElapsed, settings.restSound]);
+
+  function startWork(ex: SessionExercise, setId: string, target: number | null) {
+    primeAudio();
+    // Rest and work never run together: starting the hold ends the rest.
+    if (rest.running) rest.skip();
+    workChimed.current = false;
+    setWork({ setId, exerciseId: ex.exercise.id, startedAt: Date.now(), target });
+  }
+
+  async function stopWork(ex: SessionExercise, setId: string, setIndex: number, draft: SetDraft) {
+    if (!work) return;
+    const held = Math.max(1, Math.floor((Date.now() - work.startedAt) / 1000));
+    setWork(null);
+    await complete(ex, setId, setIndex, { ...draft, duration: String(held), isComplete: true });
   }
 
   // Running totals read from the optimistic drafts so they move as you tick.
   const totals = useMemo(() => {
-    const completed = session.exercises.flatMap((ex) =>
-      ex.sets
-        .map((set) => draftFor(set.id, toDraft(set, system)))
-        .filter((d) => d.isComplete)
-        .map((d) => ({
-          weight_kg: d.weight === "" ? null : Number(d.weight),
-          reps: d.reps === "" ? null : Number(d.reps),
-          rpe: null,
-        })),
-    );
+    let done = 0;
+    const lifted: { weight_kg: number | null; reps: number | null }[] = [];
+    for (const ex of session.exercises) {
+      for (const set of ex.sets) {
+        const d = draftOf(ex, set);
+        if (!d.isComplete) continue;
+        done++;
+        if (trackingOf(ex) === "reps") {
+          lifted.push({
+            weight_kg: d.weight === "" ? null : Number(d.weight),
+            reps: d.reps === "" ? null : Number(d.reps),
+          });
+        }
+      }
+    }
     const planned = session.exercises.reduce(
       (n, ex) => n + (ex.plan?.target_sets ?? ex.sets.length),
       0,
     );
-    return {
-      done: completed.length,
-      planned,
-      // Drafts are already in display units, so this total is too.
-      volume: totalVolume(completed),
-    };
-  }, [session.exercises, draftFor, system]);
+    // Drafts are already in display units, so this total is too.
+    return { done, planned, volume: totalVolume(lifted) };
+  }, [session.exercises, draftOf]);
 
   // Keyboard shortcuts. Held in a ref so the listener does not need rebinding
   // every keystroke, and ignored while a field has focus — space belongs to the
   // input you are typing in.
-  const shortcutState = useRef({ toggle, rest, exercises: session.exercises, drafts });
-  shortcutState.current = { toggle, rest, exercises: session.exercises, drafts };
+  const shortcutState = useRef({ toggle, rest, exercises: session.exercises, draftOf });
+  shortcutState.current = { toggle, rest, exercises: session.exercises, draftOf };
 
   useEffect(() => {
-    if (!shortcutsEnabled) return;
+    if (!settings.shortcuts) return;
 
     function onKey(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
@@ -137,11 +269,11 @@ export function SessionScreen({
       if (event.key === " ") {
         // Tick off the first set that is not done yet.
         for (const ex of current.exercises) {
-          for (const set of ex.sets) {
-            const draft = current.drafts[set.id] ?? toDraft(set, system);
+          for (const [i, set] of ex.sets.entries()) {
+            const draft = current.draftOf(ex, set);
             if (!draft.isComplete) {
               event.preventDefault();
-              current.toggle(set.id, draft);
+              void current.toggle(ex, set.id, i, draft);
               return;
             }
           }
@@ -157,7 +289,7 @@ export function SessionScreen({
 
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [shortcutsEnabled, system]);
+  }, [settings.shortcuts]);
 
   const statsRef = useRef<HTMLDivElement>(null);
   const fadeRef = useRef<HTMLDivElement>(null);
@@ -192,11 +324,40 @@ export function SessionScreen({
   const actions = {
     sessionId: session.id,
     canFinish: totals.done > 0,
-    restSeconds,
+    restSeconds: settings.restSeconds,
     rest,
     finish,
     discard,
   };
+
+  const openDrawer = (ex: SessionExercise) =>
+    setDrawer({ exercise: ex.exercise, plan: ex.plan, best: panels[ex.exercise.id]?.best ?? null });
+
+  const card = (ex: SessionExercise, superset?: string) => (
+    <ExerciseCard
+      key={ex.exercise.id}
+      ex={ex}
+      unit={unit}
+      system={system}
+      mode={modeFor(ex)}
+      superset={superset}
+      showE1rm={settings.showE1rm}
+      focused={ex.exercise.id === focusId}
+      draftOf={(set) => draftOf(ex, set)}
+      panel={panels[ex.exercise.id]}
+      work={work?.exerciseId === ex.exercise.id ? { ...work, elapsed: workElapsed } : null}
+      onFocus={() => setFocusId(ex.exercise.id)}
+      onChange={(id, d) => setDrafts((prev) => ({ ...prev, [id]: d }))}
+      onCommit={(id, d) => commit(ex, id, d)}
+      onToggle={(id, i, d) => toggle(ex, id, i, d)}
+      onStartWork={(id, target) => startWork(ex, id, target)}
+      onStopWork={(id, i, d) => stopWork(ex, id, i, d)}
+      onRemove={async (id) => void (await removeSet(id))}
+      onAddSet={() => listEdit.run(() => addSet(session.id, ex.exercise.id))}
+      addBusy={listEdit.pending}
+      onOpenDrawer={() => openDrawer(ex)}
+    />
+  );
 
   return (
     <>
@@ -247,7 +408,7 @@ export function SessionScreen({
               ) : null}
 
               {/* Keyboard shortcuts mean nothing on a touchscreen. */}
-              {shortcutsEnabled ? (
+              {settings.shortcuts ? (
                 <p className="hidden w-full font-mono text-[10px] text-fg-dim uppercase pointer-fine:block">
                   Space completes the next set · R restarts rest
                 </p>
@@ -272,31 +433,22 @@ export function SessionScreen({
             </div>
           ) : null}
 
-          {session.exercises.map((ex) => (
-            <ExerciseCard
-              key={ex.exercise.id}
-              ex={ex}
-              unit={unit}
-              system={system}
-              focused={ex.exercise.id === focusId}
-              draftFor={draftFor}
-              onFocus={() => setFocusId(ex.exercise.id)}
-              onChange={(id, d) => setDrafts((prev) => ({ ...prev, [id]: d }))}
-              onCommit={commit}
-              onToggle={toggle}
-              onRemove={async (id) => void (await removeSet(id))}
-              onAddSet={() => listEdit.run(() => addSet(session.id, ex.exercise.id))}
-              addBusy={listEdit.pending}
-              bestEver={panels[ex.exercise.id]?.bestEver ?? null}
-              onOpenDrawer={() =>
-                setDrawer({
-                  exercise: ex.exercise,
-                  plan: ex.plan,
-                  best: panels[ex.exercise.id]?.bestEver ?? null,
-                })
-              }
-            />
-          ))}
+          {blocks.map((block) =>
+            block.kind === "single" ? (
+              card(block.ex)
+            ) : (
+              <section
+                key={`superset-${block.letter}`}
+                aria-label={`Superset ${block.letter}`}
+                className="flex flex-col gap-2.5 rounded-[20px] border border-line-hi bg-accent-soft/40 p-1.5"
+              >
+                <p className="px-3 pt-1.5 font-mono text-[10px] font-bold tracking-[0.12em] text-accent uppercase">
+                  Superset {block.letter} · back to back, rest after the last
+                </p>
+                {block.members.map((ex) => card(ex, block.letter))}
+              </section>
+            ),
+          )}
         </div>
 
         {focus ? (
@@ -304,13 +456,7 @@ export function SessionScreen({
             exercise={focus.exercise}
             data={panels[focus.exercise.id]}
             system={system}
-            onOpenDrawer={() =>
-              setDrawer({
-                exercise: focus.exercise,
-                plan: focus.plan,
-                best: panels[focus.exercise.id]?.bestEver ?? null,
-              })
-            }
+            onOpenDrawer={() => openDrawer(focus)}
             onAddExercise={(exerciseId) =>
               listEdit.run(() => addExerciseToSession(session.id, exerciseId))
             }
@@ -327,7 +473,7 @@ export function SessionScreen({
             {message}
           </p>
         ) : null}
-        <div className="mx-auto flex h-16 max-w-[560px] items-center gap-2.5 px-4">
+        <div className="mx-auto flex h-16 max-w-[560px] items-center gap-2 px-4">
           <SessionActions {...actions} fill />
         </div>
       </div>
@@ -354,22 +500,16 @@ function SessionActions({
   sessionId: string;
   canFinish: boolean;
   restSeconds: number;
-  rest: ReturnType<typeof useRestTimer>;
+  rest: RestTimerState;
   finish: (formData: FormData) => void;
   discard: (formData: FormData) => void;
   /** Phone layout: the rest timer takes the spare width and both are 48px tall. */
   fill?: boolean;
 }) {
-  const size = fill ? "h-12 px-6 text-sm" : "px-[18px] py-3 text-[13.5px]";
+  const size = fill ? "h-12 px-5 text-sm" : "px-[18px] py-3 text-[13.5px]";
   return (
     <>
-      <RestTimer
-        seconds={restSeconds}
-        running={rest.running}
-        remaining={rest.remaining}
-        onToggle={rest.toggle}
-        className={fill ? "h-12 flex-1 text-sm" : undefined}
-      />
+      <RestTimer rest={rest} seconds={restSeconds} className={fill ? "min-w-0 flex-1" : undefined} />
       {canFinish ? (
         <form action={finish}>
           <input type="hidden" name="sessionId" value={sessionId} />
@@ -414,17 +554,40 @@ function Divider() {
   return <div className="hidden h-[38px] w-px bg-line lg:block" />;
 }
 
+/** "3 × 8-12", "3 × 45s", "20 MIN" — what the plan asks of this card. */
+function targetLabel(ex: SessionExercise): string {
+  const plan = ex.plan;
+  if (!plan) return "EXTRA";
+  const tracking = trackingOf(ex);
+  if (tracking === "cardio") {
+    return plan.target_seconds ? `${Math.round(plan.target_seconds / 60)} MIN` : `${plan.target_sets} × CARDIO`;
+  }
+  if (tracking === "time") {
+    return plan.target_seconds ? `${plan.target_sets} × ${plan.target_seconds}S` : `${plan.target_sets} SETS`;
+  }
+  if (plan.rep_min == null) return `${plan.target_sets} SETS`;
+  const range =
+    plan.rep_max && plan.rep_max !== plan.rep_min ? `${plan.rep_min}-${plan.rep_max}` : `${plan.rep_min}`;
+  return `${plan.target_sets} × ${range}${plan.per_side ? " /SIDE" : ""}`;
+}
+
 function ExerciseCard({
   ex,
   unit,
   system,
+  mode,
+  superset,
+  showE1rm,
   focused,
-  bestEver,
-  draftFor,
+  panel,
+  work,
+  draftOf,
   onFocus,
   onChange,
   onCommit,
   onToggle,
+  onStartWork,
+  onStopWork,
   onRemove,
   onAddSet,
   addBusy,
@@ -433,44 +596,103 @@ function ExerciseCard({
   ex: SessionExercise;
   unit: string;
   system: UnitSystem;
+  mode: RowMode;
+  /** The superset letter this card belongs to, if any. */
+  superset?: string;
+  showE1rm: boolean;
   focused: boolean;
-  bestEver: { weight_kg: number | null; reps: number | null } | null;
-  draftFor: (id: string, fallback: SetDraft) => SetDraft;
+  panel?: SidePanelData;
+  work: (Work & { elapsed: number }) | null;
+  draftOf: (set: SessionExercise["sets"][number]) => SetDraft;
   onFocus: () => void;
   onChange: (id: string, draft: SetDraft) => void;
   onCommit: (id: string, draft: SetDraft) => Promise<void>;
-  onToggle: (id: string, draft: SetDraft) => Promise<void>;
+  onToggle: (id: string, index: number, draft: SetDraft) => Promise<void>;
+  onStartWork: (id: string, target: number | null) => void;
+  onStopWork: (id: string, index: number, draft: SetDraft) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
   onAddSet: () => void;
   addBusy: boolean;
   onOpenDrawer: () => void;
 }) {
-  const target = ex.plan
-    ? ex.plan.rep_min == null
-      ? `${ex.plan.target_sets} SETS`
-      : `${ex.plan.target_sets} × ${ex.plan.rep_min}${
-          ex.plan.rep_max && ex.plan.rep_max !== ex.plan.rep_min ? `-${ex.plan.rep_max}` : ""
-        }${ex.plan.per_side ? " /SIDE" : ""}`
-    : "EXTRA";
+  const tracking = mode.tracking;
+  const withEffort = tracking === "reps" && mode.effort !== "off";
+  const prescription = panel?.prescription;
+  const best = panel?.best ?? null;
+
+  const drafts = ex.sets.map((set) => ({ set, draft: draftOf(set) }));
+  const ticked = drafts.filter((d) => d.draft.isComplete);
 
   // A PR is beating your previous best for this movement — not merely being
   // the best set of today, which would badge something on every exercise.
-  const previousBest = bestEver ? setOneRepMax(bestEver) : 0;
-  const todayBest = bestSet(
-    ex.sets.map((s) => ({
-      weight_kg: s.weight_kg == null ? null : Number(s.weight_kg),
-      reps: s.reps,
-      rpe: s.rpe == null ? null : Number(s.rpe),
-      id: s.id,
-    })),
-  );
+  const prSetId = (() => {
+    if (tracking === "reps") {
+      const today = bestSet(
+        ticked.map(({ set, draft }) => ({
+          id: set.id,
+          weight_kg: draft.weight === "" ? null : Number(draft.weight),
+          reps: draft.reps === "" ? null : Number(draft.reps),
+        })),
+      );
+      if (!today || !best?.bestSet) return null;
+      const todayE1rm = setOneRepMax(today);
+      const previousE1rm = setOneRepMax({
+        weight_kg: best.bestSet.weight_kg == null ? null : kgToDisplay(Number(best.bestSet.weight_kg), system),
+        reps: best.bestSet.reps,
+      });
+      // Past the 12-rep cap there is no estimate, so a heavier load is the record.
+      if (todayE1rm > 0) return previousE1rm > 0 && todayE1rm > previousE1rm ? today.id : null;
+      const heaviest = kgToDisplay(best.heaviestKg, system);
+      return heaviest > 0 && Number(today.weight_kg) > heaviest ? today.id : null;
+    }
+    if (tracking === "time") {
+      let top: { id: string; s: number } | null = null;
+      for (const { set, draft } of ticked) {
+        const s = Number(draft.duration) || 0;
+        if (!top || s > top.s) top = { id: set.id, s };
+      }
+      return top && best && best.longestS > 0 && top.s > best.longestS ? top.id : null;
+    }
+    return null;
+  })();
+
+  const todayE1rm = (() => {
+    if (!showE1rm || tracking !== "reps") return null;
+    const today = bestSet(
+      ticked.map(({ draft }) => ({
+        weight_kg: draft.weight === "" ? null : Number(draft.weight),
+        reps: draft.reps === "" ? null : Number(draft.reps),
+      })),
+    );
+    const value = today ? setOneRepMax(today) : 0;
+    return value > 0 ? value : null;
+  })();
+
+  const repsPlaceholder =
+    prescription?.reps != null
+      ? String(prescription.reps)
+      : ex.plan?.rep_max != null
+        ? String(ex.plan.rep_max)
+        : ex.plan?.rep_min != null
+          ? String(ex.plan.rep_min)
+          : undefined;
+  const targetSeconds = prescription?.seconds ?? ex.plan?.target_seconds ?? null;
+  const durationPlaceholder =
+    targetSeconds == null
+      ? undefined
+      : tracking === "cardio"
+        ? trimNumber(targetSeconds / 60, 1)
+        : String(targetSeconds);
+
   const lastSet = ex.sets.at(-1);
   const removeLast = useAction();
-  const isPrSet = (setId: string, complete: boolean) =>
-    complete &&
-    todayBest?.id === setId &&
-    setOneRepMax(todayBest) > previousBest &&
-    previousBest > 0;
+
+  const columns =
+    tracking === "cardio"
+      ? ["Set", "Min", distanceUnit(system)]
+      : tracking === "time"
+        ? ["Set", unit, "Secs"]
+        : ["Set", unit, "Reps", ...(withEffort ? [EFFORT_LABEL[mode.effort as "rpe" | "rir"]] : [])];
 
   return (
     <section
@@ -504,12 +726,22 @@ function ExerciseCard({
           {/* On a phone the name gets its own line rather than an ellipsis —
               "Barbell Romanian Deadlift" is the whole point of the card. */}
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            {superset ? (
+              <span className="flex-none rounded-[4px] bg-accent px-1.5 py-0.5 font-mono text-[9.5px] font-extrabold text-[#0a0c0d]">
+                {superset}
+              </span>
+            ) : null}
             <h2 className="text-[15px] leading-tight font-bold tracking-[-0.01em] sm:truncate">
               {ex.exercise.name}
             </h2>
             <span className="flex-none font-mono text-[10px] font-medium text-fg-dim">
-              {target}
+              {targetLabel(ex)}
             </span>
+            {todayE1rm != null ? (
+              <span className="flex-none font-mono text-[10px] font-semibold text-accent">
+                E1RM {trimNumber(todayE1rm, 0)} {unit}
+              </span>
+            ) : null}
           </div>
           {ex.plan?.note ? (
             <p className="mt-0.5 text-[11.5px] text-fg-soft">{ex.plan.note}</p>
@@ -524,32 +756,71 @@ function ExerciseCard({
         </button>
       </header>
 
+      {/* The rule's verdict on this movement, right where the sets are — on a
+          phone the side panel is a long scroll away. */}
+      {prescription && prescription.kind !== "off" ? (
+        <p className="flex gap-2 border-t border-[#1a1e20] px-4 py-2.5 text-[12px] leading-[1.5] text-fg-muted sm:px-5">
+          <span
+            className={cn(
+              "mt-px flex-none font-mono text-[9.5px] font-bold tracking-[0.1em] uppercase",
+              prescription.kind === "up"
+                ? "text-accent"
+                : prescription.kind === "deload"
+                  ? "text-warn"
+                  : "text-fg-dim",
+            )}
+          >
+            {prescription.kind === "up"
+              ? "↑ Up"
+              : prescription.kind === "deload"
+                ? "↓ Deload"
+                : prescription.kind === "first"
+                  ? "New"
+                  : "Hold"}
+          </span>
+          <span className="min-w-0">
+            {prescription.why}
+            <span className="ml-1.5 font-mono text-[10px] text-fg-dim uppercase">
+              {POLICY_SHORT[prescription.policy]}
+            </span>
+          </span>
+        </p>
+      ) : null}
+
       <div className="px-3.5 pt-1.5 pb-3.5 sm:px-5 sm:pb-4">
-        <div className={cn(SET_GRID, "py-2.5 font-mono text-[10px] font-medium tracking-[0.1em] text-fg-dim uppercase")}>
-          <div>Set</div>
-          <div className="text-center sm:text-left">{unit}</div>
-          <div className="text-center sm:text-left">Reps</div>
-          <div className="text-center sm:text-left">RPE</div>
+        <div className={cn(setGrid(withEffort), "py-2.5 font-mono text-[10px] font-medium tracking-[0.1em] text-fg-dim uppercase")}>
+          {columns.map((label, i) => (
+            <div key={label} className={i === 0 ? undefined : "text-center sm:text-left"}>
+              {label}
+            </div>
+          ))}
           <div />
           <div className="hidden sm:block" />
         </div>
 
-        {ex.sets.map((set, i) => {
-          const fallback = toDraft(set, system);
-          const draft = draftFor(set.id, fallback);
-          return (
-            <SetRow
-              key={set.id}
-              index={i}
-              draft={draft}
-              isPr={isPrSet(set.id, draft.isComplete)}
-              onChange={(next) => onChange(set.id, next)}
-              onCommit={() => onCommit(set.id, draftFor(set.id, fallback))}
-              onToggle={() => onToggle(set.id, draft)}
-              onRemove={() => onRemove(set.id)}
-            />
-          );
-        })}
+        {drafts.map(({ set, draft }, i) => (
+          <SetRow
+            key={set.id}
+            index={i}
+            draft={draft}
+            mode={mode}
+            isPr={prSetId === set.id}
+            placeholders={{ reps: repsPlaceholder, duration: durationPlaceholder }}
+            work={
+              tracking === "time"
+                ? { running: work?.setId === set.id, elapsed: work?.setId === set.id ? work.elapsed : 0 }
+                : undefined
+            }
+            onChange={(next) => onChange(set.id, next)}
+            onCommit={() => onCommit(set.id, draftOf(set))}
+            onToggle={() => onToggle(set.id, i, draft)}
+            onRemove={() => onRemove(set.id)}
+            onStartWork={
+              tracking === "time" && !work ? () => onStartWork(set.id, targetSeconds) : undefined
+            }
+            onStopWork={() => onStopWork(set.id, i, draftOf(set))}
+          />
+        ))}
 
         <div className="mt-2 flex gap-2">
           <button
@@ -570,7 +841,7 @@ function ExerciseCard({
               hidden one beside the tick is one mis-tap from deleting a logged
               set. So a phone removes only the last set, and only while it is
               still unticked. */}
-          {lastSet && !draftFor(lastSet.id, toDraft(lastSet, system)).isComplete ? (
+          {lastSet && !draftOf(lastSet).isComplete ? (
             <button
               type="button"
               onClick={() => removeLast.run(() => onRemove(lastSet.id))}

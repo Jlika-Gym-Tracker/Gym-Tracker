@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getRecentSessions } from "@/lib/training/queries";
+import { prescribe } from "@/lib/program/prescription";
+import type { UnitSystem } from "@/lib/database.types";
 
 
 export type ActionState = { error?: string; notice?: string };
@@ -66,22 +69,56 @@ export async function startSession(formData: FormData) {
 
   // Seed empty rows for the planned sets so the grid is ready to type into.
   if (parsedDayId) {
-    const { data: planned } = await supabase
-      .from("program_exercises")
-      .select("exercise_id, target_sets, target_weight_kg")
-      .eq("day_id", parsedDayId)
-      .order("position");
+    const [{ data: planned }, { data: day }, { data: profile }] = await Promise.all([
+      supabase
+        .from("program_exercises")
+        .select(
+          `exercise_id, target_sets, rep_min, rep_max, target_seconds, target_weight_kg,
+           progression, increment_kg,
+           exercise:exercises ( primary_muscle, equipment, tracking )`,
+        )
+        .eq("day_id", parsedDayId)
+        .order("position"),
+      supabase.from("program_days").select("progression").eq("id", parsedDayId).maybeSingle(),
+      supabase.from("profiles").select("unit_system").maybeSingle(),
+    ]);
 
-    const rows = (planned ?? []).flatMap((p) =>
-      Array.from({ length: p.target_sets }, (_, i) => ({
+    type Planned = NonNullable<typeof planned>[number] & {
+      exercise: { primary_muscle: string; equipment: string; tracking: "reps" | "time" | "cardio" };
+    };
+    const items = (planned ?? []) as unknown as Planned[];
+    const system = (profile?.unit_system ?? "metric") as UnitSystem;
+    const history = await getRecentSessions(items.map((p) => p.exercise_id), {
+      excludeSessionId: session.id,
+    });
+
+    const rows = items.flatMap((p) => {
+      const past = history.get(p.exercise_id) ?? [];
+      const next = prescribe(
+        {
+          tracking: p.exercise.tracking,
+          primaryMuscle: p.exercise.primary_muscle,
+          equipment: p.exercise.equipment,
+          dayPolicy: day?.progression ?? null,
+          plan: p,
+        },
+        past,
+        system,
+      );
+      const lastSets = past[0]?.sets ?? [];
+      return Array.from({ length: p.target_sets }, (_, i) => ({
         session_id: session.id,
         exercise_id: p.exercise_id,
         set_index: i,
-        // Pre-fill the planned load so the common case is tick, not type. It is
-        // an editable starting value, not a record of anything.
-        weight_kg: p.target_weight_kg,
-      })),
-    );
+        // Pre-fill the load so the common case is tick, not type: the rule's
+        // number when it has one, else the plan's, else what this set weighed
+        // last time. An editable starting value, not a record of anything.
+        weight_kg:
+          p.exercise.tracking === "cardio"
+            ? null
+            : (next.weightKg ?? p.target_weight_kg ?? lastSets[i]?.weight_kg ?? lastSets.at(-1)?.weight_kg ?? null),
+      }));
+    });
     if (rows.length) await supabase.from("set_logs").insert(rows);
   }
 
@@ -93,7 +130,10 @@ const setSchema = z.object({
   id: uuid,
   weightKg: z.number().min(0).max(1000).nullable(),
   reps: z.number().int().min(0).max(500).nullable(),
-  rpe: z.number().min(1).max(10).nullable(),
+  // Undefined leaves the stored rating alone (the effort column is hidden).
+  rpe: z.number().min(1).max(10).nullable().optional(),
+  durationS: z.number().int().min(0).max(86400).nullable().default(null),
+  distanceM: z.number().min(0).max(1_000_000).nullable().default(null),
   isComplete: z.boolean(),
 });
 
@@ -105,16 +145,24 @@ export async function saveSet(input: {
   id: string;
   weightKg: number | null;
   reps: number | null;
-  rpe: number | null;
+  rpe?: number | null;
+  durationS?: number | null;
+  distanceM?: number | null;
   isComplete: boolean;
 }): Promise<ActionState> {
   try {
     const { supabase } = await requireUser();
     const parsed = setSchema.parse(input);
 
-    // Completing a set with nothing in it is almost always a misclick.
-    if (parsed.isComplete && parsed.reps == null) {
-      return { error: "Add reps before ticking the set off." };
+    // Completing a set with nothing in it is almost always a misclick. Reps,
+    // a held time or a distance — whichever the movement is logged in.
+    if (
+      parsed.isComplete &&
+      parsed.reps == null &&
+      parsed.durationS == null &&
+      parsed.distanceM == null
+    ) {
+      return { error: "Add reps (or a time) before ticking the set off." };
     }
 
     const { error } = await supabase
@@ -122,7 +170,9 @@ export async function saveSet(input: {
       .update({
         weight_kg: parsed.weightKg,
         reps: parsed.reps,
-        rpe: parsed.rpe,
+        ...(parsed.rpe === undefined ? {} : { rpe: parsed.rpe }),
+        duration_s: parsed.durationS,
+        distance_m: parsed.distanceM,
         is_complete: parsed.isComplete,
         logged_at: new Date().toISOString(),
       })
@@ -225,7 +275,9 @@ export async function finishSession(
       .delete()
       .eq("session_id", sessionId)
       .eq("is_complete", false)
-      .is("reps", null);
+      .is("reps", null)
+      .is("duration_s", null)
+      .is("distance_m", null);
 
     const { error } = await supabase
       .from("workout_sessions")
@@ -237,7 +289,7 @@ export async function finishSession(
   } catch (error) {
     return fail(error);
   }
-  redirect("/?finished=1");
+  redirect(`/session/${uuid.parse(formData.get("sessionId"))}/summary`);
 }
 
 export async function discardSession(
@@ -265,6 +317,39 @@ export async function discardSession(
     return fail(error);
   }
   redirect("/");
+}
+
+const ratingSchema = z.object({
+  sessionId: uuid,
+  // 1 = too easy, 2 = about right, 3 = brutal. Null clears it.
+  rating: z.number().int().min(1).max(3).nullable(),
+  note: z.string().trim().max(500).nullable(),
+});
+
+/**
+ * How the session felt, from the finish summary. Optional and one tap; the
+ * note is free text. Both are read back by the AI Coach's reviews when that is
+ * switched on, and by nothing else.
+ */
+export async function rateSession(input: {
+  sessionId: string;
+  rating: number | null;
+  note: string | null;
+}): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const parsed = ratingSchema.parse(input);
+    const { error } = await supabase
+      .from("workout_sessions")
+      .update({ rating: parsed.rating, notes: parsed.note || null })
+      .eq("id", parsed.sessionId)
+      .not("ended_at", "is", null);
+    if (error) throw error;
+    revalidatePath(`/session/${parsed.sessionId}/summary`);
+    return { notice: "Saved." };
+  } catch (error) {
+    return fail(error);
+  }
 }
 
 /** Records the bodyweight typed on the session screen. */

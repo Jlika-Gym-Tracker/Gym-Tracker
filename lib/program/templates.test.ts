@@ -21,6 +21,7 @@ function asLoadInput(
     name: day.name,
     focus_note: day.focusNote,
     is_rest: false,
+    progression: "double",
     exercises: day.exercises.map((e, position) => ({
       id: `${day.dayIndex}-${position}`,
       position,
@@ -30,13 +31,19 @@ function asLoadInput(
       per_side: e.perSide,
       note: null,
       target_weight_kg: null,
+      target_seconds: null,
+      superset_group: null,
+      progression: null,
+      increment_kg: null,
       exercise: {
         id: e.exerciseId,
         name: e.name,
         slug: byId.get(e.exerciseId)!.slug,
         primary_muscle: byId.get(e.exerciseId)!.primary_muscle as never,
         equipment: byId.get(e.exerciseId)!.equipment as never,
+        secondary_muscles: [],
         image_start_url: null,
+        tracking: "reps",
       },
     })),
   }));
