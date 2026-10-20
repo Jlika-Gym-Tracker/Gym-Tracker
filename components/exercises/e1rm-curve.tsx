@@ -7,7 +7,7 @@ import type { LiftPoint } from "@/lib/training/lift-progress";
 import { kgToDisplay, trimNumber, weightUnit } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { MarkedLineChart } from "@/components/charts/line-chart";
-import { limeRamp } from "@/components/stats/ramp";
+import { accentRamp } from "@/components/stats/ramp";
 
 /**
  * One movement's estimated-1RM line: the best set of each session, drawn the
@@ -82,7 +82,7 @@ export function E1rmCurve({
             }}
             markFill={(p) => {
               const rir = rirOf(p.rpe);
-              return rir == null ? null : limeRamp(1 - rir / 5);
+              return rir == null ? null : accentRamp(1 - rir / 5);
             }}
           />
         </div>
