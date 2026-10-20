@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatDay, formatElapsed } from "@/lib/admin/format";
+import { formatAgo, formatClock, formatDay, formatElapsed } from "@/lib/admin/format";
 
 describe("formatElapsed", () => {
   it("floors to the minute and pads past an hour", () => {
@@ -28,9 +28,11 @@ describe("formatAgo", () => {
   });
 });
 
-describe("formatDay", () => {
-  it("writes the UTC day, so server and browser agree", () => {
+describe("formatDay and formatClock", () => {
+  it("write UTC, so server and browser agree", () => {
     expect(formatDay("2026-10-03T23:30:00Z")).toBe("Oct 3, 2026");
     expect(formatDay("2026-10-04T00:30:00+02:00")).toBe("Oct 3, 2026");
+    expect(formatClock("2026-10-03T09:04:59Z")).toBe("09:04 UTC");
+    expect(formatClock("2026-10-04T00:30:00+02:00")).toBe("22:30 UTC");
   });
 });

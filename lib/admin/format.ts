@@ -35,3 +35,15 @@ export function formatAgo(iso: string | null | undefined, now: Date): string {
 export function formatDay(iso: string): string {
   return DAY.format(new Date(iso));
 }
+
+const CLOCK = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "UTC",
+});
+
+/** "09:04 UTC" — when a list was read. */
+export function formatClock(iso: string): string {
+  return `${CLOCK.format(new Date(iso))} UTC`;
+}
