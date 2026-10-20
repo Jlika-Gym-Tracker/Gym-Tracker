@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { dayLabel } from "@/lib/dates";
-import { parseSharedWeek, planMerge, type SharedExercise } from "@/lib/program/share";
+import { planMerge, type SharedExercise } from "@/lib/program/share";
+import { parseSharedWeek } from "@/lib/program/share-parse";
 import { ownExerciseSlug } from "@/lib/program/own-exercise";
 import { ensureWeek } from "./program";
 

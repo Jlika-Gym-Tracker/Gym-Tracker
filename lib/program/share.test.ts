@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseSharedWeek, planMerge, shareFileName, toSharedWeek, type SharedWeek } from "./share";
+import { planMerge, shareFileName, toSharedWeek, type SharedWeek } from "./share";
+import { parseSharedWeek } from "./share-parse";
 import type { DayWithExercises } from "./queries";
 
 const day = (index: number, exercises: DayWithExercises["exercises"] = []): DayWithExercises => ({
