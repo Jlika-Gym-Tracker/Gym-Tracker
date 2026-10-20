@@ -6,13 +6,14 @@ import type { PhotoWithUrl } from "@/lib/body/queries";
 import type { Goal, Metric } from "@/lib/body/stats";
 import { delta, earliest, latest, weightDirection } from "@/lib/body/stats";
 import type { WeekStartDay } from "@/lib/dates";
-import type { Pose, UnitSystem } from "@/lib/database.types";
+import type { BodyFigure, Pose, UnitSystem } from "@/lib/database.types";
 import type { ActivityYear } from "@/lib/training/activity";
 import { cmToDisplay, kgToDisplay, lengthUnit, trimNumber, weightUnit } from "@/lib/units";
 import { Card, Eyebrow } from "@/components/kit/card";
 import { ChartLegend, DualLineChart, TrendChart } from "@/components/charts/line-chart";
 import { ActivityHeatmap } from "@/components/stats/activity-heatmap";
 import { GoalWeightNote, goalLineLabel } from "@/components/stats/goal-weight";
+import { MuscleMapCard, type MuscleLoads } from "@/components/stats/muscle-map-card";
 import { cn } from "@/lib/utils";
 import { CompareSlider } from "./compare-slider";
 import { PhotoTimeline } from "./photo-timeline";
@@ -33,6 +34,7 @@ export function ProgressScreen({
   goalWeightKg,
   weekStartsOn,
   activity,
+  muscles,
 }: {
   metrics: Metric[];
   photosByPose: Record<Pose, PhotoWithUrl[]>;
@@ -43,6 +45,7 @@ export function ProgressScreen({
   goalWeightKg: number | null;
   weekStartsOn: WeekStartDay;
   activity: ActivityYear;
+  muscles: { loads: MuscleLoads; figure: BodyFigure; rated: boolean };
 }) {
   const [pose, setPose] = useState<Pose>("front");
   const photos = photosByPose[pose] ?? [];
@@ -247,6 +250,8 @@ export function ProgressScreen({
             </p>
           )}
         </Card>
+
+        <MuscleMapCard loads={muscles.loads} figure={muscles.figure} rated={muscles.rated} />
       </div>
     </div>
   );

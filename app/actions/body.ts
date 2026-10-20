@@ -175,6 +175,27 @@ export async function recordPhoto(input: {
   }
 }
 
+const figureSchema = z.enum(["male", "female"]);
+
+/**
+ * Which figure the muscle map is drawn on. A drawing preference only — it is
+ * not read for anything else — so it is saved straight from the toggle.
+ */
+export async function setBodyFigure(figure: "male" | "female"): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ body_figure: figureSchema.parse(figure) })
+      .eq("id", user.id);
+    if (error) throw error;
+    revalidatePath("/progress");
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
 export async function deletePhoto(
   _prev: ActionState,
   formData: FormData,
