@@ -4,15 +4,15 @@ import fs from "node:fs";
  * Concatenates the pending migrations into supabase/apply-all.sql so the whole
  * schema can be applied in one paste.
  *
- * Excludes 0001 (applied on every project at setup) and 0012 (the weekly-review
- * cron, which needs two database settings first and would roll the rest back
- * if it failed inside the same transaction).
+ * Excludes 0001 (applied on every project at setup), and 0012 and 0030 (the
+ * weekly-review and workout-reminder crons, which each need database settings
+ * first and would roll the rest back if they failed inside the same
+ * transaction).
  */
 const dir = "supabase/migrations";
 const files = fs.readdirSync(dir).sort();
-const bundled = files.filter(
-  (f) => !f.startsWith("20260905000001") && !f.startsWith("20260905000012"),
-);
+const EXCLUDED = ["20260905000001", "20260905000012", "20261020000030"];
+const bundled = files.filter((f) => !EXCLUDED.some((prefix) => f.startsWith(prefix)));
 
 const header = `-- JLIKA Gym — every pending migration, concatenated in order.
 --
@@ -22,9 +22,11 @@ const header = `-- JLIKA Gym — every pending migration, concatenated in order.
 -- Paste the whole thing into the Supabase SQL editor and run it once. Every
 -- statement is idempotent, so running it again is harmless.
 --
--- Not included: 20260905000001_profiles.sql (already applied) and
+-- Not included: 20260905000001_profiles.sql (already applied),
 -- 20260905000012_weekly_review_cron.sql (optional; needs app.weekly_review_url
--- and app.cron_secret set on the database first).
+-- and app.cron_secret set on the database first) and
+-- 20261020000030_workout_reminder_cron.sql (optional; needs
+-- app.workout_reminder_url and app.cron_secret set first).
 
 `;
 

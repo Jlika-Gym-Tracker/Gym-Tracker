@@ -37,6 +37,8 @@ import { Field, Message, Segmented, Slider, Toggle } from "./controls";
 import { ActionButton } from "@/components/kit/action-button";
 import { useAction } from "@/lib/use-action";
 import { Loader2 } from "lucide-react";
+import { ImportCard } from "@/components/import/import-card";
+import { NotificationsCard } from "./notifications-card";
 
 const TABS = ["Account", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
 type Tab = (typeof TABS)[number];
@@ -128,7 +130,7 @@ export function ProfileScreen({
       {tab === "Crew" ? (
         <CrewTab crew={crew} invites={invites} sharing={sharing} meId={profile.id} />
       ) : null}
-      {tab === "Data & privacy" ? <DataTab settings={settings} /> : null}
+      {tab === "Data & privacy" ? <DataTab settings={settings} system={system} /> : null}
     </div>
   );
 }
@@ -692,7 +694,7 @@ function CrewTab({
   );
 }
 
-function DataTab({ settings }: { settings: UserSettings }) {
+function DataTab({ settings, system }: { settings: UserSettings; system: UnitSystem }) {
   const [deleteState, remove] = useActionState(deleteAccount, {} as ActionState);
   const [rest, setRest] = useState(settings.default_rest_seconds);
   const [effort, setEffort] = useState<EffortScale>(settings.effort_scale ?? "rpe");
@@ -786,6 +788,8 @@ function DataTab({ settings }: { settings: UserSettings }) {
         />
       </Card>
 
+      <NotificationsCard settings={settings} />
+
       <Card>
         <h2 className="text-[15px] font-bold">Export your data</h2>
         <p className="mt-1 mb-3.5 text-[12.5px] leading-[1.5] text-fg-soft">
@@ -808,6 +812,8 @@ function DataTab({ settings }: { settings: UserSettings }) {
           </Link>
         </div>
       </Card>
+
+      <ImportCard system={system} />
 
       <Card className="border-danger-border">
         <h2 className="text-[15px] font-bold text-danger">Danger zone</h2>

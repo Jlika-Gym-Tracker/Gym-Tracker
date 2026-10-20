@@ -416,6 +416,8 @@ export type Database = {
           notify_unpublished_week: boolean; meals_per_day: number;
           week_starts_on: number;
           keep_awake: boolean; rest_sound: boolean; effort_scale: EffortScale;
+          notify_workout_day: boolean; reminder_hour: number; timezone: string;
+          rest_push: boolean;
         };
         Insert: {
           user_id: string; training_days?: number[]; default_rest_seconds?: number;
@@ -426,6 +428,8 @@ export type Database = {
           notify_unpublished_week?: boolean; meals_per_day?: number;
           week_starts_on?: number;
           keep_awake?: boolean; rest_sound?: boolean; effort_scale?: EffortScale;
+          notify_workout_day?: boolean; reminder_hour?: number; timezone?: string;
+          rest_push?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["user_settings"]["Insert"]>;
         Relationships: [];
@@ -570,6 +574,30 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["coach_program_exercises"]["Insert"]>;
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          id: string; user_id: string; endpoint: string; p256dh: string; auth: string;
+          user_agent: string | null; created_at: string;
+        };
+        Insert: {
+          id?: string; user_id: string; endpoint: string; p256dh: string; auth: string;
+          user_agent?: string | null; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["push_subscriptions"]["Insert"]>;
+        Relationships: [];
+      };
+      rest_alerts: {
+        Row: {
+          user_id: string; token: string; endpoint: string; url: string;
+          ends_at: string; created_at: string;
+        };
+        Insert: {
+          user_id: string; token: string; endpoint: string; url?: string;
+          ends_at: string; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["rest_alerts"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -640,6 +668,15 @@ export type Database = {
           week_dots: number[];
         }[];
       };
+      save_push_subscription: {
+        Args: {
+          sub_endpoint: string;
+          sub_p256dh: string;
+          sub_auth: string;
+          sub_user_agent?: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
@@ -683,3 +720,5 @@ export type RosterAthlete =
   Database["public"]["Functions"]["coach_roster"]["Returns"][number];
 export type LeagueStandingRow =
   Database["public"]["Functions"]["league_standings"]["Returns"][number];
+export type PushSubscriptionRow = Tables<"push_subscriptions">;
+export type RestAlert = Tables<"rest_alerts">;

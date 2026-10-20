@@ -176,7 +176,7 @@ const settingsToggleSchema = z.object({
   key: z.enum([
     "auto_rest", "keyboard_shortcuts", "show_e1rm", "blur_thumbnails",
     "strip_exif", "notify_weighin", "notify_unpublished_week",
-    "keep_awake", "rest_sound",
+    "keep_awake", "rest_sound", "rest_push", "notify_workout_day",
   ]),
   value: z.boolean(),
 });
@@ -226,6 +226,55 @@ export async function setEffortScale(scale: string): Promise<ActionState> {
     const { error } = await supabase
       .from("user_settings")
       .upsert({ user_id: user.id, effort_scale: value }, { onConflict: "user_id" });
+    if (error) throw error;
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+const reminderSchema = z.object({
+  enabled: z.boolean().optional(),
+  hour: z.number().int().min(0).max(23).optional(),
+  timezone: z.string().min(1).max(64).optional(),
+});
+
+/**
+ * The workout-day reminder: on/off and the local hour it goes out at.
+ *
+ * The browser's time zone rides along with every change, because the hour only
+ * means something in a zone — someone who set 18:00 at home and has since moved
+ * should get it at 18:00 where they are now.
+ */
+export async function saveWorkoutReminder(input: {
+  enabled?: boolean;
+  hour?: number;
+  timezone?: string;
+}): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const { enabled, hour, timezone } = reminderSchema.parse(input);
+
+    let zone: string | undefined;
+    if (timezone) {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: timezone });
+        zone = timezone;
+      } catch {
+        // An unknown zone is left as it was rather than saved and misread later.
+      }
+    }
+
+    const { error } = await supabase.from("user_settings").upsert(
+      {
+        user_id: user.id,
+        ...(enabled === undefined ? {} : { notify_workout_day: enabled }),
+        ...(hour === undefined ? {} : { reminder_hour: hour }),
+        ...(zone === undefined ? {} : { timezone: zone }),
+      },
+      { onConflict: "user_id" },
+    );
     if (error) throw error;
     refresh();
     return {};
