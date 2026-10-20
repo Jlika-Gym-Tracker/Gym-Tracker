@@ -23,12 +23,13 @@ import { fillWeek } from "./week";
 
 /**
  * The closed list the model chooses from: the person's library, narrowed to
- * the equipment they have. Bodyweight movements are always in.
+ * the movements on offer (featured and their own) and to the equipment they
+ * have. Bodyweight movements are always in.
  */
 export function buildCatalog(library: CatalogEntry[], equipment?: readonly Equipment[]): CatalogEntry[] {
   const allowed = equipment ? new Set<Equipment>([...equipment, "body_only"]) : null;
   return library
-    .filter((entry) => !allowed || allowed.has(entry.equipment))
+    .filter((entry) => entry.offered !== false && (!allowed || allowed.has(entry.equipment)))
     .sort((a, b) => a.primary_muscle.localeCompare(b.primary_muscle) || a.name.localeCompare(b.name));
 }
 

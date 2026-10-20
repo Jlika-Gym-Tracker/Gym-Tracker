@@ -85,6 +85,13 @@ export type CatalogEntry = {
   secondary_muscles: string[];
   equipment: Equipment;
   tracking: Tracking;
+  /**
+   * Offered to the model for new picks: featured movements and the person's
+   * own, not removed. False keeps the long tail of the library out of the
+   * prompt while it can still be read and checked when a plan already uses
+   * it. Absent counts as offered.
+   */
+  offered?: boolean;
 };
 
 // ------------------------------------------------------- the model's answers

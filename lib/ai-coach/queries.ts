@@ -19,11 +19,15 @@ export type Supabase = Awaited<ReturnType<typeof createClient>>;
 const EXERCISE_COLUMNS =
   "id, day_id, exercise_id, position, target_sets, rep_min, rep_max, per_side, note, target_weight_kg, superset_group, target_seconds, progression, increment_kg";
 
-/** The movements this person can pick from: the global library plus their own. */
+/**
+ * The movements this person's plans can name: the global library plus their
+ * own. Only featured and own ones are `offered` for new picks (buildCatalog),
+ * which keeps the prompt to ~80 lines instead of the whole library.
+ */
 export async function getCatalog(supabase: Supabase, userId: string): Promise<CatalogEntry[]> {
   const { data, error } = await supabase
     .from("exercises")
-    .select("id, slug, name, primary_muscle, secondary_muscles, equipment, tracking, owner_id")
+    .select("id, slug, name, primary_muscle, secondary_muscles, equipment, tracking, owner_id, featured, archived_at")
     .or(`owner_id.is.null,owner_id.eq.${userId}`)
     .order("name");
   if (error) throw error;
@@ -35,6 +39,7 @@ export async function getCatalog(supabase: Supabase, userId: string): Promise<Ca
     secondary_muscles: row.secondary_muscles ?? [],
     equipment: row.equipment as Equipment,
     tracking: (row.tracking ?? "reps") as Tracking,
+    offered: (row.featured || row.owner_id === userId) && !row.archived_at,
   }));
 }
 
