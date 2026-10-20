@@ -29,13 +29,14 @@ export function Topbar({
   displayName,
   avatarUrl,
   goalLabel,
-  streakDays,
+  streakWeeks,
   coaching = false,
 }: {
   displayName: string;
   avatarUrl: string | null;
   goalLabel: string;
-  streakDays: number;
+  /** Weeks in a row with a finished session (lib/training/streak.ts). */
+  streakWeeks: number;
   coaching?: boolean;
 }) {
   const pathname = usePathname();
@@ -104,10 +105,13 @@ export function Topbar({
           Search exercises, meals…
         </button>
 
-        {streakDays > 0 ? (
-          <div className="hidden items-center gap-[7px] rounded-[10px] border border-line-hi bg-accent-soft px-[13px] py-[9px] font-mono text-xs font-bold text-accent sm:flex">
+        {streakWeeks > 0 ? (
+          <div
+            title="Weeks in a row with at least one finished session"
+            className="hidden items-center gap-[7px] rounded-[10px] border border-line-hi bg-accent-soft px-[13px] py-[9px] font-mono text-xs font-bold text-accent sm:flex"
+          >
             <span className="size-[6px] animate-pulse-dot rounded-full bg-accent" />
-            {streakDays} DAY STREAK
+            {streakWeeks} WEEK STREAK
           </div>
         ) : (
           <div className="hidden rounded-[10px] border border-line bg-surface px-[13px] py-[9px] font-mono text-xs font-medium text-fg-dim sm:block">
