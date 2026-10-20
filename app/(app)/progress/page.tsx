@@ -5,9 +5,17 @@ import { indexToStart, rollingAverage, type Goal } from "@/lib/body/stats";
 import { estimateOneRepMax } from "@/lib/training/e1rm";
 import { getTrainingHistory } from "@/lib/training/activity-queries";
 import { buildActivityYear } from "@/lib/training/activity";
+import {
+  EFFORT_WINDOWS,
+  effortDisplayScale,
+  summariseEffort,
+  windowStart,
+  type EffortSummary,
+  type EffortWindow,
+} from "@/lib/training/effort-stats";
 import { LOAD_WINDOWS, muscleLoad, type LoadSet } from "@/lib/training/muscle-load";
 import { WEEK_STARTS_ON, currentWeekStart, toDateString, type WeekStartDay } from "@/lib/dates";
-import type { BodyFigure, Pose, UnitSystem } from "@/lib/database.types";
+import type { BodyFigure, EffortScale, Pose, UnitSystem } from "@/lib/database.types";
 import { ProgressScreen } from "@/components/body/progress-screen";
 import type { MuscleLoads } from "@/components/stats/muscle-map-card";
 
@@ -22,7 +30,7 @@ export default async function ProgressPage() {
         .from("profiles")
         .select("unit_system, goal, goal_weight_kg, body_figure")
         .maybeSingle(),
-      supabase.from("user_settings").select("week_starts_on").maybeSingle(),
+      supabase.from("user_settings").select("week_starts_on, effort_scale").maybeSingle(),
       getTrainingHistory(),
       getMetrics(),
       getStrengthSeries(12),
@@ -120,6 +128,21 @@ export default async function ProgressPage() {
   ) as MuscleLoads;
 
   const rated = sets.some((s) => s.rpe != null);
+  const effortScale = effortDisplayScale(
+    (settings?.effort_scale ?? "rpe") as EffortScale,
+    rated,
+  );
+  const effort = effortScale
+    ? {
+        scale: effortScale,
+        summaries: Object.fromEntries(
+          EFFORT_WINDOWS.map(({ key }) => [
+            key,
+            summariseEffort(sets, { since: windowStart(key, today), weekStartsOn: startsOn }),
+          ]),
+        ) as Record<EffortWindow, EffortSummary>,
+      }
+    : null;
 
   return (
     <ProgressScreen
@@ -137,6 +160,7 @@ export default async function ProgressPage() {
         figure: (profile?.body_figure ?? "male") as BodyFigure,
         rated,
       }}
+      effort={effort}
     />
   );
 }

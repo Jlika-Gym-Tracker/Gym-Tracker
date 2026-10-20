@@ -8,10 +8,12 @@ import { delta, earliest, latest, weightDirection } from "@/lib/body/stats";
 import type { WeekStartDay } from "@/lib/dates";
 import type { BodyFigure, Pose, UnitSystem } from "@/lib/database.types";
 import type { ActivityYear } from "@/lib/training/activity";
+import type { EffortSummary, EffortWindow } from "@/lib/training/effort-stats";
 import { cmToDisplay, kgToDisplay, lengthUnit, trimNumber, weightUnit } from "@/lib/units";
 import { Card, Eyebrow } from "@/components/kit/card";
 import { ChartLegend, DualLineChart, TrendChart } from "@/components/charts/line-chart";
 import { ActivityHeatmap } from "@/components/stats/activity-heatmap";
+import { EffortCard } from "@/components/stats/effort-card";
 import { GoalWeightNote, goalLineLabel } from "@/components/stats/goal-weight";
 import { MuscleMapCard, type MuscleLoads } from "@/components/stats/muscle-map-card";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,7 @@ export function ProgressScreen({
   weekStartsOn,
   activity,
   muscles,
+  effort,
 }: {
   metrics: Metric[];
   photosByPose: Record<Pose, PhotoWithUrl[]>;
@@ -46,6 +49,8 @@ export function ProgressScreen({
   weekStartsOn: WeekStartDay;
   activity: ActivityYear;
   muscles: { loads: MuscleLoads; figure: BodyFigure; rated: boolean };
+  /** Null when no set has ever been rated: the effort card is left out. */
+  effort: { scale: "rpe" | "rir"; summaries: Record<EffortWindow, EffortSummary> } | null;
 }) {
   const [pose, setPose] = useState<Pose>("front");
   const photos = photosByPose[pose] ?? [];
@@ -252,6 +257,8 @@ export function ProgressScreen({
         </Card>
 
         <MuscleMapCard loads={muscles.loads} figure={muscles.figure} rated={muscles.rated} />
+
+        {effort ? <EffortCard scale={effort.scale} summaries={effort.summaries} /> : null}
       </div>
     </div>
   );
