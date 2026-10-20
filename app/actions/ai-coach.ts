@@ -399,7 +399,7 @@ export async function acceptPlan(
 
     refresh();
     return {
-      notice: `Saved as a draft for ${weekName(weekStart)}. Edit or publish it from Program; Revert below puts back what was there.`,
+      notice: `Saved as a draft for ${weekName(weekStart)}. Edit or publish it from Program; Revert in History puts back what was there.`,
     };
   } catch (error) {
     return fail(error);
@@ -631,9 +631,15 @@ export async function applyReview(
       .eq("id", id)
       .eq("user_id", userId);
 
+    const readFingerprint = (proposal.payload as { fingerprint?: unknown } | null)?.fingerprint;
+    const edited = typeof readFingerprint === "string" && readFingerprint !== weekFingerprint(base);
+
     refresh();
     return {
-      notice: `Applied ${picked.length} change${picked.length === 1 ? "" : "s"} to ${weekName(weekStart)}, as a draft. Revert below puts back what was there.`,
+      notice:
+        `Applied ${picked.length} change${picked.length === 1 ? "" : "s"} to ${weekName(weekStart)}, as a draft.` +
+        (edited ? " Your plan had been edited since the review; the ticked changes still fit it and were applied to it as it is now." : "") +
+        " Revert in History puts back what was there.",
     };
   } catch (error) {
     return fail(error);

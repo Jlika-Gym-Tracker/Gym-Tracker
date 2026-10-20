@@ -36,7 +36,10 @@ export function AiCoachConsent({
       <div className="mt-5 rounded-[14px] border border-line bg-surface-2 p-4">
         <div className="eyebrow mb-2.5">What is sent to Anthropic, when you run it</div>
         <ul className="flex flex-col gap-2 text-[12.5px] leading-[1.5]">
-          <Bullet>Your training plan and the sets you logged — exercises, sets, reps, loads, times and effort.</Bullet>
+          <Bullet>
+            Your training plan and the sets you logged — exercises, sets, reps, loads, times and effort — and
+            the list of movements in your library to choose from.
+          </Bullet>
           <Bullet>How sessions felt: the too easy / about right / brutal rating, and the notes you wrote.</Bullet>
           <Bullet>Your body weight entries and goal weight.</Bullet>
           <Bullet>
