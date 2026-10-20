@@ -12,7 +12,7 @@ import {
   MUSCLE_LABEL,
   equipmentLabel,
   sortEquipment,
-} from "@/components/exercises/taxonomy";
+} from "@/lib/exercises/taxonomy";
 import type { Muscle } from "@/lib/database.types";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";

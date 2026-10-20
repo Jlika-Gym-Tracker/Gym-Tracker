@@ -6,7 +6,7 @@ import type { Equipment, Muscle, Tracking } from "@/lib/database.types";
 import { MUSCLES } from "@/lib/training/muscle-load";
 import { ActionButton } from "@/components/kit/action-button";
 import { cn } from "@/lib/utils";
-import { EQUIPMENT_LABEL, MUSCLE_LABEL } from "./taxonomy";
+import { EQUIPMENT_LABEL, MUSCLE_LABEL } from "@/lib/exercises/taxonomy";
 
 export const FIELD =
   "w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-base text-fg-2 outline-none focus:border-line-hi disabled:opacity-60 sm:text-[13px]";
