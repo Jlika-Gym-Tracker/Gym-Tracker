@@ -9,6 +9,7 @@ import {
   formatDuration,
   kgToDisplay,
   metresToDisplay,
+  speedText,
   trimNumber,
 } from "@/lib/units";
 import { fromScale, toScale } from "@/lib/training/effort";
@@ -145,6 +146,17 @@ export function SetRow({
   useEffect(() => setLocal(draft), [draft]);
 
   const { tracking } = mode;
+  // The speed the typed minutes and distance make, under the distance field.
+  const typedMinutes = num(local.duration);
+  const typedDistance = num(local.distance);
+  const cardioSpeed =
+    tracking === "cardio"
+      ? speedText(
+          typedMinutes == null ? null : typedMinutes * 60,
+          typedDistance == null ? null : displayToMetres(typedDistance, mode.system),
+          mode.system,
+        )
+      : null;
   const withEffort = tracking === "reps" && mode.effort !== "off";
   const done = draft.isComplete;
   const label = `Set ${index + 1}`;
@@ -195,7 +207,14 @@ export function SetRow({
       {tracking === "cardio" ? (
         <>
           {input("duration", "minutes", { placeholder: placeholders.duration })}
-          {input("distance", "distance")}
+          <div className="relative min-w-0">
+            {input("distance", "distance")}
+            {cardioSpeed ? (
+              <span className="pointer-events-none absolute right-2 -bottom-3.5 font-mono text-[9.5px] text-fg-dim sm:-bottom-4">
+                {cardioSpeed}
+              </span>
+            ) : null}
+          </div>
         </>
       ) : (
         <>

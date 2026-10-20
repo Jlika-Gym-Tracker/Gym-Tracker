@@ -30,6 +30,8 @@ export type LoggedSet = {
   reps: number | null;
   rpe?: number | null;
   duration_s?: number | null;
+  /** Cardio only; no rule reads it, but the session shows it back. */
+  distance_m?: number | null;
 };
 
 export type SessionTarget = {

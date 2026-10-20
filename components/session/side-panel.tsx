@@ -14,6 +14,15 @@ import { ExerciseThumb } from "@/components/program/exercise-thumb";
 
 export type SidePanelData = {
   history: { date: string; topWeightKg: number; longestS: number }[];
+  /** Every ticked set of the last session of this movement, in order. */
+  lastSets: {
+    weight_kg: number | null;
+    reps: number | null;
+    duration_s: number | null;
+    distance_m?: number | null;
+  }[];
+  /** When that last session was. */
+  lastDate: string | null;
   /** What the movement's progression rule says to do today, and why. */
   prescription: {
     policy: ProgressionPolicy;

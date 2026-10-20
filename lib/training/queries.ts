@@ -239,7 +239,7 @@ export async function getRecentSessions(
   let query = supabase
     .from("set_logs")
     .select(
-      `exercise_id, session_id, set_index, weight_kg, reps, rpe, duration_s, logged_at,
+      `exercise_id, session_id, set_index, weight_kg, reps, rpe, duration_s, distance_m, logged_at,
        session:workout_sessions!inner ( started_at, day_id, user_id )`,
     )
     .eq("session.user_id", me)
@@ -261,6 +261,7 @@ export async function getRecentSessions(
     reps: number | null;
     rpe: number | null;
     duration_s: number | null;
+    distance_m: number | null;
     session: { started_at: string; day_id: string | null };
   };
   const rows = (data ?? []) as unknown as Row[];
@@ -310,6 +311,7 @@ export async function getRecentSessions(
       reps: row.reps,
       rpe: row.rpe == null ? null : Number(row.rpe),
       duration_s: row.duration_s,
+      distance_m: row.distance_m == null ? null : Number(row.distance_m),
     });
   }
 
@@ -324,6 +326,7 @@ export async function getRecentSessions(
         reps: s.reps,
         rpe: s.rpe,
         duration_s: s.duration_s,
+        distance_m: s.distance_m,
       })),
     });
     result.set(exerciseId, list);

@@ -79,6 +79,13 @@ export default async function SessionPage({
         topWeightKg: Math.max(0, ...h.sets.map((s) => Number(s.weight_kg ?? 0))),
         longestS: Math.max(0, ...h.sets.map((s) => s.duration_s ?? 0)),
       })),
+      lastSets: (history[0]?.sets ?? []).map((s) => ({
+        weight_kg: s.weight_kg,
+        reps: s.reps,
+        duration_s: s.duration_s ?? null,
+        distance_m: s.distance_m ?? null,
+      })),
+      lastDate: history[0]?.date ?? null,
       prescription: {
         policy: p.policy,
         kind: p.kind,

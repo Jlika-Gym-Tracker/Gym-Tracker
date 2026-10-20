@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { format, parseISO } from "date-fns";
 import { Loader2, Plus } from "lucide-react";
 import {
   addSet,
@@ -14,7 +15,15 @@ import {
 import type { SessionDetail, SessionExercise } from "@/lib/training/queries";
 import type { EffortScale, Tracking, UnitSystem } from "@/lib/database.types";
 import { bestSet, setOneRepMax, totalVolume } from "@/lib/training/e1rm";
-import { formatVolume, kgToDisplay, distanceUnit, trimNumber, weightUnit } from "@/lib/units";
+import {
+  distanceUnit,
+  formatVolume,
+  kgToDisplay,
+  metresToDisplay,
+  speedText,
+  trimNumber,
+  weightUnit,
+} from "@/lib/units";
 import { EFFORT_LABEL } from "@/lib/training/effort";
 import { POLICY_SHORT } from "@/lib/program/policies";
 import { ExerciseThumb } from "@/components/program/exercise-thumb";
@@ -571,6 +580,32 @@ function Divider() {
   return <div className="hidden h-[38px] w-px bg-line lg:block" />;
 }
 
+/**
+ * Last session's sets in one line — "60×8 · 60×8 · 57.5×9", "45s · 40s",
+ * "24 min · 4.1 km" — so the number to beat is beside the rows, not in a
+ * panel a phone has to scroll to.
+ */
+function lastTimeText(sets: SidePanelData["lastSets"], tracking: Tracking, system: UnitSystem) {
+  if (tracking === "time") {
+    return sets
+      .map((s) => `${s.weight_kg ? `${trimNumber(kgToDisplay(s.weight_kg, system), 1)}×` : ""}${s.duration_s ?? 0}s`)
+      .join(" · ");
+  }
+  if (tracking === "cardio") {
+    const seconds = sets.reduce((n, s) => n + (s.duration_s ?? 0), 0);
+    const metres = sets.reduce((n, s) => n + Number(s.distance_m ?? 0), 0);
+    const parts = [
+      seconds ? `${Math.round(seconds / 60)} min` : null,
+      metres ? `${trimNumber(metresToDisplay(metres, system), 2)} ${distanceUnit(system)}` : null,
+      speedText(seconds, metres, system),
+    ].filter(Boolean);
+    return parts.length ? parts.join(" · ") : `${sets.length} logged`;
+  }
+  return sets
+    .map((s) => (s.weight_kg ? `${trimNumber(kgToDisplay(s.weight_kg, system), 1)}×${s.reps ?? 0}` : `${s.reps ?? 0} reps`))
+    .join(" · ");
+}
+
 /** "3 × 8-12", "3 × 45s", "20 MIN" — what the plan asks of this card. */
 function targetLabel(ex: SessionExercise): string {
   const plan = ex.plan;
@@ -774,6 +809,15 @@ function ExerciseCard({
           HOW TO →
         </button>
       </header>
+
+      {panel?.lastSets.length ? (
+        <p className="border-t border-[#1a1e20] px-4 py-2 font-mono text-[11px] text-fg-soft sm:px-5">
+          <span className="mr-2 text-[9.5px] font-bold tracking-[0.1em] text-fg-dim uppercase">
+            Last time{panel.lastDate ? ` · ${format(parseISO(panel.lastDate), "MMM d")}` : ""}
+          </span>
+          {lastTimeText(panel.lastSets, tracking, system)}
+        </p>
+      ) : null}
 
       {/* The rule's verdict on this movement, right where the sets are — on a
           phone the side panel is a long scroll away. */}

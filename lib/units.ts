@@ -35,6 +35,17 @@ export function displayToMetres(value: number, system: UnitSystem): number {
   return system === "imperial" ? value * M_PER_MI : value * 1000;
 }
 
+/**
+ * Average speed from a duration and a distance — km/h, or mph in imperial —
+ * or null when either is missing. Treadmills show speed, so cardio logged as
+ * time and distance reads back in the number the machine displayed.
+ */
+export function speedText(seconds: number | null, metres: number | null, system: UnitSystem) {
+  if (!seconds || !metres) return null;
+  const perHour = metresToDisplay(metres, system) / (seconds / 3600);
+  return `${trimNumber(perHour, 1)} ${system === "imperial" ? "mph" : "km/h"}`;
+}
+
 export function distanceUnit(system: UnitSystem) {
   return system === "imperial" ? "mi" : "km";
 }
