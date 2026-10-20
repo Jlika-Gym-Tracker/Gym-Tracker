@@ -13,6 +13,7 @@ import {
   type EffortSummary,
   type EffortWindow,
 } from "@/lib/training/effort-stats";
+import { liftSeries } from "@/lib/training/lift-progress";
 import { LOAD_WINDOWS, muscleLoad, type LoadSet } from "@/lib/training/muscle-load";
 import { WEEK_STARTS_ON, currentWeekStart, toDateString, type WeekStartDay } from "@/lib/dates";
 import type { BodyFigure, EffortScale, Pose, UnitSystem } from "@/lib/database.types";
@@ -144,6 +145,11 @@ export default async function ProgressPage() {
       }
     : null;
 
+  const lifts = liftSeries(
+    sets,
+    new Map([...history.exercises].map(([id, e]) => [id, e.name])),
+  );
+
   return (
     <ProgressScreen
       metrics={metrics}
@@ -161,6 +167,7 @@ export default async function ProgressPage() {
         rated,
       }}
       effort={effort}
+      lifts={lifts}
     />
   );
 }
