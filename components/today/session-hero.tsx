@@ -89,6 +89,17 @@ export function SessionHero({ overview }: { overview: TodayOverview }) {
             <NavSpinner />
             View week
           </Link>
+          {/* Sick, missed a day, or the rack is taken: train another day of the
+              week (or freestyle) without touching the plan itself. */}
+          {!activeSessionId ? (
+            <Link
+              href="/session"
+              className="hit inline-flex items-center gap-1.5 px-1 py-[13px] text-[13px] font-semibold text-fg-soft transition-colors hover:text-accent"
+            >
+              <NavSpinner />
+              {today ? "Train something else →" : "Train anyway →"}
+            </Link>
+          ) : null}
         </div>
       </div>
     </div>
