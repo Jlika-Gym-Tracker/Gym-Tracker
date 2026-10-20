@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { currentWeekStart, toDateString } from "@/lib/dates";
-import type { UnitSystem } from "@/lib/database.types";
+import type { BodyFigure, UnitSystem } from "@/lib/database.types";
+import { muscleLoad } from "@/lib/training/muscle-load";
+import { MusclePreview } from "@/components/stats/muscle-preview";
 import { getWeekStartsOn } from "@/lib/settings/week";
 import { findPreviousWeek, getLibrary, getWeek, getWeekContaining } from "@/lib/program/queries";
 import { weeklyLoad } from "@/lib/program/volume";
@@ -22,7 +24,7 @@ export default async function ProgramPage({
     getWeek(weekStart),
     getLibrary(),
     findPreviousWeek(weekStart),
-    supabase.from("profiles").select("unit_system").maybeSingle(),
+    supabase.from("profiles").select("unit_system, body_figure").maybeSingle(),
   ]);
 
   // Weeks written before the start day was changed begin on a different
@@ -33,8 +35,34 @@ export default async function ProgramPage({
     return <NewWeekPrompt weekStart={weekStart} hasEarlierWeek={Boolean(previous)} />;
   }
 
+  // What each day works, drawn on the server: one entry per planned set, so a
+  // 5-set squat weighs more than a 2-set curl. Cardio is not working sets.
+  const figure = (profile?.body_figure ?? "male") as BodyFigure;
+  const dayPreviews = Object.fromEntries(
+    week.days.map((day) => [
+      day.id,
+      <MusclePreview
+        key={day.id}
+        title={`What ${day.name} hits`}
+        figure={figure}
+        empty="Add an exercise and the muscles it works light up here."
+        load={muscleLoad(
+          day.exercises
+            .filter((item) => item.exercise.tracking !== "cardio")
+            .flatMap((item) =>
+              Array.from({ length: item.target_sets }, () => ({
+                primaryMuscle: item.exercise.primary_muscle,
+                secondaryMuscles: item.exercise.secondary_muscles,
+              })),
+            ),
+        )}
+      />,
+    ]),
+  );
+
   return (
     <ProgramBuilder
+      dayPreviews={dayPreviews}
       week={week}
       library={library}
       load={weeklyLoad(week.days)}

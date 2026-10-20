@@ -30,12 +30,15 @@ export function ProgramBuilder({
   load,
   hasEarlierWeek,
   system,
+  dayPreviews = {},
 }: {
   week: WeekDetail;
   library: LibraryExercise[];
   load: MuscleLoad[];
   hasEarlierWeek: boolean;
   system: UnitSystem;
+  /** Server-rendered "what this day hits" maps, by day id. */
+  dayPreviews?: Record<string, React.ReactNode>;
 }) {
   const [showPaste, setShowPaste] = useState(false);
   const [editingWeek, setEditingWeek] = useState(false);
@@ -303,6 +306,11 @@ export function ProgramBuilder({
           activeDayId={activeDayId}
           activeDayName={activeDay?.name ?? null}
         />
+        {activeDayId && dayPreviews[activeDayId] ? (
+          <div className="rounded-[18px] border border-line bg-surface p-5">
+            {dayPreviews[activeDayId]}
+          </div>
+        ) : null}
         <LoadCheck load={load} />
       </div>
     </div>

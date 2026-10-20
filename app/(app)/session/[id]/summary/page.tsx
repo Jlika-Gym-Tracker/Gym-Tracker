@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getPersonalBests, getSession } from "@/lib/training/queries";
 import { sessionRecords } from "@/lib/training/records";
 import { bestSet, totalVolume } from "@/lib/training/e1rm";
-import type { UnitSystem } from "@/lib/database.types";
+import type { BodyFigure, UnitSystem } from "@/lib/database.types";
+import { muscleLoad } from "@/lib/training/muscle-load";
+import { MusclePreview } from "@/components/stats/muscle-preview";
 import {
   distanceUnit,
   formatDuration,
@@ -31,7 +33,7 @@ export default async function SessionSummaryPage({
   const { id } = await params;
   const supabase = await createClient();
   const [{ data: profile }, session] = await Promise.all([
-    supabase.from("profiles").select("unit_system").maybeSingle(),
+    supabase.from("profiles").select("unit_system, body_figure").maybeSingle(),
     getSession(id),
   ]);
   if (!session) notFound();
@@ -171,6 +173,27 @@ export default async function SessionSummaryPage({
           })
         )}
       </Card>
+
+      {done.length ? (
+        <Card>
+          <MusclePreview
+            title="What you trained"
+            figure={(profile?.body_figure ?? "male") as BodyFigure}
+            empty="Nothing counted — cardio is not working sets."
+            load={muscleLoad(
+              done
+                .filter((d) => (d.ex.exercise.tracking ?? "reps") !== "cardio")
+                .flatMap((d) =>
+                  d.sets.map((s) => ({
+                    primaryMuscle: d.ex.exercise.primary_muscle,
+                    secondaryMuscles: d.ex.exercise.secondary_muscles,
+                    rpe: s.rpe,
+                  })),
+                ),
+            )}
+          />
+        </Card>
+      ) : null}
 
       <SessionRating sessionId={session.id} rating={session.rating} note={session.notes} />
 
