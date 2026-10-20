@@ -350,6 +350,8 @@ export function SessionScreen({
       draftOf={(set) => draftOf(ex, set)}
       panel={panels[ex.exercise.id]}
       work={work?.exerciseId === ex.exercise.id ? { ...work, elapsed: workElapsed } : null}
+      // One clock at a time: a hold already running anywhere keeps the others' start buttons away.
+      canStartWork={work == null}
       onFocus={() => setFocusId(ex.exercise.id)}
       onChange={(id, d) => setDrafts((prev) => ({ ...prev, [id]: d }))}
       onCommit={(id, d) => commit(ex, id, d)}
@@ -596,6 +598,7 @@ function ExerciseCard({
   focused,
   panel,
   work,
+  canStartWork,
   draftOf,
   onFocus,
   onChange,
@@ -618,6 +621,7 @@ function ExerciseCard({
   focused: boolean;
   panel?: SidePanelData;
   work: (Work & { elapsed: number }) | null;
+  canStartWork: boolean;
   draftOf: (set: SessionExercise["sets"][number]) => SetDraft;
   onFocus: () => void;
   onChange: (id: string, draft: SetDraft) => void;
@@ -831,7 +835,7 @@ function ExerciseCard({
             onToggle={() => onToggle(set.id, i, draft)}
             onRemove={() => onRemove(set.id)}
             onStartWork={
-              tracking === "time" && !work ? () => onStartWork(set.id, targetSeconds) : undefined
+              tracking === "time" && canStartWork ? () => onStartWork(set.id, targetSeconds) : undefined
             }
             onStopWork={() => onStopWork(set.id, i, draftOf(set))}
           />
