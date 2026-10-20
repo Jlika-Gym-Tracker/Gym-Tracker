@@ -47,11 +47,27 @@ export type SessionDetail = {
 const EXERCISE_FIELDS =
   "id, name, slug, primary_muscle, secondary_muscles, equipment, image_start_url, image_end_url, cues, how_to, common_mistake, video_url, tracking";
 
+/**
+ * The signed-in user's id. Queries over sessions and sets filter on it
+ * explicitly: a coach's RLS also lets them read their athletes' training, and
+ * an athlete's sets must never become the coach's own history, bests or
+ * "session in progress".
+ */
+async function userId(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
 export async function getActiveSessionId(): Promise<string | null> {
   const supabase = await createClient();
+  const me = await userId(supabase);
+  if (!me) return null;
   const { data } = await supabase
     .from("workout_sessions")
     .select("id")
+    .eq("user_id", me)
     .is("ended_at", null)
     .order("started_at", { ascending: false })
     .limit(1)
@@ -163,9 +179,12 @@ export async function getPersonalBests(
   if (exerciseIds.length === 0) return result;
 
   const supabase = await createClient();
+  const me = await userId(supabase);
+  if (!me) return result;
   let query = supabase
     .from("set_logs")
-    .select("exercise_id, weight_kg, reps, duration_s")
+    .select("exercise_id, weight_kg, reps, duration_s, session:workout_sessions!inner ( user_id )")
+    .eq("session.user_id", me)
     .in("exercise_id", exerciseIds)
     .eq("is_complete", true)
     .limit(20000);
@@ -215,12 +234,15 @@ export async function getRecentSessions(
   if (exerciseIds.length === 0) return result;
 
   const supabase = await createClient();
+  const me = await userId(supabase);
+  if (!me) return result;
   let query = supabase
     .from("set_logs")
     .select(
       `exercise_id, session_id, set_index, weight_kg, reps, rpe, duration_s, logged_at,
-       session:workout_sessions!inner ( started_at, day_id )`,
+       session:workout_sessions!inner ( started_at, day_id, user_id )`,
     )
+    .eq("session.user_id", me)
     .in("exercise_id", exerciseIds)
     .eq("is_complete", true)
     .order("logged_at", { ascending: false })

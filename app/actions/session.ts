@@ -43,9 +43,12 @@ export async function startSession(formData: FormData) {
   const dayId = formData.get("dayId");
   const parsedDayId = typeof dayId === "string" && dayId ? uuid.parse(dayId) : null;
 
+  // Your own open session — a coach can read their athletes' sessions too, and
+  // must not be "resumed" into one of theirs.
   const { data: open } = await supabase
     .from("workout_sessions")
     .select("id")
+    .eq("user_id", user.id)
     .is("ended_at", null)
     .maybeSingle();
   if (open) redirect(`/session/${open.id}`);
@@ -377,6 +380,7 @@ export async function setSessionBodyweight(
       const { data: existing } = await supabase
         .from("body_metrics")
         .select("id, weight_kg")
+        .eq("user_id", user.id)
         .eq("measured_on", day)
         .maybeSingle();
       if (!existing) {

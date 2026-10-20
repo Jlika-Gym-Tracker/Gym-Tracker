@@ -13,6 +13,9 @@ export default async function SessionPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const [{ data: profile }, { data: prefs }, session, { data: lastWeighIn }] = await Promise.all([
     supabase.from("profiles").select("unit_system").maybeSingle(),
@@ -26,6 +29,8 @@ export default async function SessionPage({
     supabase
       .from("body_metrics")
       .select("weight_kg")
+      // Your own: a coach may also read an athlete's weigh-ins.
+      .eq("user_id", user?.id ?? "")
       .not("weight_kg", "is", null)
       .order("measured_on", { ascending: false })
       .limit(1)
