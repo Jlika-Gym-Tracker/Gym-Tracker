@@ -189,7 +189,9 @@ function DeviceStatus({
             turnOn.run(async () => {
               const result = await enablePush();
               if (result.ok) onChange("on", { notice: "Notifications are on for this device." });
-              else onChange(result.state ?? "off", { error: result.error });
+              // A new state (blocked, not configured…) explains itself in the box above.
+              else if (result.state && result.state !== "off") onChange(result.state, {});
+              else onChange("off", { error: result.error });
             })
           }
         >
@@ -212,6 +214,7 @@ function DeviceStatus({
                 test.run(async () => {
                   const result = await sendTestPush();
                   if (result.ok) onChange("on", { notice: "Sent — it should arrive in a few seconds." });
+                  else if (result.state === "unconfigured") onChange(result.state, {});
                   else onChange(result.state ?? "on", { error: result.error });
                 })
               }
