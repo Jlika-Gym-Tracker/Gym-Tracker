@@ -175,25 +175,34 @@ function AccountRow({
             />
             <Fact
               label="Open session"
-              value={account.openSessionSince ? `Since ${formatAgo(account.openSessionSince, now)}` : "—"}
+              value={account.openSessionSince ? `Started ${formatAgo(account.openSessionSince, now)}` : "—"}
               tone={account.openSessionSince ? "accent" : undefined}
             />
           </dl>
         </div>
 
-        {locked ? null : account.disabled ? (
-          <AsyncButton action={() => apply(false)} className={cn(ROW_BUTTON, "text-fg-2 hover:bg-hover")}>
-            Enable
-          </AsyncButton>
-        ) : confirming ? null : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className={cn(ROW_BUTTON, "text-danger hover:bg-danger-soft")}
-          >
-            Disable
-          </button>
-        )}
+        {/* Always present on wide screens, so a row without a button keeps
+            its columns in line with the rest. */}
+        <div
+          className={cn(
+            "flex-none sm:flex sm:w-[84px] sm:justify-end",
+            (locked || (confirming && !account.disabled)) && "max-sm:hidden",
+          )}
+        >
+          {locked ? null : account.disabled ? (
+            <AsyncButton action={() => apply(false)} className={cn(ROW_BUTTON, "text-fg-2 hover:bg-hover")}>
+              Enable
+            </AsyncButton>
+          ) : confirming ? null : (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className={cn(ROW_BUTTON, "text-danger hover:bg-danger-soft")}
+            >
+              Disable
+            </button>
+          )}
+        </div>
       </div>
 
       {confirming ? (
