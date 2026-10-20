@@ -14,7 +14,7 @@ export default async function SessionPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: prefs }, session] = await Promise.all([
+  const [{ data: profile }, { data: prefs }, session, { data: lastWeighIn }] = await Promise.all([
     supabase.from("profiles").select("unit_system").maybeSingle(),
     supabase
       .from("user_settings")
@@ -23,6 +23,13 @@ export default async function SessionPage({
       )
       .maybeSingle(),
     getSession(id),
+    supabase
+      .from("body_metrics")
+      .select("weight_kg")
+      .not("weight_kg", "is", null)
+      .order("measured_on", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (!session) notFound();
@@ -79,5 +86,13 @@ export default async function SessionPage({
     };
   }
 
-  return <SessionScreen session={session} system={system} settings={settings} panels={panels} />;
+  return (
+    <SessionScreen
+      session={session}
+      system={system}
+      settings={settings}
+      panels={panels}
+      lastWeightKg={lastWeighIn?.weight_kg == null ? null : Number(lastWeighIn.weight_kg)}
+    />
+  );
 }

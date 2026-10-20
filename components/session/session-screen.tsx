@@ -34,6 +34,7 @@ import {
   type SetDraft,
 } from "./set-row";
 import { ExerciseDrawer, type DrawerData } from "./exercise-drawer";
+import { WeighIn } from "./weigh-in";
 import { SidePanel, type SidePanelData } from "./side-panel";
 import { ActionButton } from "@/components/kit/action-button";
 
@@ -99,12 +100,15 @@ export function SessionScreen({
   system,
   settings,
   panels,
+  lastWeightKg = null,
 }: {
   session: SessionDetail;
   system: UnitSystem;
   settings: SessionSettings;
   /** Per-exercise history, bests and prescription, computed on the server. */
   panels: Record<string, SidePanelData>;
+  /** The latest weigh-in, to pre-fill the "weigh in first?" prompt. */
+  lastWeightKg?: number | null;
 }) {
   const unit = weightUnit(system);
   // Adding a set changes the list, so a repeated tap must not repeat the
@@ -424,6 +428,17 @@ export function SessionScreen({
               )}
             />
           </div>
+
+          {/* Asked only before anything is ticked: half-way through a workout
+              is not when anyone steps on a scale. */}
+          {session.bodyweight_kg != null || totals.done === 0 ? (
+            <WeighIn
+              sessionId={session.id}
+              system={system}
+              current={session.bodyweight_kg == null ? null : Number(session.bodyweight_kg)}
+              lastKg={lastWeightKg}
+            />
+          ) : null}
 
           {session.exercises.length === 0 ? (
             <div className="rounded-[18px] border border-line bg-surface px-5 py-10 text-center">

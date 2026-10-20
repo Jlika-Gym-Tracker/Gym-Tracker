@@ -352,19 +352,41 @@ export async function rateSession(input: {
   }
 }
 
-/** Records the bodyweight typed on the session screen. */
+/**
+ * Records the bodyweight typed at the start of a session, and the day's
+ * weigh-in with it so the weight chart picks it up — unless a weigh-in for
+ * that day already exists, which is never overwritten. The client sends its
+ * own date, because "today" is wherever the lifter is, not the server.
+ */
 export async function setSessionBodyweight(
   sessionId: string,
   bodyweightKg: number | null,
+  localDate?: string,
 ): Promise<ActionState> {
   try {
-    const { supabase } = await requireUser();
+    const { supabase, user } = await requireUser();
     const value = bodyweightKg == null ? null : z.number().min(20).max(400).parse(bodyweightKg);
     const { error } = await supabase
       .from("workout_sessions")
       .update({ bodyweight_kg: value })
       .eq("id", uuid.parse(sessionId));
     if (error) throw error;
+
+    if (value != null && localDate) {
+      const day = z.iso.date().parse(localDate);
+      const { data: existing } = await supabase
+        .from("body_metrics")
+        .select("id, weight_kg")
+        .eq("measured_on", day)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from("body_metrics").insert({ user_id: user.id, measured_on: day, weight_kg: value });
+      } else if (existing.weight_kg == null) {
+        await supabase.from("body_metrics").update({ weight_kg: value }).eq("id", existing.id);
+      }
+      revalidatePath("/progress");
+    }
+    revalidatePath(`/session/${sessionId}`);
     return {};
   } catch (error) {
     return fail(error);
