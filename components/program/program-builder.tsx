@@ -21,6 +21,7 @@ import { LibraryPanel } from "./library-panel";
 import { LoadCheck } from "./load-check";
 import { PastePanel } from "./paste-panel";
 import { TemplatePicker } from "./template-picker";
+import { ShareWeek } from "./share-week";
 import { ActionButton } from "@/components/kit/action-button";
 
 export function ProgramBuilder({
@@ -266,6 +267,8 @@ export function ProgramBuilder({
             ) : null}
           </form>
         ) : null}
+
+        <ShareWeek week={week} />
 
         {week.days.some((d) => d.is_rest && d.exercises.length === 0) ? (
           <div className="flex flex-wrap items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-4 py-3">
