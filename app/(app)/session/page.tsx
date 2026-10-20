@@ -72,14 +72,17 @@ export default async function SessionIndexPage() {
           <Eyebrow>Recent sessions</Eyebrow>
           <ul className="mt-3 flex flex-col">
             {recent.map((s) => (
-              <li
-                key={s.id}
-                className="flex items-center gap-3 border-b border-[#1a1e20] py-2.5 last:border-0"
-              >
-                <span className="font-mono text-[11px] text-fg-dim">
-                  {format(parseISO(s.started_at), "MMM dd")}
-                </span>
-                <span className="text-[13px] font-semibold">{s.title ?? "Session"}</span>
+              <li key={s.id} className="border-b border-[#1a1e20] last:border-0">
+                <Link
+                  href={`/session/${s.id}/summary`}
+                  className="flex min-h-11 items-center gap-3 py-2.5 hover:text-accent"
+                >
+                  <span className="font-mono text-[11px] text-fg-dim">
+                    {format(parseISO(s.started_at), "MMM dd")}
+                  </span>
+                  <span className="text-[13px] font-semibold">{s.title ?? "Session"}</span>
+                  <span className="ml-auto font-mono text-[10px] text-fg-dim">SUMMARY →</span>
+                </Link>
               </li>
             ))}
           </ul>
