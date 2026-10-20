@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { X } from "lucide-react";
 import type { PersonalBest, SessionExercise } from "@/lib/training/queries";
 import type { UnitSystem } from "@/lib/database.types";
-import { formatDuration, formatWeight, trimNumber, weightUnit } from "@/lib/units";
-import { E1RM_REP_CAP, estimateOneRepMax } from "@/lib/training/e1rm";
+import { formatDuration, formatWeight } from "@/lib/units";
+import { estimateOneRepMax } from "@/lib/training/e1rm";
 import { Portal } from "@/components/kit/portal";
+import { OneRepMaxCalculator } from "@/components/exercises/one-rep-max-calculator";
 
 export type DrawerData = {
   exercise: SessionExercise["exercise"];
@@ -135,7 +136,7 @@ export function ExerciseDrawer({
             ) : null}
           </div>
 
-          {tracking === "reps" ? <OneRepMaxCalculator system={system} /> : null}
+          {tracking === "reps" ? <OneRepMaxCalculator system={system} className="mb-6" /> : null}
 
           {exercise.how_to?.length ? (
             <>
@@ -204,58 +205,6 @@ function Tile({ label, value }: { label: string; value: string }) {
     <div className="flex-1 rounded-xl border border-line bg-surface p-3.5">
       <div className="eyebrow">{label}</div>
       <div className="mt-1.5 font-mono text-base font-extrabold">{value}</div>
-    </div>
-  );
-}
-
-/**
- * "What would this set make my max?" — for a set you have not done yet, or one
- * from another app. Refuses past the rep cap, like every other estimate here.
- */
-function OneRepMaxCalculator({ system }: { system: UnitSystem }) {
-  const [weight, setWeight] = useState("");
-  const [reps, setReps] = useState("");
-  const unit = weightUnit(system);
-  const w = Number(weight.replace(",", "."));
-  const r = Math.round(Number(reps));
-  const tooMany = r > E1RM_REP_CAP;
-  // Display units in, display units out: Epley is linear in the load.
-  const estimate = w > 0 && r > 0 ? estimateOneRepMax(w, r) : 0;
-
-  const field =
-    "w-full min-w-0 rounded-[10px] border border-line bg-surface px-3 py-2.5 font-mono text-base outline-none focus:border-line-hi sm:text-[13px]";
-
-  return (
-    <div className="mb-6 rounded-[14px] border border-line bg-surface p-4">
-      <div className="eyebrow mb-3">1RM calculator</div>
-      <div className="grid grid-cols-2 gap-2.5">
-        <label className="block">
-          <span className="mb-1 block font-mono text-[10px] text-fg-dim uppercase">{unit}</span>
-          <input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="100" className={field} />
-        </label>
-        <label className="block">
-          <span className="mb-1 block font-mono text-[10px] text-fg-dim uppercase">Reps</span>
-          <input inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="5" className={field} />
-        </label>
-      </div>
-      <p className="mt-3 text-[12.5px] leading-[1.5] text-fg-muted">
-        {tooMany
-          ? `Past ${E1RM_REP_CAP} reps an estimate says more about endurance than strength — no guess.`
-          : estimate > 0
-            ? (
-                <>
-                  Estimated max{" "}
-                  <span className="font-mono font-bold text-accent">
-                    {trimNumber(estimate, 1)} {unit}
-                  </span>
-                  {" · "}
-                  {[90, 80, 70]
-                    .map((pct) => `${pct}% ${trimNumber((estimate * pct) / 100, 1)}`)
-                    .join(" · ")}
-                </>
-              )
-            : "Type a weight and the reps you got (or think you would)."}
-      </p>
     </div>
   );
 }
