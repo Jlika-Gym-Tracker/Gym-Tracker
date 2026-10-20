@@ -117,7 +117,10 @@ async function ownExercise(supabase: Supabase, userId: string, id: string) {
   return data;
 }
 
-/** Completed sets of this movement in your own sessions. */
+/**
+ * Sets of this movement in your own sessions, ticked or not: an unticked row
+ * of an unfinished session still points at the exercise.
+ */
 async function loggedSetCount(supabase: Supabase, userId: string, exerciseId: string) {
   const { count, error } = await supabase
     .from("set_logs")
