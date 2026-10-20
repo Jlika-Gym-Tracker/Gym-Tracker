@@ -23,6 +23,10 @@ const PUBLIC_PATHS = [
   "/icon.svg",
   "/icon-192.png",
   "/icon-512.png",
+  // The browser re-fetches the service worker to check for updates whether or
+  // not anyone is signed in; a redirect to /login there would leave the old
+  // worker installed forever. It holds no data.
+  "/sw.js",
 ];
 
 function isPublic(pathname: string) {

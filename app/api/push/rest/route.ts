@@ -3,22 +3,25 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { deliverRestAlert, pushConfig } from "@/lib/push/server";
 
-/** Rest is at most ten minutes; the wait is capped to match. */
-const MAX_WAIT_MS = 10 * 60_000;
+/**
+ * The longest rest this route will wait out. It must stay under maxDuration
+ * with room to send; lib/push/rest-alert.ts skips longer rests to match.
+ */
+const MAX_WAIT_MS = 280_000;
 
 /**
  * Hosting constraint: this function stays alive for the whole rest. It answers
  * at once, then `after()` keeps the invocation running until the rest is over
- * so it can send the push — up to ten minutes, plus a moment to send. That
- * needs a host that lets one function invocation live that long. A plain
- * `next start` Node server has no such limit. On a serverless host the plan's
- * function duration cap must reach 630 s (on Vercel that means Fluid compute on
- * a plan that allows it); under a lower cap the wait is cut short and longer
- * rests end without a push. Each reschedule leaves the earlier invocation
- * sleeping until its own end time, when it finds itself replaced and exits —
- * billed time, which is the price of not running a separate job queue.
+ * so it can send the push. 300 s is what common serverless plans accept (a
+ * higher value can fail the deploy on a plan that caps lower), so rests longer
+ * than MAX_WAIT_MS get no background push — the in-app chime still sounds.
+ * On a plain `next start` server, or a plan that allows longer functions,
+ * raise both numbers together (and MAX_PUSH_REST_MS in rest-alert.ts).
+ * Each reschedule leaves the earlier invocation sleeping until its own end
+ * time, when it finds itself replaced and exits — billed time, which is the
+ * price of not running a separate job queue.
  */
-export const maxDuration = 630;
+export const maxDuration = 300;
 
 const scheduleSchema = z.object({
   /** Milliseconds from now, measured on the phone: its clock and ours needn't agree. */

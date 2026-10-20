@@ -17,8 +17,11 @@
  * sends it only if nothing has replaced or cancelled it by the time it is due.
  */
 
-/** Rest never runs longer than this; the server caps its wait to match. */
-const MAX_REST_MS = 10 * 60_000;
+/**
+ * The longest rest that gets a background push — what /api/push/rest can wait
+ * out inside its function time limit. Longer rests still chime in the app.
+ */
+const MAX_PUSH_REST_MS = 280_000;
 /** How long to stop asking after the server says no. */
 const QUIET_MS = 5 * 60_000;
 /** How long a looked-up subscription is trusted before asking the browser again. */
@@ -88,8 +91,13 @@ async function sendSchedule(id: number, endsAtMs: number) {
   const endpoint = await deviceEndpoint();
   if (!endpoint) return;
 
-  const delayMs = Math.min(endsAtMs - Date.now(), MAX_REST_MS);
+  const delayMs = endsAtMs - Date.now();
   if (delayMs <= 0) return;
+  if (delayMs > MAX_PUSH_REST_MS) {
+    // Too long for the server to wait out; make sure nothing earlier fires.
+    await fetch("/api/push/rest", { method: "DELETE", keepalive: true });
+    return;
+  }
   // The delay, not the end time, crosses the wire: the phone's clock and the
   // server's rarely agree to the second, and a rest is measured in them.
   const response = await fetch("/api/push/rest", {
