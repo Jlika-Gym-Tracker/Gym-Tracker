@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState } from "react";
 import { signUp } from "@/app/actions/auth";
-import { createClient } from "@/lib/supabase/client";
 import { Field, FormMessage } from "./field";
 import { SubmitButton } from "./submit-button";
 
@@ -18,9 +17,9 @@ export type SignupMode = "athlete" | "coach";
  * render, so the Coach nav is there waiting.
  *
  * While the operator has signup set to invite-only, both doors also ask for an
- * invite code. `inviteOnly` can be passed from the page; left out, the form
- * asks the database itself. Either way the signUp action has the last word
- * and reveals the field if it was missed.
+ * invite code. The page reads that setting on the server and passes it in, so
+ * the field is there from the first paint; the signUp action still has the
+ * last word and reveals the field if the setting changed in between.
  */
 export function SignupForm({
   mode = "athlete",
@@ -29,26 +28,12 @@ export function SignupForm({
 }: {
   mode?: SignupMode;
   presetCode?: string;
-  inviteOnly?: boolean;
+  inviteOnly: boolean;
 }) {
   const [state, action] = useActionState(signUp, {});
   const isCoach = mode === "coach";
   const fromCoachLink = Boolean(presetCode?.startsWith("COACH-"));
-  const [asked, setAsked] = useState<boolean | undefined>(inviteOnly);
-  const needsInvite = (inviteOnly ?? asked) === true || state?.inviteRequired === true;
-
-  useEffect(() => {
-    if (inviteOnly !== undefined) return;
-    let live = true;
-    createClient()
-      .rpc("signup_invite_required")
-      .then(({ data }) => {
-        if (live) setAsked(data === true);
-      });
-    return () => {
-      live = false;
-    };
-  }, [inviteOnly]);
+  const needsInvite = inviteOnly || state?.inviteRequired === true;
 
   return (
     <>
