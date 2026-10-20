@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronLeft, History, LogOut, Search, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
+import Form from "next/form";
+import { ChevronLeft, Dumbbell, History, LogOut, Search, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { endNavigation, startNavigation } from "@/lib/activity";
 import { titleForPath } from "@/lib/nav";
@@ -98,15 +99,22 @@ export function Topbar({
       </div>
 
       <div className="ml-auto flex flex-none items-center gap-2.5">
-        <button
-          type="button"
-          disabled
-          title="Search arrives with the exercise library"
-          className="hidden w-[260px] items-center gap-[9px] rounded-[10px] border border-line bg-surface px-[13px] py-[9px] text-left text-[13px] text-fg-dim disabled:cursor-not-allowed lg:flex"
+        {/* Searches the exercise library; next/form keeps it a client-side
+            navigation to /exercises?q=… rather than a full page load. */}
+        <Form
+          action="/exercises"
+          role="search"
+          className="hidden w-[260px] items-center gap-[9px] rounded-[10px] border border-line bg-surface px-[13px] py-[7px] text-[13px] focus-within:border-line-hi lg:flex"
         >
-          <Search className="size-[13px]" strokeWidth={1.5} />
-          Search exercises, meals…
-        </button>
+          <Search className="size-[13px] flex-none text-fg-dim" strokeWidth={1.5} />
+          <input
+            name="q"
+            type="search"
+            placeholder="Search exercises…"
+            aria-label="Search the exercise library"
+            className="w-full min-w-0 bg-transparent py-0.5 text-fg-2 outline-none placeholder:text-fg-dim"
+          />
+        </Form>
 
         {streakWeeks > 0 ? (
           <div
@@ -135,6 +143,10 @@ export function Topbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             {/* On a phone these are not in the tab bar, so they live here. */}
+            <DropdownMenuItem render={<Link href="/exercises" />} className="py-2.5 lg:hidden">
+              <Dumbbell className="size-4" />
+              Exercises
+            </DropdownMenuItem>
             <DropdownMenuItem render={<Link href="/history" />} className="py-2.5 lg:hidden">
               <History className="size-4" />
               History

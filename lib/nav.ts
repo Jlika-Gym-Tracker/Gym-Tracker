@@ -29,6 +29,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/", label: "Today" },
       { href: "/session", label: "Live session" },
       { href: "/program", label: "Program" },
+      { href: "/exercises", label: "Exercises" },
       { href: "/history", label: "History" },
     ],
   },
@@ -60,6 +61,7 @@ export const PAGE_TITLES: Record<string, { title: string; sub: string }> = {
   "/coach": { title: "Coaching", sub: "Athletes · programs · invites" },
   "/ai-coach": { title: "AI Coach", sub: "Optional · you approve every change" },
   "/history": { title: "History", sub: "Every session · month by month" },
+  "/exercises": { title: "Exercises", sub: "The whole library · your numbers for each" },
   "/admin": { title: "Admin", sub: "Accounts · signup · no training data" },
 };
 

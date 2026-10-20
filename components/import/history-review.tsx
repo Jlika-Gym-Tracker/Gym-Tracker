@@ -12,7 +12,7 @@ import {
   type ExerciseSpec,
   type ImportLibraryExercise,
 } from "@/app/actions/import";
-import { AUTO_MATCH_THRESHOLD, findCandidates, type MatchCandidate } from "@/lib/program/match";
+import { confidentMatch, findCandidates, type MatchCandidate } from "@/lib/program/match";
 import { parseHistoryFile } from "@/lib/import/backup";
 import { chunk, chunkPayloads, minuteKey, sessionTimes, toPayloads } from "@/lib/import/batches";
 import {
@@ -177,15 +177,16 @@ export function HistoryReview({
       const restored = backupRow(summary, library);
       if (restored) return restored;
       const candidates = findCandidates(summary.name, library, 4);
-      const best = candidates[0];
-      const auto = !!best && best.score >= AUTO_MATCH_THRESHOLD;
+      // The same rule the paste parser uses: featured rows win close calls, and
+      // a dead heat among obscure variants goes to review instead of a guess.
+      const confident = confidentMatch(candidates);
       return {
         key: exerciseKey(summary),
         summary,
         label: summary.name,
         candidates,
-        auto,
-        fallback: auto ? { kind: "match", exerciseId: best.exercise.id } : createGuess(summary),
+        auto: !!confident,
+        fallback: confident ? { kind: "match", exerciseId: confident.id } : createGuess(summary),
       };
     });
   }, [history, library]);

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Tracking } from "@/lib/database.types";
 import type { LibraryExercise } from "@/lib/program/match";
+import { getLibrary } from "@/lib/program/queries";
 import { EQUIPMENT, MUSCLES, TRACKING } from "@/lib/import/guess";
 import type { BodyWeightEntry, WorkoutPayload } from "@/lib/import/types";
 
@@ -44,19 +45,21 @@ const minuteKey = (instant: string) => new Date(instant).toISOString().slice(0, 
 
 export type ImportLibraryExercise = LibraryExercise & { tracking: Tracking; own: boolean };
 
-/** The library to match names against: every global exercise plus the caller's own. */
+/**
+ * The library to match names against: every global exercise plus the caller's
+ * own, without the ones they removed — the same read the builder uses, paged
+ * past Supabase's 1000-row cap and carrying `featured`, so an imported
+ * "Bench Press" lands on the curated row rather than an obscure variant.
+ */
 export async function getImportLibrary(): Promise<Result<{ library: ImportLibraryExercise[] }>> {
   try {
-    const { supabase, user } = await requireUser();
-    const { data, error } = await supabase
-      .from("exercises")
-      .select("id, name, slug, aliases, primary_muscle, equipment, image_start_url, tracking, owner_id")
-      .order("name");
-    if (error) throw error;
+    const { user } = await requireUser();
+    const rows = await getLibrary();
     return {
-      library: (data ?? []).map(({ owner_id, ...exercise }) => ({
+      library: rows.map((exercise) => ({
         ...exercise,
-        own: owner_id === user.id,
+        tracking: exercise.tracking ?? "reps",
+        own: exercise.owner_id === user.id,
       })),
     };
   } catch (error) {
