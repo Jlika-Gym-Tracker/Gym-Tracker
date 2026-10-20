@@ -161,3 +161,18 @@ export async function getPlannableWeeks(
     };
   });
 }
+
+/** How many planned days use this movement, in weeks of yours. */
+export async function countPlannedDays(
+  supabase: Supabase,
+  userId: string,
+  exerciseId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("program_exercises")
+    .select("id, day:program_days!inner ( week:program_weeks!inner ( user_id ) )")
+    .eq("exercise_id", exerciseId)
+    .eq("day.week.user_id", userId);
+  if (error) throw error;
+  return data?.length ?? 0;
+}

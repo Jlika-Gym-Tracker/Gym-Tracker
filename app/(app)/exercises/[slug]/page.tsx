@@ -4,7 +4,7 @@ import { format, parseISO } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { BodyFigure, EffortScale, Muscle, Tracking, UnitSystem } from "@/lib/database.types";
-import { getExercise, getExerciseSets, getPlannableWeeks } from "@/lib/exercises/queries";
+import { countPlannedDays, getExercise, getExerciseSets, getPlannableWeeks } from "@/lib/exercises/queries";
 import { exerciseStats, type ExerciseSet, type ExerciseStats } from "@/lib/exercises/stats";
 import { MUSCLE_LABEL, TRACKING_LABEL, equipmentLabel } from "@/lib/exercises/taxonomy";
 import { E1RM_REP_CAP } from "@/lib/training/e1rm";
@@ -16,6 +16,7 @@ import { MuscleMap } from "@/components/stats/muscle-map";
 import { E1rmCurve } from "@/components/exercises/e1rm-curve";
 import { AddToDay } from "@/components/exercises/add-to-day";
 import { OneRepMaxCalculator } from "@/components/exercises/one-rep-max-calculator";
+import { OwnerTools } from "@/components/exercises/owner-tools";
 
 /**
  * One movement: what it works and how to do it, and — from your own sets
@@ -34,11 +35,12 @@ export default async function ExercisePage({ params }: { params: Promise<{ slug:
   const own = exercise.owner_id === user.id;
   const archived = Boolean(exercise.archived_at);
 
-  const [{ data: profile }, { data: settings }, sets, weeks] = await Promise.all([
+  const [{ data: profile }, { data: settings }, sets, weeks, plannedDays] = await Promise.all([
     supabase.from("profiles").select("unit_system, body_figure").eq("id", user.id).maybeSingle(),
     supabase.from("user_settings").select("effort_scale").eq("user_id", user.id).maybeSingle(),
     getExerciseSets(supabase, user.id, exercise.id),
     archived ? Promise.resolve([]) : getPlannableWeeks(supabase, user.id, exercise.id, new Date()),
+    own && !archived ? countPlannedDays(supabase, user.id, exercise.id) : Promise.resolve(0),
   ]);
 
   const system = (profile?.unit_system ?? "metric") as UnitSystem;
@@ -143,6 +145,21 @@ export default async function ExercisePage({ params }: { params: Promise<{ slug:
       <LastSessions stats={stats} tracking={tracking} system={system} />
 
       <HowTo exercise={exercise} />
+
+      {own && !archived ? (
+        <OwnerTools
+          exerciseId={exercise.id}
+          draft={{
+            name: exercise.name,
+            primaryMuscle: exercise.primary_muscle,
+            equipment: exercise.equipment,
+            tracking,
+            description: exercise.how_to.join("\n"),
+          }}
+          loggedSets={stats.sets}
+          plannedDays={plannedDays}
+        />
+      ) : null}
     </div>
   );
 }
