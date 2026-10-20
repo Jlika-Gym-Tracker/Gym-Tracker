@@ -13,6 +13,9 @@ export const COACH_GROUP: NavGroup = {
   items: [{ href: "/coach", label: "My athletes" }],
 };
 
+/** Only shown when the server has an Anthropic key (lib/ai-coach/config.ts). */
+export const AI_COACH_ITEM: NavItem = { href: "/ai-coach", label: "AI Coach" };
+
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Train",
@@ -48,7 +51,19 @@ export const PAGE_TITLES: Record<string, { title: string; sub: string }> = {
   "/league": { title: "Crew league", sub: "Consistency · transformation" },
   "/profile": { title: "Profile & settings", sub: "Account · targets · food · crew" },
   "/coach": { title: "Coaching", sub: "Athletes · programs · invites" },
+  "/ai-coach": { title: "AI Coach", sub: "Optional · you approve every change" },
 };
+
+/**
+ * The sidebar's groups for this account and server: AI Coach joins Train when
+ * the server has a key, Coach is added for accounts that coach.
+ */
+export function navGroups({ coaching = false, aiCoach = false } = {}): NavGroup[] {
+  const groups = NAV_GROUPS.map((group) =>
+    aiCoach && group.title === "Train" ? { ...group, items: [...group.items, AI_COACH_ITEM] } : group,
+  );
+  return coaching ? [...groups, COACH_GROUP] : groups;
+}
 
 export function titleForPath(pathname: string) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];

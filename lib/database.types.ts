@@ -57,6 +57,7 @@ export type Database = {
           goal_weight_kg: number | null;
           body_figure: BodyFigure;
           created_at: string;
+          ai_coach_consented_at: string | null;
         };
         Insert: {
           id: string;
@@ -79,6 +80,7 @@ export type Database = {
           goal_weight_kg?: number | null;
           body_figure?: BodyFigure;
           created_at?: string;
+          ai_coach_consented_at?: string | null;
         };
         Update: {
           id?: string;
@@ -101,6 +103,7 @@ export type Database = {
           goal_weight_kg?: number | null;
           body_figure?: BodyFigure;
           created_at?: string;
+          ai_coach_consented_at?: string | null;
         };
         Relationships: [];
       };
@@ -598,6 +601,70 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["rest_alerts"]["Insert"]>;
         Relationships: [];
       };
+      ai_coach_intakes: {
+        Row: { user_id: string; answers: Json; updated_at: string };
+        Insert: { user_id: string; answers: Json; updated_at?: string };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_intakes"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_runs: {
+        Row: {
+          id: string; user_id: string; kind: AiCoachRunKind; status: AiCoachRunStatus;
+          model: string; input_tokens: number | null; output_tokens: number | null;
+          cache_read_tokens: number | null; error: string | null;
+          created_at: string; finished_at: string | null;
+        };
+        Insert: {
+          id?: string; user_id: string; kind: AiCoachRunKind; status?: AiCoachRunStatus;
+          model: string; input_tokens?: number | null; output_tokens?: number | null;
+          cache_read_tokens?: number | null; error?: string | null;
+          created_at?: string; finished_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_runs"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_proposals: {
+        Row: {
+          id: string; user_id: string; run_id: string | null; kind: AiCoachProposalKind;
+          status: AiCoachProposalStatus; summary: string | null; payload: Json;
+          base_week_start: string | null; applied_week_start: string | null;
+          parent_id: string | null; created_at: string; decided_at: string | null;
+        };
+        Insert: {
+          id?: string; user_id: string; run_id?: string | null; kind: AiCoachProposalKind;
+          status?: AiCoachProposalStatus; summary?: string | null; payload: Json;
+          base_week_start?: string | null; applied_week_start?: string | null;
+          parent_id?: string | null; created_at?: string; decided_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_proposals"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_changes: {
+        Row: {
+          id: string; proposal_id: string; position: number; type: AiCoachChangeType;
+          change: Json; target_text: string; before_text: string; after_text: string;
+          rationale: string; decision: AiCoachDecision; decided_at: string | null;
+        };
+        Insert: {
+          id?: string; proposal_id: string; position: number; type: AiCoachChangeType;
+          change: Json; target_text: string; before_text: string; after_text: string;
+          rationale: string; decision?: AiCoachDecision; decided_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_changes"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_snapshots: {
+        Row: {
+          id: string; user_id: string; proposal_id: string | null; week_start: string;
+          snapshot: Json; created_at: string; reverted_at: string | null;
+        };
+        Insert: {
+          id?: string; user_id: string; proposal_id?: string | null; week_start: string;
+          snapshot: Json; created_at?: string; reverted_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_snapshots"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -622,6 +689,21 @@ export type Database = {
       };
       swap_program_days: {
         Args: { day_a: string; day_b: string };
+        Returns: undefined;
+      };
+      ai_coach_start_run: {
+        Args: { p_kind: AiCoachRunKind; p_model: string; p_daily_limit: number };
+        Returns: string;
+      };
+      ai_coach_finish_run: {
+        Args: {
+          p_run: string;
+          p_status: "succeeded" | "failed";
+          p_input_tokens: number | null;
+          p_output_tokens: number | null;
+          p_cache_read_tokens: number | null;
+          p_error: string | null;
+        };
         Returns: undefined;
       };
       coach_invite_preview: {
@@ -722,3 +804,18 @@ export type LeagueStandingRow =
   Database["public"]["Functions"]["league_standings"]["Returns"][number];
 export type PushSubscriptionRow = Tables<"push_subscriptions">;
 export type RestAlert = Tables<"rest_alerts">;
+
+// AI Coach (20261020000031_ai_coach.sql)
+export type AiCoachRunKind = "plan" | "refine" | "review";
+export type AiCoachRunStatus = "running" | "succeeded" | "failed";
+export type AiCoachProposalKind = "plan" | "review";
+export type AiCoachProposalStatus = "pending" | "applied" | "dismissed" | "superseded" | "reverted";
+export type AiCoachDecision = "pending" | "accepted" | "rejected";
+export type AiCoachChangeType =
+  | "swap_exercise" | "add_exercise" | "remove_exercise"
+  | "set_sets" | "set_rep_range" | "set_target_seconds" | "set_load"
+  | "set_progression" | "set_superset" | "rename_day";
+export type AiCoachRun = Tables<"ai_coach_runs">;
+export type AiCoachProposal = Tables<"ai_coach_proposals">;
+export type AiCoachChange = Tables<"ai_coach_changes">;
+export type AiCoachSnapshot = Tables<"ai_coach_snapshots">;
