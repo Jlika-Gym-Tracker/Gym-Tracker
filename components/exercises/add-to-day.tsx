@@ -18,7 +18,9 @@ import { FIELD } from "./exercise-form";
 export function AddToDay({ exerciseId, weeks }: { exerciseId: string; weeks: PlannableWeek[] }) {
   const router = useRouter();
   const { pending, run } = useAction();
-  const firstOpen = weeks.flatMap((w) => w.days).find((d) => !d.hasIt)?.id ?? "";
+  // Start on the next day still to come that does not have it yet.
+  const days = weeks.flatMap((w) => w.days);
+  const firstOpen = (days.find((d) => !d.hasIt && !d.past) ?? days.find((d) => !d.hasIt))?.id ?? "";
   const [dayId, setDayId] = useState(firstOpen);
   const [result, setResult] = useState<{ ok: boolean; text: string; weekStart?: string } | null>(null);
 
@@ -82,7 +84,7 @@ export function AddToDay({ exerciseId, weeks }: { exerciseId: string; weeks: Pla
                 {week.days.map((day) => (
                   <option key={day.id} value={day.id} disabled={day.hasIt}>
                     {day.label} · {day.isRest ? "Rest" : day.name}
-                    {day.hasIt ? " — already in" : ""}
+                    {day.hasIt ? " — already in" : day.past ? " — past" : ""}
                   </option>
                 ))}
               </optgroup>

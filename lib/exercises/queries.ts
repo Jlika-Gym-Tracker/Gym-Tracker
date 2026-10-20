@@ -2,7 +2,7 @@ import "server-only";
 import { addDays, format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import type { Exercise } from "@/lib/database.types";
-import { dayLabel, toDateString } from "@/lib/dates";
+import { dayDate, dayLabel, toDateString } from "@/lib/dates";
 import type { ExerciseSet } from "./stats";
 
 /**
@@ -102,7 +102,7 @@ export async function getExerciseSets(
 export type PlannableWeek = {
   weekStart: string;
   label: string;
-  days: { id: string; label: string; name: string; isRest: boolean; hasIt: boolean }[];
+  days: { id: string; label: string; name: string; isRest: boolean; hasIt: boolean; past: boolean }[];
 };
 
 /**
@@ -142,24 +142,23 @@ export async function getPlannableWeeks(
     : { data: [] };
   const hasIt = new Set((planned ?? []).map((p) => p.day_id));
 
-  return rows.map((week) => {
-    return {
-      weekStart: week.week_start,
-      label:
-        week.week_start <= todayString
-          ? "This week"
-          : `Week of ${format(parseISO(week.week_start), "MMM d")}`,
-      days: [...week.days]
-        .sort((a, b) => a.day_index - b.day_index)
-        .map((d) => ({
-          id: d.id,
-          label: dayLabel(week.week_start, d.day_index),
-          name: d.name,
-          isRest: d.is_rest,
-          hasIt: hasIt.has(d.id),
-        })),
-    };
-  });
+  return rows.map((week) => ({
+    weekStart: week.week_start,
+    label:
+      week.week_start <= todayString
+        ? "This week"
+        : `Week of ${format(parseISO(week.week_start), "MMM d")}`,
+    days: [...week.days]
+      .sort((a, b) => a.day_index - b.day_index)
+      .map((d) => ({
+        id: d.id,
+        label: dayLabel(week.week_start, d.day_index),
+        name: d.name,
+        isRest: d.is_rest,
+        hasIt: hasIt.has(d.id),
+        past: toDateString(dayDate(week.week_start, d.day_index)) < todayString,
+      })),
+  }));
 }
 
 /** How many planned days use this movement, in weeks of yours. */
