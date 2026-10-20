@@ -5,10 +5,13 @@ import { format, parseISO } from "date-fns";
 import type { PhotoWithUrl } from "@/lib/body/queries";
 import type { Goal, Metric } from "@/lib/body/stats";
 import { delta, earliest, latest, weightDirection } from "@/lib/body/stats";
+import type { WeekStartDay } from "@/lib/dates";
 import type { Pose, UnitSystem } from "@/lib/database.types";
+import type { ActivityYear } from "@/lib/training/activity";
 import { cmToDisplay, kgToDisplay, lengthUnit, trimNumber, weightUnit } from "@/lib/units";
 import { Card, Eyebrow } from "@/components/kit/card";
 import { ChartLegend, DualLineChart, TrendChart } from "@/components/charts/line-chart";
+import { ActivityHeatmap } from "@/components/stats/activity-heatmap";
 import { GoalWeightNote, goalLineLabel } from "@/components/stats/goal-weight";
 import { cn } from "@/lib/utils";
 import { CompareSlider } from "./compare-slider";
@@ -28,6 +31,8 @@ export function ProgressScreen({
   strengthDeltaPct,
   goal,
   goalWeightKg,
+  weekStartsOn,
+  activity,
 }: {
   metrics: Metric[];
   photosByPose: Record<Pose, PhotoWithUrl[]>;
@@ -36,6 +41,8 @@ export function ProgressScreen({
   strengthDeltaPct: number | null;
   goal: Goal;
   goalWeightKg: number | null;
+  weekStartsOn: WeekStartDay;
+  activity: ActivityYear;
 }) {
   const [pose, setPose] = useState<Pose>("front");
   const photos = photosByPose[pose] ?? [];
@@ -204,9 +211,11 @@ export function ProgressScreen({
             </p>
           )}
         </Card>
+
+        <ActivityHeatmap year={activity} system={system} weekStartsOn={weekStartsOn} />
       </div>
 
-      <div className="flex flex-col gap-[18px]">
+      <div className="flex min-w-0 flex-col gap-[18px]">
         <MeasurementsPanel metrics={metrics} system={system} />
 
         <Card className="rounded-[18px]">
