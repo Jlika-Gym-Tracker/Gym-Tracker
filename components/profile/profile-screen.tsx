@@ -38,6 +38,7 @@ import { ActionButton } from "@/components/kit/action-button";
 import { useAction } from "@/lib/use-action";
 import { Loader2 } from "lucide-react";
 import { ImportCard } from "@/components/import/import-card";
+import { NotificationsCard } from "./notifications-card";
 
 const TABS = ["Account", "Targets", "Food", "Coach", "Crew", "Data & privacy"] as const;
 type Tab = (typeof TABS)[number];
@@ -786,6 +787,8 @@ function DataTab({ settings, system }: { settings: UserSettings; system: UnitSys
           onChange={(v) => toggleSetting("notify_unpublished_week", v)}
         />
       </Card>
+
+      <NotificationsCard settings={settings} />
 
       <Card>
         <h2 className="text-[15px] font-bold">Export your data</h2>
