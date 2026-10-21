@@ -48,6 +48,12 @@ used). Database changes are migrations `20261020000027` – `35`; see
 
 ### Planning
 
+- **Paste a week the way people write it** — "Monday - Upper A" headers,
+  "3 × 10 each", holds ("Plank: 3 × 30–60 sec") and cardio ("Cardio: 15 min
+  incline treadmill walk"). Lines the library doesn't have can be kept as your
+  own exercises; days left out become rest days.
+- **Add exercise** opens a search inside the day card, with "add as my own"
+  for anything the library lacks.
 - **5×5 linear** and **Greyskull LP** starter programs that come with their
   progression rule.
 - **Your own exercises** — a name and a muscle is enough; edit them later, and
