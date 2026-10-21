@@ -1,28 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, ChevronUp, GripVertical, Loader2, Pencil, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, GripVertical, Link2, Loader2, Pencil, Plus, Unlink, X } from "lucide-react";
 import {
+  linkWithNext,
   removeProgramExercise,
   reorderDayExercises,
   swapDays,
+  unlinkSuperset,
   updateDay,
   updateProgramExercise,
 } from "@/app/actions/program";
 import type { DayWithExercises } from "@/lib/program/queries";
+import type { ProgressionPolicy, UnitSystem } from "@/lib/database.types";
 import { dayLabel } from "@/lib/dates";
-import { trimNumber } from "@/lib/units";
+import { kgToDisplay, trimNumber, weightUnit } from "@/lib/units";
+import {
+  DAY_POLICIES,
+  POLICIES_FOR,
+  POLICY_DESCRIPTION,
+  POLICY_NAME,
+  POLICY_SHORT,
+  effectivePolicy,
+} from "@/lib/program/policies";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
+import { QuickAdd } from "./quick-add";
+import type { LibraryExercise } from "@/lib/program/match";
 import { ActionButton } from "@/components/kit/action-button";
 import { useAction } from "@/lib/use-action";
 
-function loadLabel(item: DayWithExercises["exercises"][number], unit: string) {
-  if (item.target_weight_kg == null) return null;
-  return `${trimNumber(Number(item.target_weight_kg))} ${unit}`;
+type Item = DayWithExercises["exercises"][number];
+
+function loadLabel(item: Item, system: UnitSystem) {
+  if (item.target_weight_kg == null || item.exercise.tracking === "cardio") return null;
+  return `${trimNumber(kgToDisplay(Number(item.target_weight_kg), system))} ${weightUnit(system)}`;
 }
 
-function repLabel(item: DayWithExercises["exercises"][number]) {
+function repLabel(item: Item) {
+  if (item.exercise.tracking === "cardio") {
+    return item.target_seconds ? `${Math.round(item.target_seconds / 60)} min` : "cardio";
+  }
+  if (item.exercise.tracking === "time") {
+    return item.target_seconds ? `${item.target_sets} × ${item.target_seconds}s` : `${item.target_sets} sets`;
+  }
   const reps =
     item.rep_min == null
       ? "sets"
@@ -33,10 +54,30 @@ function repLabel(item: DayWithExercises["exercises"][number]) {
   return item.per_side ? `${base} /side` : base;
 }
 
+/** Superset letters in the order they first appear in the day, as the session shows them. */
+function supersetLetters(items: Item[]) {
+  const counts = new Map<number, number>();
+  for (const item of items) {
+    if (item.superset_group != null) {
+      counts.set(item.superset_group, (counts.get(item.superset_group) ?? 0) + 1);
+    }
+  }
+  const letters = new Map<number, string>();
+  for (const item of items) {
+    const g = item.superset_group;
+    if (g != null && (counts.get(g) ?? 0) > 1 && !letters.has(g)) {
+      letters.set(g, String.fromCharCode(65 + letters.size));
+    }
+  }
+  return letters;
+}
+
 export function DayCard({
   day,
   days,
   weekStart,
+  system,
+  library,
   active,
   onActivate,
 }: {
@@ -45,6 +86,9 @@ export function DayCard({
   days: DayWithExercises[];
   /** The week's own start date, which decides what weekday each position is. */
   weekStart: string;
+  system: UnitSystem;
+  /** The whole library, for adding from inside the card. */
+  library: LibraryExercise[];
   active: boolean;
   onActivate: () => void;
 }) {
@@ -55,6 +99,9 @@ export function DayCard({
   const [exerciseError, setExerciseError] = useState<string | null>(null);
   const exerciseSave = useAction();
   const move = useAction();
+  const pair = useAction();
+  const [adding, setAdding] = useState(false);
+  const unit = weightUnit(system);
 
   const ordered = [...days].sort((a, b) => a.day_index - b.day_index);
   const at = ordered.findIndex((d) => d.id === day.id);
@@ -68,6 +115,7 @@ export function DayCard({
   useEffect(() => setOrder(day.exercises), [day.exercises]);
 
   const sets = day.exercises.reduce((total, e) => total + e.target_sets, 0);
+  const letters = supersetLetters(order);
 
   function commitOrder(next: typeof order) {
     setOrder(next);
@@ -129,10 +177,15 @@ export function DayCard({
             <p className="truncate text-[11px] text-fg-dim">{day.focus_note}</p>
           ) : null}
         </div>
-        <span className="ml-auto font-mono text-[10px] font-medium text-fg-dim">
+        <span className="ml-auto text-right font-mono text-[10px] font-medium text-fg-dim">
           {day.is_rest && day.exercises.length === 0
             ? "REST"
             : `${day.exercises.length} EX · ${sets} SETS`}
+          {!day.is_rest ? (
+            <span className="block text-[9px] text-fg-faint">
+              {POLICY_SHORT[day.progression ?? "double"].toUpperCase()}
+            </span>
+          ) : null}
         </span>
         <button
           type="button"
@@ -218,12 +271,13 @@ export function DayCard({
               className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[13px] outline-none focus:border-line-hi"
             />
           </label>
+          <DayRuleField initial={day.progression ?? "double"} />
           <label className="flex min-h-11 items-center gap-2.5 text-[12.5px] text-fg-muted">
             <input
               type="checkbox"
               name="isRest"
               defaultChecked={day.is_rest}
-              className="size-4 accent-[#c9f24d]"
+              className="size-4 accent-[var(--accent)]"
             />
             Rest day
             {day.exercises.length > 0 ? (
@@ -299,6 +353,8 @@ export function DayCard({
             className={cn(
               "group flex cursor-grab items-center gap-[11px] rounded-[10px] px-2 py-[9px] transition-colors hover:bg-[#15191b] active:cursor-grabbing",
               dragId === item.id && "opacity-40",
+              item.superset_group != null && letters.has(item.superset_group) &&
+                "rounded-l-none border-l-2 border-accent",
             )}
           >
             <GripVertical
@@ -327,6 +383,14 @@ export function DayCard({
               muscle={item.exercise.primary_muscle}
             />
             <span className="min-w-0 truncate text-[12.5px] leading-[1.3] font-semibold">
+              {item.superset_group != null && letters.has(item.superset_group) ? (
+                <span
+                  className="mr-1.5 rounded-[3px] bg-accent px-1 py-px font-mono text-[9px] font-extrabold text-[#0a0c0d]"
+                  title="Superset — done back to back"
+                >
+                  {letters.get(item.superset_group)}
+                </span>
+              ) : null}
               {item.exercise.name}
             </span>
             <button
@@ -339,8 +403,8 @@ export function DayCard({
               aria-expanded={editingExercise === item.id}
               className="hit ml-auto flex flex-none items-baseline gap-2 rounded px-1 font-mono text-[11px] font-semibold hover:text-accent"
             >
-              {loadLabel(item, "kg") ? (
-                <span className="text-accent">{loadLabel(item, "kg")}</span>
+              {loadLabel(item, system) ? (
+                <span className="text-accent">{loadLabel(item, system)}</span>
               ) : null}
               <span className="text-fg-soft">{repLabel(item)}</span>
             </button>
@@ -373,47 +437,15 @@ export function DayCard({
               className="mx-2 mb-2 flex flex-col gap-2 rounded-[10px] border border-line bg-surface-2 p-2.5"
             >
               <input type="hidden" name="id" value={item.id} />
-              <div className="grid grid-cols-4 gap-2">
-                <label className="block">
-                  <span className="eyebrow mb-1 block">Sets</span>
-                  <input
-                    name="targetSets" type="number" min={1} max={20} required
-                    defaultValue={item.target_sets}
-                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
-                  />
-                </label>
-                <label className="block">
-                  <span className="eyebrow mb-1 block">Reps</span>
-                  <input
-                    name="repMin" type="number" min={1} max={100} placeholder="—"
-                    defaultValue={item.rep_min ?? ""}
-                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
-                  />
-                </label>
-                <label className="block">
-                  <span className="eyebrow mb-1 block">To</span>
-                  <input
-                    name="repMax" type="number" min={1} max={100} placeholder="—"
-                    defaultValue={item.rep_max ?? ""}
-                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
-                  />
-                </label>
-                <label className="block">
-                  <span className="eyebrow mb-1 block">kg</span>
-                  <input
-                    name="targetWeightKg" type="number" min={0} max={1000} step="0.5" placeholder="—"
-                    defaultValue={item.target_weight_kg ?? ""}
-                    className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-[13px] outline-none focus:border-line-hi"
-                  />
-                </label>
-              </div>
+              <ExerciseTargetFields item={item} system={system} />
+              <ExerciseRuleFields item={item} dayPolicy={day.progression ?? "double"} unit={unit} system={system} />
               <input
                 name="note" defaultValue={item.note ?? ""} maxLength={200}
                 placeholder="Note — pause 1s, last set to failure…"
                 className="w-full rounded-[8px] border border-line bg-surface px-2.5 py-2 text-[12.5px] outline-none focus:border-line-hi"
               />
               <label className="flex min-h-11 items-center gap-2 text-[12px] text-fg-muted">
-                <input type="checkbox" name="perSide" defaultChecked={item.per_side} className="size-4 accent-[#c9f24d]" />
+                <input type="checkbox" name="perSide" defaultChecked={item.per_side} className="size-4 accent-[var(--accent)]" />
                 Per side
               </label>
               <div className="flex items-center gap-2">
@@ -430,31 +462,79 @@ export function DayCard({
                 >
                   Cancel
                 </button>
-                <span className="text-[11px] text-fg-dim">Leave kg empty to decide on the day.</span>
+                <span className="text-[11px] text-fg-dim">Leave {unit} empty to decide on the day.</span>
               </div>
               {exerciseError ? (
                 <p className="rounded-[8px] border border-danger-border bg-danger-soft px-2.5 py-1.5 text-[11.5px] text-danger">
                   {exerciseError}
                 </p>
               ) : null}
+              <div className="flex flex-wrap items-center gap-2 border-t border-line pt-2">
+                <span className="eyebrow">Superset</span>
+                {index < order.length - 1 ? (
+                  <button
+                    type="button"
+                    disabled={pair.pending}
+                    onClick={() =>
+                      pair.run(async () => {
+                        const result = await linkWithNext(item.id);
+                        setExerciseError(result.error ?? null);
+                      })
+                    }
+                    className="hit flex items-center gap-1.5 rounded-[8px] border border-stroke px-2.5 py-1.5 text-[11.5px] font-semibold text-fg-muted hover:border-accent hover:text-accent disabled:opacity-50"
+                  >
+                    {pair.pending ? <Loader2 className="size-3 animate-spin" strokeWidth={2} /> : <Link2 className="size-3" strokeWidth={2} />}
+                    Pair with {order[index + 1]!.exercise.name}
+                  </button>
+                ) : null}
+                {item.superset_group != null ? (
+                  <button
+                    type="button"
+                    disabled={pair.pending}
+                    onClick={() => pair.run(() => unlinkSuperset(item.id))}
+                    className="hit flex items-center gap-1.5 rounded-[8px] border border-stroke px-2.5 py-1.5 text-[11.5px] font-semibold text-fg-muted hover:border-danger-border hover:text-danger disabled:opacity-50"
+                  >
+                    <Unlink className="size-3" strokeWidth={2} />
+                    Take out of the superset
+                  </button>
+                ) : null}
+                <span className="w-full text-[11px] leading-[1.5] text-fg-dim">
+                  Paired exercises run back to back in the session, with the rest after the last of them.
+                </span>
+              </div>
             </form>
           ) : null}
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={onActivate}
-          className={cn(
-            "mx-2 mt-1.5 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[10px] border border-dashed px-2 py-[9px] text-xs font-semibold transition-colors pointer-coarse:min-h-11",
-            active
-              ? "border-accent text-accent"
-              : "border-stroke text-fg-dim hover:border-accent hover:text-accent",
-          )}
-        >
-          <Plus className="size-3.5" strokeWidth={2} />
-          {active ? "Pick from the library →" : "Add exercise"}
-        </button>
+        {/* Adding happens here, in the card: the library panel may be a long
+            scroll away (below every day on anything narrower than xl). */}
+        {adding ? (
+          <QuickAdd
+            dayId={day.id}
+            dayName={day.name}
+            library={library}
+            onClose={() => setAdding(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onActivate();
+              setAdding(true);
+            }}
+            className={cn(
+              "mx-2 mt-1.5 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[10px] border border-dashed px-2 py-[9px] text-xs font-semibold transition-colors pointer-coarse:min-h-11",
+              active
+                ? "border-accent text-accent"
+                : "border-stroke text-fg-dim hover:border-accent hover:text-accent",
+            )}
+          >
+            <Plus className="size-3.5" strokeWidth={2} />
+            Add exercise
+          </button>
+        )}
       </div>
 
       {day.focus_note ? (
@@ -463,5 +543,151 @@ export function DayCard({
         </p>
       ) : null}
     </section>
+  );
+}
+
+const numberField =
+  "w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-center font-mono text-base outline-none focus:border-line-hi sm:text-[13px]";
+
+/** Sets and the target, shaped by how the movement is logged. */
+function ExerciseTargetFields({ item, system }: { item: Item; system: UnitSystem }) {
+  const tracking = item.exercise.tracking ?? "reps";
+  const unit = weightUnit(system);
+  const load = item.target_weight_kg == null ? "" : trimNumber(kgToDisplay(Number(item.target_weight_kg), system), 2);
+  const sets = (
+    <label className="block">
+      <span className="eyebrow mb-1 block">Sets</span>
+      <input name="targetSets" type="number" min={1} max={20} required defaultValue={item.target_sets} className={numberField} />
+    </label>
+  );
+  const weight = (
+    <label className="block">
+      <span className="eyebrow mb-1 block">{unit}</span>
+      <input name="targetWeight" type="number" min={0} max={2000} step="0.25" placeholder="—" defaultValue={load} className={numberField} />
+    </label>
+  );
+
+  if (tracking === "cardio") {
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        {sets}
+        <label className="block">
+          <span className="eyebrow mb-1 block">Minutes</span>
+          <input
+            name="targetMinutes" type="number" min={1} max={240} step="1" placeholder="—"
+            defaultValue={item.target_seconds ? Math.round(item.target_seconds / 60) : ""}
+            className={numberField}
+          />
+        </label>
+      </div>
+    );
+  }
+  if (tracking === "time") {
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        {sets}
+        <label className="block">
+          <span className="eyebrow mb-1 block">Seconds</span>
+          <input
+            name="targetSeconds" type="number" min={1} max={3600} placeholder="—"
+            defaultValue={item.target_seconds ?? ""}
+            className={numberField}
+          />
+        </label>
+        {weight}
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {sets}
+      <label className="block">
+        <span className="eyebrow mb-1 block">Reps</span>
+        <input name="repMin" type="number" min={1} max={100} placeholder="—" defaultValue={item.rep_min ?? ""} className={numberField} />
+      </label>
+      <label className="block">
+        <span className="eyebrow mb-1 block">To</span>
+        <input name="repMax" type="number" min={1} max={100} placeholder="—" defaultValue={item.rep_max ?? ""} className={numberField} />
+      </label>
+      {weight}
+    </div>
+  );
+}
+
+/** Which rule moves this exercise forward, and by how much. */
+function ExerciseRuleFields({
+  item,
+  dayPolicy,
+  unit,
+  system,
+}: {
+  item: Item;
+  dayPolicy: DayWithExercises["progression"];
+  unit: string;
+  system: UnitSystem;
+}) {
+  const tracking = item.exercise.tracking ?? "reps";
+  const [override, setOverride] = useState<ProgressionPolicy | "">(item.progression ?? "");
+  const inherited = effectivePolicy(null, dayPolicy, tracking);
+  const shown = effectivePolicy(override || null, dayPolicy, tracking);
+  if (tracking === "cardio") return null;
+
+  return (
+    <div className="grid grid-cols-[1fr_88px] gap-2">
+      <label className="block">
+        <span className="eyebrow mb-1 block">Progression</span>
+        <select
+          name="progression"
+          value={override}
+          onChange={(e) => setOverride(e.target.value as typeof override)}
+          className="w-full rounded-[8px] border border-line bg-surface px-2 py-2 text-base outline-none focus:border-line-hi sm:text-[12.5px]"
+        >
+          <option value="">Day&apos;s rule — {POLICY_SHORT[inherited]}</option>
+          {POLICIES_FOR[tracking].map((policy) => (
+            <option key={policy} value={policy}>
+              {POLICY_NAME[policy]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {tracking === "reps" ? (
+        <label className="block">
+          <span className="eyebrow mb-1 block">Step {unit}</span>
+          <input
+            name="increment" type="number" min={0.25} max={100} step="0.25" placeholder="auto"
+            defaultValue={item.increment_kg ? trimNumber(kgToDisplay(Number(item.increment_kg), system), 2) : ""}
+            className={numberField}
+          />
+        </label>
+      ) : (
+        <span />
+      )}
+      <p className="col-span-2 text-[11px] leading-[1.5] text-fg-dim">{POLICY_DESCRIPTION[shown]}</p>
+    </div>
+  );
+}
+
+/** The day's default progression rule, with what it does. */
+function DayRuleField({ initial }: { initial: DayWithExercises["progression"] }) {
+  const [value, setValue] = useState(initial);
+  return (
+    <label className="block">
+      <span className="eyebrow mb-1.5 block">Progression rule</span>
+      <select
+        name="progression"
+        value={value}
+        onChange={(e) => setValue(e.target.value as typeof value)}
+        className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-base outline-none focus:border-line-hi sm:text-[13px]"
+      >
+        {DAY_POLICIES.map((policy) => (
+          <option key={policy} value={policy}>
+            {POLICY_NAME[policy]}
+          </option>
+        ))}
+      </select>
+      <span className="mt-1.5 block text-[11px] leading-[1.5] text-fg-dim">
+        {POLICY_DESCRIPTION[value]} Timed holds on this day add time instead; any exercise can override it.
+      </span>
+    </label>
   );
 }

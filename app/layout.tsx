@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import { ActivityLoader } from "@/components/shell/activity-loader";
+import { ACCENT_BOOT_SCRIPT } from "@/lib/theme/accent";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -38,10 +39,18 @@ export default function RootLayout({
     // The font variables live on <html> because globals.css applies `font-sans`
     // there — on <body> the var() would be out of scope and silently fall back.
     // The bottom scroll padding keeps focused fields clear of the phone's fixed bottom bar.
+    // suppressHydrationWarning: the <head> script below sets data-accent before
+    // React hydrates, which React would otherwise report as a mismatch.
     <html
       lang="en"
+      suppressHydrationWarning
       className={`dark scroll-pb-[calc(88px+env(safe-area-inset-bottom))] lg:scroll-pb-0 ${archivo.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        {/* The account's accent colour, from a cookie, before anything paints —
+            so nobody sees a flash of lime. Keeps pages static: no cookies() here. */}
+        <script dangerouslySetInnerHTML={{ __html: ACCENT_BOOT_SCRIPT }} />
+      </head>
       <body>
         {children}
         <ActivityLoader />

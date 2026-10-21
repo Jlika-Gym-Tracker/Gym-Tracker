@@ -7,7 +7,14 @@ import { getMetrics, getPhotos } from "@/lib/body/queries";
 import { getTargets, getWeekPlan } from "@/lib/nutrition/queries";
 import { recipeMacros } from "@/lib/nutrition/plan";
 import { CalorieRing } from "@/components/nutrition/calorie-ring";
-import { delta, latest, type Metric } from "@/lib/body/stats";
+import {
+  delta,
+  earliest,
+  latest,
+  weightDirection,
+  type Goal,
+  type Metric,
+} from "@/lib/body/stats";
 import { formatVolume, kgToDisplay, trimNumber, weightUnit } from "@/lib/units";
 import type { PhotoWithUrl } from "@/lib/body/queries";
 import type { UnitSystem } from "@/lib/database.types";
@@ -16,11 +23,12 @@ import { EmptyState } from "@/components/kit/empty-state";
 import { SessionHero } from "@/components/today/session-hero";
 import { WeekStrip } from "@/components/today/week-strip";
 import { TrendChart } from "@/components/charts/line-chart";
+import { GoalWeightNote, goalLineLabel } from "@/components/stats/goal-weight";
 
 export default async function TodayPage() {
   const supabase = await createClient();
   const [{ data: profile }, overview, metrics, photos, targets, plan] = await Promise.all([
-    supabase.from("profiles").select("unit_system").maybeSingle(),
+    supabase.from("profiles").select("unit_system, goal, goal_weight_kg").maybeSingle(),
     getTodayOverview(),
     getMetrics(120),
     getPhotos(undefined, 12),
@@ -44,7 +52,21 @@ export default async function TodayPage() {
   const system = (profile?.unit_system ?? "metric") as UnitSystem;
   const unit = weightUnit(system);
   const currentWeight = latest(metrics, "weight_kg");
+  const firstWeight = earliest(metrics, "weight_kg");
   const weightDelta = delta(metrics, "weight_kg");
+  const goalWeightKg = profile?.goal_weight_kg == null ? null : Number(profile.goal_weight_kg);
+  // Toward the goal weight (or, without one, the stated goal) is good news.
+  const weightTone =
+    currentWeight && firstWeight
+      ? ({ toward: "accent", away: "warn", none: "dim" } as const)[
+          weightDirection({
+            fromKg: firstWeight.value,
+            toKg: currentWeight.value,
+            goalWeightKg,
+            goal: (profile?.goal ?? "cut") as Goal,
+          })
+        ]
+      : "dim";
 
   // No week written yet — the whole screen is one call to action.
   if (!overview.weekLabel) {
@@ -132,11 +154,11 @@ export default async function TodayPage() {
             }
             unit={unit}
             delta={
-              weightDelta == null
+              weightDelta == null || !firstWeight
                 ? "Log your first weigh-in"
-                : `${weightDelta > 0 ? "+" : ""}${trimNumber(kgToDisplay(weightDelta, system))} ${unit} since ${format(parseISO(metrics[metrics.length - 1]!.measured_on), "MMM")}`
+                : `${weightDelta > 0 ? "+" : ""}${trimNumber(kgToDisplay(weightDelta, system))} ${unit} since ${format(parseISO(firstWeight.on), "MMM")}`
             }
-            tone={weightDelta != null && weightDelta < 0 ? "accent" : "dim"}
+            tone={weightTone}
           />
         </div>
 
@@ -153,7 +175,12 @@ export default async function TodayPage() {
           <WeekStrip days={overview.strip} />
         </Card>
 
-        <WeightTrendCard metrics={metrics} system={system} />
+        <WeightTrendCard
+          metrics={metrics}
+          system={system}
+          goalWeightKg={goalWeightKg}
+          currentKg={currentWeight?.value ?? null}
+        />
       </div>
 
       <SidePanels
@@ -164,7 +191,17 @@ export default async function TodayPage() {
   );
 }
 
-function WeightTrendCard({ metrics, system }: { metrics: Metric[]; system: UnitSystem }) {
+function WeightTrendCard({
+  metrics,
+  system,
+  goalWeightKg,
+  currentKg,
+}: {
+  metrics: Metric[];
+  system: UnitSystem;
+  goalWeightKg: number | null;
+  currentKg: number | null;
+}) {
   const points = [...metrics]
     .filter((m) => m.weight_kg != null)
     .sort((a, b) => a.measured_on.localeCompare(b.measured_on))
@@ -186,9 +223,29 @@ function WeightTrendCard({ metrics, system }: { metrics: Metric[]; system: UnitS
           Body progress →
         </Link>
       </div>
+      {goalWeightKg != null ? (
+        <GoalWeightNote
+          goalWeightKg={goalWeightKg}
+          currentKg={currentKg}
+          system={system}
+          className="mt-2"
+        />
+      ) : null}
       {points.length >= 2 ? (
         <div className="mt-3">
-          <TrendChart data={points} dataKey="weight" unit={weightUnit(system)} />
+          <TrendChart
+            data={points}
+            dataKey="weight"
+            unit={weightUnit(system)}
+            reference={
+              goalWeightKg != null
+                ? {
+                    value: Number(kgToDisplay(goalWeightKg, system).toFixed(1)),
+                    label: goalLineLabel(goalWeightKg, system),
+                  }
+                : undefined
+            }
+          />
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center">

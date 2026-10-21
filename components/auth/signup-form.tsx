@@ -15,17 +15,25 @@ export type SignupMode = "athlete" | "coach";
  * someone who trains. `mode` only changes what is asked for and where they land:
  * a coach skips the crew code and gets coaching switched on before their first
  * render, so the Coach nav is there waiting.
+ *
+ * While the operator has signup set to invite-only, both doors also ask for an
+ * invite code. The page reads that setting on the server and passes it in, so
+ * the field is there from the first paint; the signUp action still has the
+ * last word and reveals the field if the setting changed in between.
  */
 export function SignupForm({
   mode = "athlete",
   presetCode,
+  inviteOnly,
 }: {
   mode?: SignupMode;
   presetCode?: string;
+  inviteOnly: boolean;
 }) {
   const [state, action] = useActionState(signUp, {});
   const isCoach = mode === "coach";
   const fromCoachLink = Boolean(presetCode?.startsWith("COACH-"));
+  const needsInvite = inviteOnly || state?.inviteRequired === true;
 
   return (
     <>
@@ -48,6 +56,23 @@ export function SignupForm({
 
       <form action={action} className="mt-[26px] flex flex-col gap-[11px]">
         {isCoach ? <input type="hidden" name="as" value="coach" /> : null}
+        {needsInvite ? (
+          <Field
+            label="Invite code"
+            name="signupCode"
+            placeholder="JLIKA-XXXX-XXXX-XXXX"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={40}
+            required
+            hint={
+              <span className="font-mono text-[10px] tracking-[0.08em] text-fg-dim uppercase">
+                Invite-only
+              </span>
+            }
+          />
+        ) : null}
         <Field
           label="Display name"
           name="displayName"
@@ -88,7 +113,9 @@ export function SignupForm({
         {/* A coach joins nobody, so the code field would only be noise. */}
         {isCoach ? null : (
           <Field
-            label={fromCoachLink ? "Coach code" : "Invite code"}
+            // With the signup invite field above, two "Invite code"s would read
+            // as one asked twice.
+            label={fromCoachLink ? "Coach code" : needsInvite ? "Crew code" : "Invite code"}
             name="inviteCode"
             defaultValue={presetCode}
             placeholder="CREW-7K2P (optional)"

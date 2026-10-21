@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const CATEGORY_STYLE: Record<string, { label: string; className: string }> = {
   protein: { label: "PR", className: "border-line-hi bg-accent-soft text-accent" },
   carbs: { label: "CA", className: "border-line bg-surface-2 text-fg-muted" },
-  produce: { label: "PD", className: "border-line-hi bg-[#0f1409] text-accent-2" },
+  produce: { label: "PD", className: "border-line-hi bg-done text-accent-2" },
   dairy: { label: "DA", className: "border-line bg-surface-2 text-fg-muted" },
   fats: { label: "FA", className: "border-warn/30 bg-warn-soft text-warn" },
   pantry: { label: "PA", className: "border-line bg-surface-2 text-fg-dim" },

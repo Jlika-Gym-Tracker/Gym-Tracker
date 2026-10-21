@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { COACH_GROUP, NAV_GROUPS, isActivePath } from "@/lib/nav";
+import { isActivePath, navGroups } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { AvatarBubble } from "./avatar-bubble";
@@ -24,15 +24,21 @@ export function Sidebar({
   goalLine,
   summary,
   coaching = false,
+  aiCoach = false,
+  admin = false,
 }: {
   displayName: string;
   avatarUrl: string | null;
   goalLine: string;
   summary: SidebarSummary;
   coaching?: boolean;
+  /** The server has an Anthropic key, so the AI Coach exists. */
+  aiCoach?: boolean;
+  /** Signed in with an ADMIN_EMAILS address. */
+  admin?: boolean;
 }) {
   const pathname = usePathname();
-  const groups = coaching ? [...NAV_GROUPS, COACH_GROUP] : NAV_GROUPS;
+  const groups = navGroups({ coaching, aiCoach, admin });
 
   return (
     // Desktop only — a 216px column leaves a phone 114px of content. Phones get

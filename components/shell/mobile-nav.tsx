@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLinkStatus } from "next/link";
-import { Activity, CalendarRange, Dumbbell, House, Loader2, Utensils } from "lucide-react";
+import { Activity, CalendarRange, Dumbbell, House, Loader2, Sparkles, Utensils } from "lucide-react";
 import { isActivePath } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 /**
- * The phone's navigation: five tabs along the bottom, where a thumb reaches.
+ * The phone's navigation: five tabs along the bottom, where a thumb reaches —
+ * six when the server has an AI Coach.
  *
  * Session sits in the middle and is the only filled tab, because it is the one
  * screen used standing up with a bar in the other hand. League, Coach and
@@ -22,22 +23,29 @@ const TABS = [
   { href: "/nutrition", label: "Food", icon: Utensils },
 ] as const;
 
-/** A live session owns the bottom of the screen with its own bar. */
+/** Only when the server has an Anthropic key. Last, where it is out of a thumb's way mid-set. */
+const AI_COACH_TAB = { href: "/ai-coach", label: "AI Coach", icon: Sparkles } as const;
+
+/**
+ * A live session owns the bottom of the screen with its own bar. Its finish
+ * summary (/session/:id/summary) is an ordinary page and keeps the tab bar.
+ */
 export function isFocusedSession(pathname: string) {
-  return /^\/session\/[^/]+/.test(pathname);
+  return /^\/session\/[^/]+\/?$/.test(pathname);
 }
 
-export function MobileNav() {
+export function MobileNav({ aiCoach = false }: { aiCoach?: boolean } = {}) {
   const pathname = usePathname();
   if (isFocusedSession(pathname)) return null;
+  const tabs: readonly ((typeof TABS)[number] | typeof AI_COACH_TAB)[] = aiCoach ? [...TABS, AI_COACH_TAB] : TABS;
 
   return (
     <nav
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-sidebar-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
     >
-      <div className="mx-auto grid h-16 max-w-[560px] grid-cols-5">
-        {TABS.map((tab) => {
+      <div className={cn("mx-auto grid h-16 max-w-[560px]", aiCoach ? "grid-cols-6" : "grid-cols-5")}>
+        {tabs.map((tab) => {
           const active = isActivePath(pathname, tab.href);
           const Icon = tab.icon;
           const primary = "primary" in tab && tab.primary;

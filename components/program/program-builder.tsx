@@ -12,6 +12,7 @@ import {
 import type { WeekDetail } from "@/lib/program/queries";
 import type { LibraryExercise } from "@/lib/program/match";
 import type { MuscleLoad } from "@/lib/program/volume";
+import type { UnitSystem } from "@/lib/database.types";
 import { weekRangeLabel } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { HeroBackdrop } from "@/components/kit/hero-backdrop";
@@ -20,6 +21,8 @@ import { LibraryPanel } from "./library-panel";
 import { LoadCheck } from "./load-check";
 import { PastePanel } from "./paste-panel";
 import { TemplatePicker } from "./template-picker";
+import { ShareWeek } from "./share-week";
+import { QuickAdd } from "./quick-add";
 import { ActionButton } from "@/components/kit/action-button";
 
 export function ProgramBuilder({
@@ -27,11 +30,16 @@ export function ProgramBuilder({
   library,
   load,
   hasEarlierWeek,
+  system,
+  dayPreviews = {},
 }: {
   week: WeekDetail;
   library: LibraryExercise[];
   load: MuscleLoad[];
   hasEarlierWeek: boolean;
+  system: UnitSystem;
+  /** Server-rendered "what this day hits" maps, by day id. */
+  dayPreviews?: Record<string, React.ReactNode>;
 }) {
   const [showPaste, setShowPaste] = useState(false);
   const [editingWeek, setEditingWeek] = useState(false);
@@ -138,13 +146,13 @@ export function ProgramBuilder({
                   "flex cursor-pointer items-center gap-1.5 pl-1 font-mono text-[10px] tracking-[0.06em] uppercase",
                   hasEarlierWeek ? "text-fg-dim" : "pointer-events-none opacity-40",
                 )}
-                title="Steps each load up where last week cleared its rep range with reps to spare"
+                title="Runs each exercise's progression rule on what you logged: loads step up, hold, or deload"
               >
                 <input
                   type="checkbox"
                   checked={progressLoads}
                   onChange={(e) => setProgressLoads(e.target.checked)}
-                  className="size-3 accent-[#c9f24d]"
+                  className="size-3 accent-[var(--accent)]"
                 />
                 Step loads up
               </label>
@@ -205,6 +213,8 @@ export function ProgramBuilder({
                 day={day}
                 days={week.days}
                 weekStart={week.week_start}
+                system={system}
+                library={library}
                 active={day.id === activeDayId}
                 onActivate={() => setActiveDayId(day.id)}
               />
@@ -263,6 +273,8 @@ export function ProgramBuilder({
           </form>
         ) : null}
 
+        <ShareWeek week={week} />
+
         {week.days.some((d) => d.is_rest && d.exercises.length === 0) ? (
           <div className="flex flex-wrap items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-4 py-3">
             <span className="eyebrow">Rest days</span>
@@ -284,8 +296,19 @@ export function ProgramBuilder({
                 </button>
               ))}
             <span className="text-xs text-fg-dim">
-              Pick one, then add an exercise from the library to turn it into a training day.
+              Pick one and add an exercise to turn it into a training day.
             </span>
+            {activeDay && activeDay.is_rest && activeDay.exercises.length === 0 ? (
+              <div className="w-full">
+                <QuickAdd
+                  key={activeDay.id}
+                  dayId={activeDay.id}
+                  dayName={activeDay.name}
+                  library={library}
+                  onClose={() => setActiveDayId(firstTrainingDay?.id ?? null)}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -296,6 +319,11 @@ export function ProgramBuilder({
           activeDayId={activeDayId}
           activeDayName={activeDay?.name ?? null}
         />
+        {activeDayId && dayPreviews[activeDayId] ? (
+          <div className="rounded-[18px] border border-line bg-surface p-5">
+            {dayPreviews[activeDayId]}
+          </div>
+        ) : null}
         <LoadCheck load={load} />
       </div>
     </div>

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { AUTH_POINTS, AuthShell, type ValuePoint } from "@/components/auth/auth-shell";
 import { SignupForm } from "@/components/auth/signup-form";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
+import { createClient } from "@/lib/supabase/server";
+import { signupInviteRequired } from "@/lib/admin/signup-invite";
 
 export const metadata: Metadata = { title: "Create an account · JLIKA Gym" };
 
@@ -27,6 +29,8 @@ export default async function SignupPage({
 }) {
   const { as, code } = await searchParams;
   const isCoach = as === "coach";
+  // Known on the server, so the invite field is there from the first paint.
+  const inviteOnly = await signupInviteRequired(await createClient());
 
   return (
     <AuthShell
@@ -36,6 +40,7 @@ export default async function SignupPage({
     >
       <SignupForm
         mode={isCoach ? "coach" : "athlete"}
+        inviteOnly={inviteOnly}
         presetCode={code ? code.trim().toUpperCase().slice(0, 24) : undefined}
       />
     </AuthShell>

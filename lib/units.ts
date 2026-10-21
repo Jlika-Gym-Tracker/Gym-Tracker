@@ -24,6 +24,32 @@ export function displayToCm(value: number, system: UnitSystem): number {
   return system === "imperial" ? value / IN_PER_CM : value;
 }
 
+const M_PER_MI = 1609.344;
+
+/** Metres → km, or miles in imperial. Stored in metres like everything else is in SI. */
+export function metresToDisplay(m: number, system: UnitSystem): number {
+  return system === "imperial" ? m / M_PER_MI : m / 1000;
+}
+
+export function displayToMetres(value: number, system: UnitSystem): number {
+  return system === "imperial" ? value * M_PER_MI : value * 1000;
+}
+
+/**
+ * Average speed from a duration and a distance — km/h, or mph in imperial —
+ * or null when either is missing. Treadmills show speed, so cardio logged as
+ * time and distance reads back in the number the machine displayed.
+ */
+export function speedText(seconds: number | null, metres: number | null, system: UnitSystem) {
+  if (!seconds || !metres) return null;
+  const perHour = metresToDisplay(metres, system) / (seconds / 3600);
+  return `${trimNumber(perHour, 1)} ${system === "imperial" ? "mph" : "km/h"}`;
+}
+
+export function distanceUnit(system: UnitSystem) {
+  return system === "imperial" ? "mi" : "km";
+}
+
 export function weightUnit(system: UnitSystem) {
   return system === "imperial" ? "lb" : "kg";
 }
@@ -60,6 +86,30 @@ export function formatVolume(kg: number, system: UnitSystem) {
 /** The load step for the progression hint — 2.5 kg, or 5 lb in imperial. */
 export function loadIncrementKg(system: UnitSystem) {
   return system === "imperial" ? 5 / LB_PER_KG : 2.5;
+}
+
+/**
+ * Rounds a load to something you could put on a bar, in the units you lift in:
+ * the nearest 0.25 kg, or the nearest 0.5 lb. Done in display units because a
+ * kg value that is a whole number of pounds is not a round number of kg, and
+ * rounding it in kg would hand an imperial lifter 137.2 lb.
+ */
+export function roundLoadKg(kg: number, system: UnitSystem): number {
+  if (system === "imperial") return displayToKg(Math.round(kgToDisplay(kg, system) * 2) / 2, system);
+  return Math.round(kg * 4) / 4;
+}
+
+/** Snaps a load to a multiple of `stepKg`, measured in display units. */
+export function snapLoadKg(kg: number, stepKg: number, system: UnitSystem): number {
+  const step = kgToDisplay(stepKg, system);
+  if (!(step > 0)) return roundLoadKg(kg, system);
+  const snapped = Math.round(kgToDisplay(kg, system) / step) * step;
+  return roundLoadKg(displayToKg(snapped, system), system);
+}
+
+/** A load as you would say it: "62.5 kg", "135 lb". */
+export function loadText(kg: number, system: UnitSystem): string {
+  return `${trimNumber(kgToDisplay(kg, system), 1)} ${weightUnit(system)}`;
 }
 
 export function formatDuration(totalSeconds: number): string {

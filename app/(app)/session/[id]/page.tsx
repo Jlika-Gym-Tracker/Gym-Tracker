@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getExerciseHistory, getSession } from "@/lib/training/queries";
-import { bestSet, progressionHint } from "@/lib/training/e1rm";
-import { loadIncrementKg, weightUnit } from "@/lib/units";
-import { SessionScreen } from "@/components/session/session-screen";
+import { getRecentSessions, getSession } from "@/lib/training/queries";
+import { getBestsBefore } from "@/lib/training/history-queries";
+import { prescribe } from "@/lib/program/prescription";
+import { SessionScreen, type SessionSettings } from "@/components/session/session-screen";
 import type { SidePanelData } from "@/components/session/side-panel";
-import type { UnitSystem } from "@/lib/database.types";
+import type { EffortScale, UnitSystem } from "@/lib/database.types";
 
 export default async function SessionPage({
   params,
@@ -14,55 +14,100 @@ export default async function SessionPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const [{ data: profile }, { data: settings }, session] = await Promise.all([
+  const [{ data: profile }, { data: prefs }, session, { data: lastWeighIn }] = await Promise.all([
     supabase.from("profiles").select("unit_system").maybeSingle(),
     supabase
       .from("user_settings")
-      .select("default_rest_seconds, keyboard_shortcuts")
+      .select(
+        "default_rest_seconds, keyboard_shortcuts, auto_rest, show_e1rm, keep_awake, rest_sound, effort_scale",
+      )
       .maybeSingle(),
     getSession(id),
+    supabase
+      .from("body_metrics")
+      .select("weight_kg")
+      // Your own: a coach may also read an athlete's weigh-ins.
+      .eq("user_id", user?.id ?? "")
+      .not("weight_kg", "is", null)
+      .order("measured_on", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (!session) notFound();
-  if (session.ended_at) redirect(`/?finished=1`);
+  if (session.ended_at) redirect(`/session/${session.id}/summary`);
 
   const system = (profile?.unit_system ?? "metric") as UnitSystem;
+  const settings: SessionSettings = {
+    restSeconds: prefs?.default_rest_seconds ?? 90,
+    autoRest: prefs?.auto_rest ?? true,
+    shortcuts: prefs?.keyboard_shortcuts ?? true,
+    showE1rm: prefs?.show_e1rm ?? false,
+    keepAwake: prefs?.keep_awake ?? true,
+    restSound: prefs?.rest_sound ?? true,
+    effortScale: (prefs?.effort_scale ?? "rpe") as EffortScale,
+  };
 
-  // Per-movement history and the next-step hint, computed once on the server so
-  // the client bundle stays free of database access.
+  // Per-movement history, bests and the next-step prescription, computed once on
+  // the server so the client bundle stays free of database access.
+  const ids = session.exercises.map((ex) => ex.exercise.id);
+  const [recent, bests] = await Promise.all([
+    getRecentSessions(ids, { excludeSessionId: session.id, perExercise: 8 }),
+    // Everything logged before this session started, read page by page: a
+    // PR badge has to beat all of it, not the first thousand sets.
+    getBestsBefore(ids, session.started_at, { excludeSessionId: session.id }),
+  ]);
+
   const panels: Record<string, SidePanelData> = {};
-  await Promise.all(
-    session.exercises.map(async (ex) => {
-      const history = await getExerciseHistory(ex.exercise.id, {
-        excludeSessionId: session.id,
-      });
-      const lastSets = history[0]?.sets ?? [];
-      panels[ex.exercise.id] = {
-        history: history.map((h) => ({
-          date: h.date,
-          topWeightKg: h.topWeightKg,
-          volumeKg: h.volumeKg,
-        })),
-        hint: progressionHint({
-          lastSets,
-          repMin: ex.plan?.rep_min ?? null,
-          repMax: ex.plan?.rep_max ?? null,
-          incrementKg: loadIncrementKg(system),
-          unitLabel: weightUnit(system),
-        }).headline,
-        bestEver: bestSet(history.flatMap((h) => h.sets)),
-      };
-    }),
-  );
+  for (const ex of session.exercises) {
+    const history = recent.get(ex.exercise.id) ?? [];
+    const p = prescribe(
+      {
+        tracking: ex.exercise.tracking ?? "reps",
+        primaryMuscle: ex.exercise.primary_muscle,
+        equipment: ex.exercise.equipment,
+        dayPolicy: session.day?.progression ?? null,
+        plan: ex.plan,
+      },
+      history,
+      system,
+    );
+    panels[ex.exercise.id] = {
+      history: history.slice(0, 6).map((h) => ({
+        date: h.date,
+        topWeightKg: Math.max(0, ...h.sets.map((s) => Number(s.weight_kg ?? 0))),
+        longestS: Math.max(0, ...h.sets.map((s) => s.duration_s ?? 0)),
+      })),
+      lastSets: (history[0]?.sets ?? []).map((s) => ({
+        weight_kg: s.weight_kg,
+        reps: s.reps,
+        duration_s: s.duration_s ?? null,
+        distance_m: s.distance_m ?? null,
+      })),
+      lastDate: history[0]?.date ?? null,
+      prescription: {
+        policy: p.policy,
+        kind: p.kind,
+        why: p.why,
+        reps: p.reps,
+        seconds: p.seconds,
+        weightKg: p.weightKg,
+      },
+      best: bests.get(ex.exercise.id) ?? null,
+    };
+  }
 
   return (
     <SessionScreen
       session={session}
       system={system}
-      restSeconds={settings?.default_rest_seconds ?? 90}
+      settings={settings}
       panels={panels}
-      shortcutsEnabled={settings?.keyboard_shortcuts ?? true}
+      lastWeightKg={lastWeighIn?.weight_kg == null ? null : Number(lastWeighIn.weight_kg)}
     />
   );
 }

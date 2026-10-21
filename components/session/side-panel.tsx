@@ -4,14 +4,35 @@ import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import type { SessionExercise } from "@/lib/training/queries";
 import type { UnitSystem } from "@/lib/database.types";
-import { formatWeight, weightUnit } from "@/lib/units";
+import { formatDuration, formatWeight, weightUnit } from "@/lib/units";
+import type { ProgressionPolicy } from "@/lib/database.types";
+import type { PersonalBest } from "@/lib/training/queries";
+import type { PrescriptionKind } from "@/lib/program/prescription";
+import { POLICY_NAME } from "@/lib/program/policies";
 import { Card } from "@/components/kit/card";
 import { ExerciseThumb } from "@/components/program/exercise-thumb";
 
 export type SidePanelData = {
-  history: { date: string; topWeightKg: number; volumeKg: number }[];
-  hint: string;
-  bestEver: { weight_kg: number | null; reps: number | null } | null;
+  history: { date: string; topWeightKg: number; longestS: number }[];
+  /** Every ticked set of the last session of this movement, in order. */
+  lastSets: {
+    weight_kg: number | null;
+    reps: number | null;
+    duration_s: number | null;
+    distance_m?: number | null;
+  }[];
+  /** When that last session was. */
+  lastDate: string | null;
+  /** What the movement's progression rule says to do today, and why. */
+  prescription: {
+    policy: ProgressionPolicy;
+    kind: PrescriptionKind;
+    why: string;
+    weightKg: number | null;
+    reps: number | null;
+    seconds: number | null;
+  };
+  best: PersonalBest | null;
 };
 
 const MUSCLE_LABEL: Record<string, string> = {
@@ -38,7 +59,10 @@ export function SidePanel({
 }) {
   const unit = weightUnit(system);
   const history = data?.history ?? [];
-  const peak = Math.max(1, ...history.map((h) => h.topWeightKg));
+  // Timed movements chart how long you held; everything else, the top load.
+  const timed = exercise.tracking === "time" && history.every((h) => h.topWeightKg === 0);
+  const value = (h: SidePanelData["history"][number]) => (timed ? h.longestS : h.topWeightKg);
+  const peak = Math.max(1, ...history.map(value));
   const [showAdd, setShowAdd] = useState(false);
 
   return (
@@ -100,11 +124,13 @@ export function SidePanel({
                   <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
                     <span
                       className="block h-full rounded-full bg-accent-deep"
-                      style={{ width: `${Math.round((entry.topWeightKg / peak) * 100)}%` }}
+                      style={{ width: `${Math.round((value(entry) / peak) * 100)}%` }}
                     />
                   </span>
                   <span className="flex-none font-mono text-[11px] font-semibold text-fg-2">
-                    {formatWeight(entry.topWeightKg, system, 0)} {unit}
+                    {timed
+                      ? formatDuration(entry.longestS)
+                      : `${formatWeight(entry.topWeightKg, system, 0)} ${unit}`}
                   </span>
                 </div>
               ))
@@ -113,12 +139,12 @@ export function SidePanel({
         </div>
       </Card>
 
-      {data?.hint ? (
+      {data?.prescription ? (
         <div className="rounded-[18px] border border-line-hi bg-accent-soft px-5 py-[18px]">
           <div className="font-mono text-[10px] font-bold tracking-[0.12em] text-accent uppercase">
-            Progression hint
+            {POLICY_NAME[data.prescription.policy]}
           </div>
-          <p className="mt-2 text-[13px] leading-[1.55] text-[#dfe7d5]">{data.hint}</p>
+          <p className="mt-2 text-[13px] leading-[1.55] text-[#dfe7d5]">{data.prescription.why}</p>
         </div>
       ) : null}
 

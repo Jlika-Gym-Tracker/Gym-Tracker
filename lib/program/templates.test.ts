@@ -21,6 +21,7 @@ function asLoadInput(
     name: day.name,
     focus_note: day.focusNote,
     is_rest: false,
+    progression: "double",
     exercises: day.exercises.map((e, position) => ({
       id: `${day.dayIndex}-${position}`,
       position,
@@ -30,13 +31,19 @@ function asLoadInput(
       per_side: e.perSide,
       note: null,
       target_weight_kg: null,
+      target_seconds: null,
+      superset_group: null,
+      progression: null,
+      increment_kg: null,
       exercise: {
         id: e.exerciseId,
         name: e.name,
         slug: byId.get(e.exerciseId)!.slug,
         primary_muscle: byId.get(e.exerciseId)!.primary_muscle as never,
         equipment: byId.get(e.exerciseId)!.equipment as never,
+        secondary_muscles: [],
         image_start_url: null,
+        tracking: "reps",
       },
     })),
   }));
@@ -95,6 +102,13 @@ describe("template catalogue", () => {
         }
       }
     }
+  });
+
+  it("gives the strength programs their own progression rule", () => {
+    expect(findTemplate("strength-5x5")?.progression).toBe("linear");
+    expect(findTemplate("greyskull-lp")?.progression).toBe("greyskull");
+    // Everything else keeps the default, double progression.
+    expect(findTemplate("upper-lower-4")?.progression).toBeUndefined();
   });
 
   it("finds a template by slug and nothing by a bad one", () => {

@@ -6,8 +6,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { applyPendingSignup } from "@/lib/auth/pending-signup";
+import { checkSignupInvite, signupInviteRequired } from "@/lib/admin/signup-invite";
+import { INVITE_CODE_EXAMPLE, INVITE_REJECTED, normalizeInviteCode } from "@/lib/admin/invite-code";
 
-export type AuthState = { error?: string; notice?: string };
+/** `inviteRequired` tells the signup form to show its invite-code field. */
+export type AuthState = { error?: string; notice?: string; inviteRequired?: boolean };
 
 const emailSchema = z.email("Enter a valid email address.");
 
@@ -108,6 +111,33 @@ export async function signUp(
   if (!parsed.success) return { error: firstError(parsed.error) };
 
   const supabase = await createClient();
+
+  // Invite-only signup (20261020000034_admin.sql). The rule is the trigger on
+  // auth.users, which a direct signUp call cannot skip; this only says why in
+  // words before the database refuses. Not to be confused with the crew or
+  // coach code above, which links accounts rather than letting one exist.
+  const inviteOnly = await signupInviteRequired(supabase);
+  let signupCode: string | null = null;
+  if (inviteOnly) {
+    const typed = String(formData.get("signupCode") ?? "").trim();
+    if (!typed) {
+      return {
+        error: "Signups are invite-only right now. Enter the invite code you were given.",
+        inviteRequired: true,
+      };
+    }
+    signupCode = normalizeInviteCode(typed);
+    if (!signupCode) {
+      return {
+        error: `That isn't an invite code — they look like ${INVITE_CODE_EXAMPLE}.`,
+        inviteRequired: true,
+      };
+    }
+    if ((await checkSignupInvite(signupCode)) === "rejected") {
+      return { error: INVITE_REJECTED, inviteRequired: true };
+    }
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -120,12 +150,20 @@ export async function signUp(
         display_name: parsed.data.displayName,
         ...(parsed.data.inviteCode ? { invite_code: parsed.data.inviteCode } : {}),
         ...(parsed.data.asCoach ? { wants_coaching: true } : {}),
+        // Read and spent by the enforce_signup_invite trigger.
+        ...(signupCode ? { signup_code: signupCode } : {}),
       },
       emailRedirectTo: `${await siteUrl()}/auth/confirm`,
     },
   });
 
   if (error) {
+    // The trigger refused: the code went stale between the check and the
+    // insert (its last use taken, say). Recent GoTrue passes the trigger's
+    // message through; older versions only say there was a database error.
+    if (inviteOnly && /invite-only|database error saving new user/i.test(error.message)) {
+      return { error: INVITE_REJECTED, inviteRequired: true };
+    }
     return {
       error:
         error.code === "user_already_exists"
@@ -218,6 +256,10 @@ export async function resendLink(
  * and password only. Re-add the button once it is turned on; note that OAuth
  * carries no signup metadata, so a coach arriving this way needs `next` set to
  * /coach (and gets coaching switched on there) rather than ?as=coach.
+ *
+ * For the same reason it carries no invite code: while signup is invite-only,
+ * a first-time Google sign-in is refused by the enforce_signup_invite trigger
+ * and lands on /auth/auth-error. Accounts that already exist sign in as usual.
  */
 export async function signInWithGoogle(formData: FormData) {
   const supabase = await createClient();

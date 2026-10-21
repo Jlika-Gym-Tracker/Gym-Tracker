@@ -2,16 +2,17 @@
 
 import { useEffect } from "react";
 import { X } from "lucide-react";
-import type { SessionExercise } from "@/lib/training/queries";
+import type { PersonalBest, SessionExercise } from "@/lib/training/queries";
 import type { UnitSystem } from "@/lib/database.types";
-import { formatWeight } from "@/lib/units";
+import { formatDuration, formatWeight } from "@/lib/units";
 import { estimateOneRepMax } from "@/lib/training/e1rm";
 import { Portal } from "@/components/kit/portal";
+import { OneRepMaxCalculator } from "@/components/exercises/one-rep-max-calculator";
 
 export type DrawerData = {
   exercise: SessionExercise["exercise"];
   plan: SessionExercise["plan"];
-  best: { weight_kg: number | null; reps: number | null } | null;
+  best: PersonalBest | null;
 };
 
 const MUSCLE_LABEL: Record<string, string> = {
@@ -47,17 +48,19 @@ export function ExerciseDrawer({
 
   if (!data) return null;
   const { exercise, plan, best } = data;
+  const tracking = exercise.tracking ?? "reps";
 
   const target = plan
-    ? plan.rep_min == null
-      ? `${plan.target_sets} sets`
-      : `${plan.target_sets} × ${plan.rep_min}${plan.rep_max && plan.rep_max !== plan.rep_min ? `-${plan.rep_max}` : ""}`
+    ? tracking !== "reps" && plan.target_seconds
+      ? `${plan.target_sets} × ${tracking === "cardio" ? `${Math.round(plan.target_seconds / 60)} min` : `${plan.target_seconds}s`}`
+      : plan.rep_min == null
+        ? `${plan.target_sets} sets`
+        : `${plan.target_sets} × ${plan.rep_min}${plan.rep_max && plan.rep_max !== plan.rep_min ? `-${plan.rep_max}` : ""}`
     : "—";
 
+  const top = best?.bestSet ?? null;
   const e1rm =
-    best?.weight_kg && best.reps
-      ? estimateOneRepMax(Number(best.weight_kg), best.reps)
-      : null;
+    top?.weight_kg && top.reps ? estimateOneRepMax(Number(top.weight_kg), top.reps) : 0;
 
   const muscles = [exercise.primary_muscle, ...(exercise.secondary_muscles ?? [])]
     .map((m) => MUSCLE_LABEL[m] ?? m)
@@ -112,19 +115,28 @@ export function ExerciseDrawer({
 
           <div className="my-5 flex gap-2.5">
             <Tile label="Today" value={target} />
-            <Tile
-              label="Best set"
-              value={
-                best?.weight_kg && best.reps
-                  ? `${formatWeight(best.weight_kg, system)} × ${best.reps}`
-                  : "—"
-              }
-            />
-            <Tile
-              label="Est. 1RM"
-              value={e1rm ? formatWeight(e1rm, system, 0) : "—"}
-            />
+            {tracking === "time" ? (
+              <Tile
+                label="Longest hold"
+                value={best?.longestS ? formatDuration(best.longestS) : "—"}
+              />
+            ) : tracking === "reps" ? (
+              <>
+                <Tile
+                  label="Best set"
+                  value={top?.weight_kg && top.reps ? `${formatWeight(top.weight_kg, system)} × ${top.reps}` : "—"}
+                />
+                {/* An estimate names its source: 140 × 1 and 100 × 10 are
+                    very different claims about the same number. */}
+                <Tile
+                  label="Est. 1RM"
+                  value={e1rm > 0 ? formatWeight(e1rm, system, 0) : "—"}
+                />
+              </>
+            ) : null}
           </div>
+
+          {tracking === "reps" ? <OneRepMaxCalculator system={system} className="mb-6" /> : null}
 
           {exercise.how_to?.length ? (
             <>

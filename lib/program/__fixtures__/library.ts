@@ -12,7 +12,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000001",
@@ -24,7 +25,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "lats",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000002",
@@ -36,7 +38,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000003",
@@ -48,7 +51,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "middle_back",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000004",
@@ -61,7 +65,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000005",
@@ -74,7 +79,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "triceps",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000006",
@@ -86,7 +92,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "biceps",
     "equipment": "ez_curl_bar",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Curl/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Curl/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000007",
@@ -95,7 +102,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     "aliases": [],
     "primary_muscle": "quadriceps",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000008",
@@ -106,7 +114,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "hamstrings",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000009",
@@ -118,7 +127,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000010",
@@ -129,7 +139,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000011",
@@ -142,7 +153,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "hamstrings",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000012",
@@ -153,7 +165,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "calves",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000013",
@@ -165,7 +178,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "abdominals",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000014",
@@ -177,7 +191,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000015",
@@ -188,7 +203,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "lats",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000016",
@@ -200,7 +216,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "lats",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Iso_Row/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Iso_Row/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000017",
@@ -212,7 +229,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Shoulder_Military_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Shoulder_Military_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000018",
@@ -223,7 +241,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000019",
@@ -235,7 +254,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "triceps",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000020",
@@ -246,7 +266,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "biceps",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Curl/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Curl/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000021",
@@ -257,7 +278,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000022",
@@ -268,7 +290,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "hamstrings",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000023",
@@ -277,7 +300,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     "aliases": [],
     "primary_muscle": "calves",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Calf_Raise/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Calf_Raise/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000024",
@@ -288,7 +312,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "abdominals",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000025",
@@ -300,7 +325,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000026",
@@ -312,7 +338,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000027",
@@ -323,7 +350,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "lower_back",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000028",
@@ -334,7 +362,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000029",
@@ -347,7 +376,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "lats",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000030",
@@ -359,7 +389,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "lats",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000031",
@@ -371,7 +402,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "triceps",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000032",
@@ -384,7 +416,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000033",
@@ -396,7 +429,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "middle_back",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000034",
@@ -409,7 +443,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "middle_back",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000035",
@@ -422,7 +457,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Military_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Military_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000036",
@@ -433,7 +469,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Arnold_Dumbbell_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Arnold_Dumbbell_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000037",
@@ -445,7 +482,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000038",
@@ -456,7 +494,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000039",
@@ -467,7 +506,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Barbell_Row/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Barbell_Row/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000040",
@@ -478,7 +518,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "biceps",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Curl/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Curl/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000041",
@@ -491,7 +532,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "biceps",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000042",
@@ -502,7 +544,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "biceps",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000043",
@@ -511,7 +554,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     "aliases": [],
     "primary_muscle": "biceps",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Preacher_Curl/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Preacher_Curl/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000044",
@@ -524,7 +568,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "triceps",
     "equipment": "ez_curl_bar",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Triceps_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Triceps_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000045",
@@ -536,7 +581,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crossover/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crossover/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000046",
@@ -548,7 +594,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Flyes/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Flyes/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000047",
@@ -561,7 +608,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000048",
@@ -573,7 +621,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000049",
@@ -584,7 +633,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "chest",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Barbell_Bench_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Barbell_Bench_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000050",
@@ -596,7 +646,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "middle_back",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/T-Bar_Row_with_Handle/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/T-Bar_Row_with_Handle/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000051",
@@ -607,7 +658,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "lower_back",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rack_Pulls/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rack_Pulls/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000052",
@@ -618,7 +670,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "hamstrings",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Good_Morning/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Good_Morning/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000053",
@@ -631,7 +684,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "glutes",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000054",
@@ -642,7 +696,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squat_with_Dumbbells/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squat_with_Dumbbells/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000055",
@@ -654,7 +709,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000056",
@@ -663,7 +719,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     "aliases": [],
     "primary_muscle": "hamstrings",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Leg_Curl/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Leg_Curl/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000057",
@@ -672,7 +729,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     "aliases": [],
     "primary_muscle": "calves",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Calf_Raise/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Calf_Raise/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000058",
@@ -683,7 +741,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "calves",
     "equipment": "other",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Donkey_Calf_Raises/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Donkey_Calf_Raises/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000059",
@@ -694,7 +753,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "abdominals",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000060",
@@ -705,7 +765,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "abdominals",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000061",
@@ -716,7 +777,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "abdominals",
     "equipment": "body_only",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000062",
@@ -728,7 +790,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "abdominals",
     "equipment": "other",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000063",
@@ -737,7 +800,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     "aliases": [],
     "primary_muscle": "forearms",
     "equipment": "other",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wrist_Roller/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wrist_Roller/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000064",
@@ -749,7 +813,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "forearms",
     "equipment": "other",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Farmers_Walk/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Farmers_Walk/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000065",
@@ -760,7 +825,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Press/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Press/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000066",
@@ -771,7 +837,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "triceps",
     "equipment": "cable",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Grip_Triceps_Pushdown/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Grip_Triceps_Pushdown/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000067",
@@ -782,7 +849,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "biceps",
     "equipment": "dumbbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Concentration_Curls/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Concentration_Curls/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000068",
@@ -793,7 +861,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "barbell",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Rear_Delt_Row/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Rear_Delt_Row/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000069",
@@ -805,7 +874,8 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "shoulders",
     "equipment": "machine",
-    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Machine_Flyes/0.jpg"
+    "image_start_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Machine_Flyes/0.jpg",
+    "featured": true
   },
   {
     "id": "00000000-0000-4000-8000-000000000070",
@@ -817,6 +887,7 @@ export const SEEDED_LIBRARY: LibraryExercise[] = [
     ],
     "primary_muscle": "quadriceps",
     "equipment": "dumbbell",
-    "image_start_url": null
+    "image_start_url": null,
+    "featured": true
   }
 ];

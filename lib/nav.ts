@@ -13,6 +13,15 @@ export const COACH_GROUP: NavGroup = {
   items: [{ href: "/coach", label: "My athletes" }],
 };
 
+/** Only shown to operators on ADMIN_EMAILS; the route checks again itself. */
+export const ADMIN_GROUP: NavGroup = {
+  title: "Operator",
+  items: [{ href: "/admin", label: "Admin" }],
+};
+
+/** Only shown when the server has an Anthropic key (lib/ai-coach/config.ts). */
+export const AI_COACH_ITEM: NavItem = { href: "/ai-coach", label: "AI Coach" };
+
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Train",
@@ -20,6 +29,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/", label: "Today" },
       { href: "/session", label: "Live session" },
       { href: "/program", label: "Program" },
+      { href: "/exercises", label: "Exercises" },
+      { href: "/history", label: "History" },
     ],
   },
   {
@@ -46,12 +57,31 @@ export const PAGE_TITLES: Record<string, { title: string; sub: string }> = {
   },
   "/nutrition": { title: "Nutrition", sub: "Fat loss · meal plan · groceries" },
   "/league": { title: "Crew league", sub: "Consistency · transformation" },
-  "/profile": { title: "Profile & settings", sub: "Account · targets · food · crew" },
+  "/profile": { title: "Profile & settings", sub: "Account · training · targets · crew" },
   "/coach": { title: "Coaching", sub: "Athletes · programs · invites" },
+  "/ai-coach": { title: "AI Coach", sub: "Optional · you approve every change" },
+  "/history": { title: "History", sub: "Every session · month by month" },
+  "/exercises": { title: "Exercises", sub: "The whole library · your numbers for each" },
+  "/admin": { title: "Admin", sub: "Accounts · signup · no training data" },
 };
+
+/**
+ * The sidebar's groups for this account and server: AI Coach joins Train when
+ * the server has a key, Coach is added for accounts that coach.
+ */
+export function navGroups({ coaching = false, aiCoach = false, admin = false } = {}): NavGroup[] {
+  const groups = NAV_GROUPS.map((group) =>
+    aiCoach && group.title === "Train" ? { ...group, items: [...group.items, AI_COACH_ITEM] } : group,
+  );
+  return [...groups, ...(coaching ? [COACH_GROUP] : []), ...(admin ? [ADMIN_GROUP] : [])];
+}
+
+/** A finished session's summary sits under /session but is not a live session. */
+const SUMMARY_TITLE = { title: "Session summary", sub: "Time · volume · new bests" };
 
 export function titleForPath(pathname: string) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (/^\/session\/[^/]+\/summary\/?$/.test(pathname)) return SUMMARY_TITLE;
   const base = Object.keys(PAGE_TITLES)
     .filter((p) => p !== "/" && pathname.startsWith(p))
     .sort((a, b) => b.length - a.length)[0];

@@ -177,3 +177,104 @@ describe("parseProgramText — formats people actually type", () => {
     expect(parseProgramText("   \n\n ")).toMatchObject({ days: [], issues: [] });
   });
 });
+
+/** A real week, pasted as written: weekday headers, "×", en dashes, holds and cardio. */
+const REAL_WEEK = `Monday - Upper A
+Barbell Bench Press: 3 × 6–10
+Neutral-Grip Lat Pulldown: 3 × 8–12
+Incline Machine Press: 2 × 10–12
+Single-Arm Dumbbell Row: 3 × 10 each
+Reverse Pec Deck: 2 × 12–15
+Rope Triceps Pushdown: 2 × 12–15
+Hammer Curl: 2 × 10–15
+Cardio: 15 min incline treadmill walk
+
+Tuesday - Lower A
+Smith Machine Squat: 3 × 8–10
+Dumbbell Romanian Deadlift: 3 × 8–12
+Reverse Lunge: 2 × 10 each
+Seated Leg Curl: 3 × 10–15
+Standing Calf Raise: 3 × 12–15
+Plank: 3 × 30–60 sec
+Cardio: 10 min easy cycling
+
+Thursday - Upper B
+Incline Smith Machine Press: 3 × 8–12
+Assisted Pull-Up: 3 × 6–10
+Wide-Grip Cable Row: 3 × 10–12
+Seated Dumbbell Shoulder Press: 2 × 8–12
+Cable Chest Fly: 2 × 12–15
+Single-Arm Cable Triceps Extension: 2 × 10–15
+Preacher Curl: 2 × 10–15
+Cardio: 15 min brisk treadmill walk
+
+Friday - Lower B
+Hack Squat: 3 × 8–12
+Hip Thrust: 3 × 8–12
+Lying Leg Curl: 3 × 10–15
+Step-Up: 2 × 10 each
+Seated Calf Raise: 3 × 12–15
+Reverse Crunch: 3 × 12–15
+Cardio: 10 min easy cycling`;
+
+describe("a week written with weekday headers", () => {
+  const result = parseProgramText(REAL_WEEK);
+
+  it("splits into the four named days, on their own weekdays", () => {
+    expect(result.days.map((d) => [d.dayIndex, d.name])).toEqual([
+      [0, "Upper A"],
+      [1, "Lower A"],
+      [3, "Upper B"],
+      [4, "Lower B"],
+    ]);
+    expect(result.issues).toEqual([]);
+    expect(result.days.map((d) => d.exercises.length)).toEqual([8, 7, 8, 7]);
+  });
+
+  it("reads ×, en dashes and a bare 'each'", () => {
+    const [bench, , , row] = result.days[0]!.exercises;
+    expect(bench).toMatchObject({ name: "Barbell Bench Press", kind: "reps", targetSets: 3, repMin: 6, repMax: 10 });
+    expect(row).toMatchObject({ name: "Single-Arm Dumbbell Row", repMin: 10, repMax: 10, perSide: true });
+  });
+
+  it("reads a hold as time, starting from the bottom of its range", () => {
+    const plank = result.days[1]!.exercises.find((e) => e.name === "Plank");
+    expect(plank).toMatchObject({ kind: "time", targetSets: 3, targetSeconds: 30, repMin: null });
+    expect(plank!.note).toMatch(/30s to 60s/);
+  });
+
+  it("reads cardio lines as one block of time, named by what follows", () => {
+    const cardio = result.days[0]!.exercises.at(-1);
+    expect(cardio).toMatchObject({
+      kind: "cardio",
+      name: "Incline treadmill walk",
+      targetSets: 1,
+      targetSeconds: 900,
+    });
+    expect(result.days[1]!.exercises.at(-1)).toMatchObject({ name: "Easy cycling", targetSeconds: 600 });
+  });
+
+  it("places weekdays relative to the week's own start", () => {
+    // A week starting on a Saturday: Monday is its third day.
+    const shifted = parseProgramText("Monday - Push\nBench Press: 3 x 8", { weekStartsOn: 6 });
+    expect(shifted.days[0]!.dayIndex).toBe(2);
+  });
+
+  it("keeps two headers for one weekday from colliding", () => {
+    const twice = parseProgramText("Monday\nBench Press: 3 x 8\nMonday\nSquat: 3 x 5");
+    expect(twice.days.map((d) => d.dayIndex)).toEqual([0, 1]);
+  });
+});
+
+describe("holds and cardio without a prefix", () => {
+  it("reads a single cardio machine line", () => {
+    const [ex] = parseProgramText("Treadmill: 20 min").days[0]!.exercises;
+    expect(ex).toMatchObject({ kind: "cardio", name: "Treadmill", targetSeconds: 1200 });
+  });
+
+  it("reads holds in minutes and plain seconds", () => {
+    const { days } = parseProgramText("Wall Sit: 3 x 1 min\nSide Plank 2 x 45s each");
+    expect(days[0]!.exercises[0]).toMatchObject({ kind: "time", targetSeconds: 60, targetSets: 3 });
+    expect(days[0]!.exercises[1]).toMatchObject({ kind: "time", targetSeconds: 45, perSide: true });
+  });
+});

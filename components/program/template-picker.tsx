@@ -10,6 +10,7 @@ import {
 } from "@/lib/program/templates";
 import { dayLabel } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { POLICY_DESCRIPTION, POLICY_NAME } from "@/lib/program/policies";
 import { ActionButton } from "@/components/kit/action-button";
 
 const LEVEL_LABEL: Record<string, string> = {
@@ -79,6 +80,11 @@ export function TemplatePicker({
               </span>
             </div>
             <div className="mt-2 text-[13.5px] font-bold">{option.name}</div>
+            {option.progression ? (
+              <div className="mt-0.5 font-mono text-[10px] text-accent uppercase">
+                {POLICY_NAME[option.progression]}
+              </div>
+            ) : null}
             <div className="mt-1 text-[11.5px] leading-[1.5] text-fg-soft">
               {option.summary}
             </div>
@@ -118,11 +124,17 @@ export function TemplatePicker({
             <p className="text-[12.5px] leading-[1.55] text-fg-muted">
               {template.bestFor}
             </p>
+            {template.progression ? (
+              <p className="mt-2 text-[11.5px] leading-[1.5] text-fg-soft">
+                Every day runs {POLICY_NAME[template.progression]}:{" "}
+                {POLICY_DESCRIPTION[template.progression]}
+              </p>
+            ) : null}
             {template.belowFloorByDesign ? (
               <p className="mt-2 text-[11.5px] leading-[1.5] text-warn">
-                The load check will show this week under its weekly set floor. That
-                is on purpose — the floor is tuned for someone a year in, and you
-                grow on far less to start with.
+                {template.progression
+                  ? "The load check will show this week under its weekly set floor. That is the point of a strength program: a few heavy lifts, done often, with the weight going up."
+                  : "The load check will show this week under its weekly set floor. That is on purpose — the floor is tuned for someone a year in, and you grow on far less to start with."}
               </p>
             ) : null}
             <div className="mt-2.5 flex flex-wrap gap-1.5">

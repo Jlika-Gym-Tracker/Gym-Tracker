@@ -68,6 +68,13 @@ export default async function ProfilePage() {
     notify_unpublished_week: true,
     meals_per_day: 4,
     week_starts_on: 1,
+    keep_awake: true,
+    rest_sound: true,
+    effort_scale: "rpe",
+    notify_workout_day: false,
+    reminder_hour: 18,
+    timezone: "UTC",
+    rest_push: true,
   };
 
   const resolvedSharing: SharingPrefs = sharing ?? {

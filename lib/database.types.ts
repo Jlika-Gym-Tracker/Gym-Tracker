@@ -14,6 +14,13 @@ export type Goal = "cut" | "bulk" | "recomp" | "strength" | "health";
 export type Sex = "male" | "female" | "other";
 export type UnitSystem = "metric" | "imperial";
 export type WeekStatus = "draft" | "published" | "archived";
+/** How a movement is logged: weight × reps, a held duration, or cardio. */
+export type Tracking = "reps" | "time" | "cardio";
+/** A day-level progression rule. `time` only exists per exercise, for timed holds. */
+export type DayProgression = "off" | "double" | "linear" | "greyskull";
+export type ProgressionPolicy = DayProgression | "time";
+export type EffortScale = "off" | "rpe" | "rir";
+export type BodyFigure = "male" | "female";
 
 export type Muscle =
   | "chest" | "lats" | "middle_back" | "lower_back" | "traps" | "shoulders"
@@ -47,7 +54,11 @@ export type Database = {
           avatar_url: string | null;
           coaching_enabled: boolean;
           gym_name: string | null;
+          goal_weight_kg: number | null;
+          body_figure: BodyFigure;
+          accent: string;
           created_at: string;
+          ai_coach_consented_at: string | null;
         };
         Insert: {
           id: string;
@@ -67,7 +78,11 @@ export type Database = {
           avatar_url?: string | null;
           coaching_enabled?: boolean;
           gym_name?: string | null;
+          goal_weight_kg?: number | null;
+          body_figure?: BodyFigure;
+          accent?: string;
           created_at?: string;
+          ai_coach_consented_at?: string | null;
         };
         Update: {
           id?: string;
@@ -87,7 +102,11 @@ export type Database = {
           avatar_url?: string | null;
           coaching_enabled?: boolean;
           gym_name?: string | null;
+          goal_weight_kg?: number | null;
+          body_figure?: BodyFigure;
+          accent?: string;
           created_at?: string;
+          ai_coach_consented_at?: string | null;
         };
         Relationships: [];
       };
@@ -107,7 +126,10 @@ export type Database = {
           cues: string[];
           how_to: string[];
           common_mistake: string | null;
+          tracking: Tracking;
           created_at: string;
+          featured: boolean;
+          archived_at: string | null;
         };
         Insert: {
           id?: string;
@@ -124,7 +146,10 @@ export type Database = {
           cues?: string[];
           how_to?: string[];
           common_mistake?: string | null;
+          tracking?: Tracking;
           created_at?: string;
+          featured?: boolean;
+          archived_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["exercises"]["Insert"]>;
         Relationships: [];
@@ -161,6 +186,7 @@ export type Database = {
           name: string;
           focus_note: string | null;
           is_rest: boolean;
+          progression: DayProgression;
         };
         Insert: {
           id?: string;
@@ -169,6 +195,7 @@ export type Database = {
           name: string;
           focus_note?: string | null;
           is_rest?: boolean;
+          progression?: DayProgression;
         };
         Update: Partial<Database["public"]["Tables"]["program_days"]["Insert"]>;
         Relationships: [];
@@ -185,6 +212,10 @@ export type Database = {
           per_side: boolean;
           note: string | null;
           target_weight_kg: number | null;
+          superset_group: number | null;
+          target_seconds: number | null;
+          progression: ProgressionPolicy | null;
+          increment_kg: number | null;
         };
         Insert: {
           id?: string;
@@ -197,6 +228,10 @@ export type Database = {
           per_side?: boolean;
           note?: string | null;
           target_weight_kg?: number | null;
+          superset_group?: number | null;
+          target_seconds?: number | null;
+          progression?: ProgressionPolicy | null;
+          increment_kg?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["program_exercises"]["Insert"]>;
         Relationships: [];
@@ -211,6 +246,7 @@ export type Database = {
           ended_at: string | null;
           bodyweight_kg: number | null;
           notes: string | null;
+          rating: number | null;
         };
         Insert: {
           id?: string;
@@ -221,6 +257,7 @@ export type Database = {
           ended_at?: string | null;
           bodyweight_kg?: number | null;
           notes?: string | null;
+          rating?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["workout_sessions"]["Insert"]>;
         Relationships: [];
@@ -234,6 +271,8 @@ export type Database = {
           weight_kg: number | null;
           reps: number | null;
           rpe: number | null;
+          duration_s: number | null;
+          distance_m: number | null;
           is_complete: boolean;
           logged_at: string;
         };
@@ -245,6 +284,8 @@ export type Database = {
           weight_kg?: number | null;
           reps?: number | null;
           rpe?: number | null;
+          duration_s?: number | null;
+          distance_m?: number | null;
           is_complete?: boolean;
           logged_at?: string;
         };
@@ -384,6 +425,9 @@ export type Database = {
           blur_thumbnails: boolean; strip_exif: boolean; notify_weighin: boolean;
           notify_unpublished_week: boolean; meals_per_day: number;
           week_starts_on: number;
+          keep_awake: boolean; rest_sound: boolean; effort_scale: EffortScale;
+          notify_workout_day: boolean; reminder_hour: number; timezone: string;
+          rest_push: boolean;
         };
         Insert: {
           user_id: string; training_days?: number[]; default_rest_seconds?: number;
@@ -393,6 +437,9 @@ export type Database = {
           blur_thumbnails?: boolean; strip_exif?: boolean; notify_weighin?: boolean;
           notify_unpublished_week?: boolean; meals_per_day?: number;
           week_starts_on?: number;
+          keep_awake?: boolean; rest_sound?: boolean; effort_scale?: EffortScale;
+          notify_workout_day?: boolean; reminder_hour?: number; timezone?: string;
+          rest_push?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["user_settings"]["Insert"]>;
         Relationships: [];
@@ -537,6 +584,116 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["coach_program_exercises"]["Insert"]>;
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          id: string; user_id: string; endpoint: string; p256dh: string; auth: string;
+          user_agent: string | null; created_at: string;
+        };
+        Insert: {
+          id?: string; user_id: string; endpoint: string; p256dh: string; auth: string;
+          user_agent?: string | null; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["push_subscriptions"]["Insert"]>;
+        Relationships: [];
+      };
+      rest_alerts: {
+        Row: {
+          user_id: string; token: string; endpoint: string; url: string;
+          ends_at: string; created_at: string;
+        };
+        Insert: {
+          user_id: string; token: string; endpoint: string; url?: string;
+          ends_at: string; created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["rest_alerts"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_intakes: {
+        Row: { user_id: string; answers: Json; updated_at: string };
+        Insert: { user_id: string; answers: Json; updated_at?: string };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_intakes"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_runs: {
+        Row: {
+          id: string; user_id: string; kind: AiCoachRunKind; status: AiCoachRunStatus;
+          model: string; input_tokens: number | null; output_tokens: number | null;
+          cache_read_tokens: number | null; error: string | null;
+          created_at: string; finished_at: string | null;
+        };
+        Insert: {
+          id?: string; user_id: string; kind: AiCoachRunKind; status?: AiCoachRunStatus;
+          model: string; input_tokens?: number | null; output_tokens?: number | null;
+          cache_read_tokens?: number | null; error?: string | null;
+          created_at?: string; finished_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_runs"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_proposals: {
+        Row: {
+          id: string; user_id: string; run_id: string | null; kind: AiCoachProposalKind;
+          status: AiCoachProposalStatus; summary: string | null; payload: Json;
+          base_week_start: string | null; applied_week_start: string | null;
+          parent_id: string | null; created_at: string; decided_at: string | null;
+        };
+        Insert: {
+          id?: string; user_id: string; run_id?: string | null; kind: AiCoachProposalKind;
+          status?: AiCoachProposalStatus; summary?: string | null; payload: Json;
+          base_week_start?: string | null; applied_week_start?: string | null;
+          parent_id?: string | null; created_at?: string; decided_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_proposals"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_changes: {
+        Row: {
+          id: string; proposal_id: string; position: number; type: AiCoachChangeType;
+          change: Json; target_text: string; before_text: string; after_text: string;
+          rationale: string; decision: AiCoachDecision; decided_at: string | null;
+        };
+        Insert: {
+          id?: string; proposal_id: string; position: number; type: AiCoachChangeType;
+          change: Json; target_text: string; before_text: string; after_text: string;
+          rationale: string; decision?: AiCoachDecision; decided_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_changes"]["Insert"]>;
+        Relationships: [];
+      };
+      ai_coach_snapshots: {
+        Row: {
+          id: string; user_id: string; proposal_id: string | null; week_start: string;
+          snapshot: Json; created_at: string; reverted_at: string | null;
+        };
+        Insert: {
+          id?: string; user_id: string; proposal_id?: string | null; week_start: string;
+          snapshot: Json; created_at?: string; reverted_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_coach_snapshots"]["Insert"]>;
+        Relationships: [];
+      };
+      // Operator dashboard (20261020000034_admin.sql). No user role can read
+      // either table; only the server's secret key and definer functions.
+      app_settings: {
+        Row: { id: number; invite_only: boolean; updated_at: string; updated_by: string | null };
+        Insert: { id?: number; invite_only?: boolean; updated_at?: string; updated_by?: string | null };
+        Update: Partial<Database["public"]["Tables"]["app_settings"]["Insert"]>;
+        Relationships: [];
+      };
+      signup_invites: {
+        Row: {
+          code: string; max_uses: number; uses: number; expires_at: string | null;
+          note: string | null; created_by: string | null; created_at: string;
+          last_used_at: string | null; revoked_at: string | null;
+        };
+        Insert: {
+          code: string; max_uses?: number; uses?: number; expires_at?: string | null;
+          note?: string | null; created_by?: string | null; created_at?: string;
+          last_used_at?: string | null; revoked_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["signup_invites"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -561,6 +718,21 @@ export type Database = {
       };
       swap_program_days: {
         Args: { day_a: string; day_b: string };
+        Returns: undefined;
+      };
+      ai_coach_start_run: {
+        Args: { p_kind: AiCoachRunKind; p_model: string; p_daily_limit: number };
+        Returns: string;
+      };
+      ai_coach_finish_run: {
+        Args: {
+          p_run: string;
+          p_status: "succeeded" | "failed";
+          p_input_tokens: number | null;
+          p_output_tokens: number | null;
+          p_cache_read_tokens: number | null;
+          p_error: string | null;
+        };
         Returns: undefined;
       };
       coach_invite_preview: {
@@ -607,6 +779,52 @@ export type Database = {
           week_dots: number[];
         }[];
       };
+      save_push_subscription: {
+        Args: {
+          sub_endpoint: string;
+          sub_p256dh: string;
+          sub_auth: string;
+          sub_user_agent?: string | null;
+        };
+        Returns: undefined;
+      };
+      // Operator dashboard: service_role only, except signup_invite_required.
+      signup_invite_required: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      admin_overview: {
+        Args: { p_week_start: string };
+        Returns: {
+          accounts: number;
+          active_7d: number;
+          active_30d: number;
+          sessions_this_week: number;
+          disabled: number;
+        }[];
+      };
+      admin_accounts: {
+        Args: { p_search: string | null; p_limit: number; p_offset: number };
+        Returns: {
+          user_id: string;
+          email: string | null;
+          created_at: string;
+          last_sign_in_at: string | null;
+          disabled: boolean;
+          finished_sessions: number;
+          last_trained_at: string | null;
+          open_session_since: string | null;
+          total: number;
+        }[];
+      };
+      admin_training_now: {
+        Args: Record<string, never>;
+        Returns: { email: string | null; started_at: string }[];
+      };
+      admin_end_sessions: {
+        Args: { p_user: string };
+        Returns: number;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
@@ -650,3 +868,24 @@ export type RosterAthlete =
   Database["public"]["Functions"]["coach_roster"]["Returns"][number];
 export type LeagueStandingRow =
   Database["public"]["Functions"]["league_standings"]["Returns"][number];
+export type PushSubscriptionRow = Tables<"push_subscriptions">;
+export type RestAlert = Tables<"rest_alerts">;
+
+// AI Coach (20261020000031_ai_coach.sql)
+export type AiCoachRunKind = "plan" | "refine" | "review";
+export type AiCoachRunStatus = "running" | "succeeded" | "failed";
+export type AiCoachProposalKind = "plan" | "review";
+export type AiCoachProposalStatus = "pending" | "applied" | "dismissed" | "superseded" | "reverted";
+export type AiCoachDecision = "pending" | "accepted" | "rejected";
+export type AiCoachChangeType =
+  | "swap_exercise" | "add_exercise" | "remove_exercise"
+  | "set_sets" | "set_rep_range" | "set_target_seconds" | "set_load"
+  | "set_progression" | "set_superset" | "rename_day";
+export type AiCoachRun = Tables<"ai_coach_runs">;
+export type AiCoachProposal = Tables<"ai_coach_proposals">;
+export type AiCoachChange = Tables<"ai_coach_changes">;
+export type AiCoachSnapshot = Tables<"ai_coach_snapshots">;
+
+// Operator dashboard (20261020000034_admin.sql)
+export type AppSettings = Tables<"app_settings">;
+export type SignupInvite = Tables<"signup_invites">;

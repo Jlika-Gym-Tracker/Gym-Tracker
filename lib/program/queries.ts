@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Exercise, ProgramWeek, WeekStatus } from "@/lib/database.types";
+import type {
+  DayProgression, Exercise, ProgramWeek, ProgressionPolicy, WeekStatus,
+} from "@/lib/database.types";
 import type { LibraryExercise } from "./match";
 import { parseISO } from "date-fns";
 import { isInWeek } from "@/lib/dates";
@@ -11,6 +13,7 @@ export type DayWithExercises = {
   name: string;
   focus_note: string | null;
   is_rest: boolean;
+  progression: DayProgression;
   exercises: {
     id: string;
     position: number;
@@ -20,9 +23,14 @@ export type DayWithExercises = {
     per_side: boolean;
     note: string | null;
     target_weight_kg: number | null;
+    target_seconds: number | null;
+    superset_group: number | null;
+    progression: ProgressionPolicy | null;
+    increment_kg: number | null;
     exercise: Pick<
       Exercise,
-      "id" | "name" | "slug" | "primary_muscle" | "equipment" | "image_start_url"
+      | "id" | "name" | "slug" | "primary_muscle" | "secondary_muscles" | "equipment"
+      | "image_start_url" | "tracking"
     >;
   }[];
 };
@@ -59,10 +67,13 @@ export async function getWeek(weekStart: string): Promise<WeekDetail | null> {
     .select(
       `id, user_id, label, week_start, status, notes, created_at,
        days:program_days (
-         id, day_index, name, focus_note, is_rest,
+         id, day_index, name, focus_note, is_rest, progression,
          exercises:program_exercises (
            id, position, target_sets, rep_min, rep_max, per_side, note, target_weight_kg,
-           exercise:exercises ( id, name, slug, primary_muscle, equipment, image_start_url )
+           target_seconds, superset_group, progression, increment_kg,
+           exercise:exercises (
+             id, name, slug, primary_muscle, secondary_muscles, equipment, image_start_url, tracking
+           )
          )
        )`,
     )
@@ -106,13 +117,30 @@ export async function findPreviousWeek(weekStart: string, status?: WeekStatus) {
   return data;
 }
 
-/** Global seed rows plus the user's own movements. RLS handles the filtering. */
+/**
+ * Global rows plus the user's own movements, minus any they removed. RLS
+ * limits it to those two; it is not training data, so a coach reading an
+ * athlete's sets does not change what comes back here.
+ *
+ * The full library is ~760 global rows. Supabase caps a response at 1000, so
+ * it is read a page at a time rather than trusting one response to hold it.
+ */
 export async function getLibrary(): Promise<LibraryExercise[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("exercises")
-    .select("id, name, slug, aliases, primary_muscle, equipment, image_start_url")
-    .order("name");
-  if (error) throw error;
-  return data ?? [];
+  const PAGE = 1000;
+  const rows: LibraryExercise[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("exercises")
+      .select(
+        "id, name, slug, aliases, primary_muscle, equipment, image_start_url, tracking, owner_id, featured, archived_at",
+      )
+      .is("archived_at", null)
+      .order("name")
+      .order("id")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE) return rows;
+  }
 }

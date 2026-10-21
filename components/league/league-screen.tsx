@@ -35,7 +35,8 @@ const TABS: { key: StandingsTab; label: string }[] = [
   { key: "transformation", label: "Transformation" },
 ];
 
-const SERIES_COLORS = ["#c9f24d", "#e7ebe8", "#7d9440", "#4a5560", "#c98d4d"];
+// The first series is you, in your accent; the rest stay neutral.
+const SERIES_COLORS = ["var(--accent)", "#e7ebe8", "var(--accent-2)", "#4a5560", "#c98d4d"];
 
 export function LeagueScreen({
   view,

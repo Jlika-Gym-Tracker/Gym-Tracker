@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronLeft, LogOut, Search, Settings, Trophy, Users } from "lucide-react";
+import Form from "next/form";
+import { ChevronLeft, Dumbbell, History, LogOut, Search, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { endNavigation, startNavigation } from "@/lib/activity";
 import { titleForPath } from "@/lib/nav";
@@ -29,14 +30,18 @@ export function Topbar({
   displayName,
   avatarUrl,
   goalLabel,
-  streakDays,
+  streakWeeks,
   coaching = false,
+  admin = false,
 }: {
   displayName: string;
   avatarUrl: string | null;
   goalLabel: string;
-  streakDays: number;
+  /** Weeks in a row with a finished session (lib/training/streak.ts). */
+  streakWeeks: number;
   coaching?: boolean;
+  /** Signed in with an ADMIN_EMAILS address; the route checks again. */
+  admin?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -94,20 +99,30 @@ export function Topbar({
       </div>
 
       <div className="ml-auto flex flex-none items-center gap-2.5">
-        <button
-          type="button"
-          disabled
-          title="Search arrives with the exercise library"
-          className="hidden w-[260px] items-center gap-[9px] rounded-[10px] border border-line bg-surface px-[13px] py-[9px] text-left text-[13px] text-fg-dim disabled:cursor-not-allowed lg:flex"
+        {/* Searches the exercise library; next/form keeps it a client-side
+            navigation to /exercises?q=… rather than a full page load. */}
+        <Form
+          action="/exercises"
+          role="search"
+          className="hidden w-[260px] items-center gap-[9px] rounded-[10px] border border-line bg-surface px-[13px] py-[7px] text-[13px] focus-within:border-line-hi lg:flex"
         >
-          <Search className="size-[13px]" strokeWidth={1.5} />
-          Search exercises, meals…
-        </button>
+          <Search className="size-[13px] flex-none text-fg-dim" strokeWidth={1.5} />
+          <input
+            name="q"
+            type="search"
+            placeholder="Search exercises…"
+            aria-label="Search the exercise library"
+            className="w-full min-w-0 bg-transparent py-0.5 text-fg-2 outline-none placeholder:text-fg-dim"
+          />
+        </Form>
 
-        {streakDays > 0 ? (
-          <div className="hidden items-center gap-[7px] rounded-[10px] border border-line-hi bg-accent-soft px-[13px] py-[9px] font-mono text-xs font-bold text-accent sm:flex">
+        {streakWeeks > 0 ? (
+          <div
+            title="Weeks in a row with at least one finished session"
+            className="hidden items-center gap-[7px] rounded-[10px] border border-line-hi bg-accent-soft px-[13px] py-[9px] font-mono text-xs font-bold text-accent sm:flex"
+          >
             <span className="size-[6px] animate-pulse-dot rounded-full bg-accent" />
-            {streakDays} DAY STREAK
+            {streakWeeks} WEEK STREAK
           </div>
         ) : (
           <div className="hidden rounded-[10px] border border-line bg-surface px-[13px] py-[9px] font-mono text-xs font-medium text-fg-dim sm:block">
@@ -128,6 +143,14 @@ export function Topbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             {/* On a phone these are not in the tab bar, so they live here. */}
+            <DropdownMenuItem render={<Link href="/exercises" />} className="py-2.5 lg:hidden">
+              <Dumbbell className="size-4" />
+              Exercises
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/history" />} className="py-2.5 lg:hidden">
+              <History className="size-4" />
+              History
+            </DropdownMenuItem>
             <DropdownMenuItem render={<Link href="/league" />} className="py-2.5 lg:hidden">
               <Trophy className="size-4" />
               Crew league
@@ -136,6 +159,12 @@ export function Topbar({
               <DropdownMenuItem render={<Link href="/coach" />} className="py-2.5 lg:hidden">
                 <Users className="size-4" />
                 My athletes
+              </DropdownMenuItem>
+            ) : null}
+            {admin ? (
+              <DropdownMenuItem render={<Link href="/admin" />} className="py-2.5 lg:hidden">
+                <ShieldCheck className="size-4" />
+                Admin
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuSeparator className="lg:hidden" />

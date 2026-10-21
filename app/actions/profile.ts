@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { addDays } from "date-fns";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { displayToCm } from "@/lib/units";
+import { cookies } from "next/headers";
+import { displayToCm, displayToKg } from "@/lib/units";
+import { ACCENTS, ACCENT_COOKIE, type Accent } from "@/lib/theme/accent";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -37,6 +39,8 @@ const accountSchema = z.object({
   unitSystem,
   goal: z.enum(["cut", "bulk", "recomp", "strength", "health"]),
   activityFactor: z.coerce.number().min(1.2).max(2),
+  // In display units; converted to kg below. Blank clears the goal.
+  goalWeight: z.union([z.literal(""), z.coerce.number().min(20).max(880)]).transform((v) => (v === "" ? null : v)),
 });
 
 export async function saveAccount(
@@ -53,11 +57,18 @@ export async function saveAccount(
       unitSystem: formData.get("unitSystem"),
       goal: formData.get("goal"),
       activityFactor: formData.get("activityFactor"),
+      goalWeight: formData.get("goalWeight") ?? "",
     });
 
     // Heights arrive in whatever the user is looking at; kg/cm go to the table.
     const heightCm =
       input.height == null ? null : displayToCm(input.height, input.unitSystem);
+
+    const goalWeightKg =
+      input.goalWeight == null ? null : displayToKg(input.goalWeight, input.unitSystem);
+    if (goalWeightKg != null && (goalWeightKg <= 20 || goalWeightKg >= 400)) {
+      return { error: "That goal weight is outside what the app can store." };
+    }
 
     const { error } = await supabase
       .from("profiles")
@@ -69,6 +80,7 @@ export async function saveAccount(
         unit_system: input.unitSystem,
         goal: input.goal,
         activity_factor: input.activityFactor,
+        goal_weight_kg: goalWeightKg == null ? null : Math.round(goalWeightKg * 100) / 100,
       })
       .eq("id", user.id);
     if (error) throw error;
@@ -166,6 +178,7 @@ const settingsToggleSchema = z.object({
   key: z.enum([
     "auto_rest", "keyboard_shortcuts", "show_e1rm", "blur_thumbnails",
     "strip_exif", "notify_weighin", "notify_unpublished_week",
+    "keep_awake", "rest_sound", "rest_push", "notify_workout_day",
   ]),
   value: z.boolean(),
 });
@@ -199,6 +212,106 @@ export async function setRestSeconds(seconds: number): Promise<ActionState> {
     const { error } = await supabase
       .from("user_settings")
       .upsert({ user_id: user.id, default_rest_seconds: value }, { onConflict: "user_id" });
+    if (error) throw error;
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * The account's accent colour. Saved on the profile so it follows the account
+ * to every device, and mirrored into a cookie so the next page load paints in
+ * it straight away (see ACCENT_BOOT_SCRIPT).
+ */
+export async function setAccent(accent: string): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const value = z.enum(ACCENTS.map((a) => a.key) as [Accent, ...Accent[]]).parse(accent);
+    const { error } = await supabase.from("profiles").update({ accent: value }).eq("id", user.id);
+    if (error) throw error;
+    (await cookies()).set(ACCENT_COOKIE, value, { path: "/", maxAge: 31536000, sameSite: "lax" });
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Signs this account out on every device — phones left at the gym included.
+ * Supabase revokes every refresh token for the user; each device drops out the
+ * next time its access token needs renewing, within the hour at most.
+ */
+export async function signOutEverywhere(): Promise<ActionState> {
+  try {
+    const { supabase } = await requireUser();
+    const { error } = await supabase.auth.signOut({ scope: "global" });
+    if (error) throw error;
+  } catch (error) {
+    return fail(error);
+  }
+  redirect("/login");
+}
+
+/** Which scale the effort column asks in. Stored sets stay RPE either way. */
+export async function setEffortScale(scale: string): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const value = z.enum(["off", "rpe", "rir"]).parse(scale);
+    const { error } = await supabase
+      .from("user_settings")
+      .upsert({ user_id: user.id, effort_scale: value }, { onConflict: "user_id" });
+    if (error) throw error;
+    refresh();
+    return {};
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+const reminderSchema = z.object({
+  enabled: z.boolean().optional(),
+  hour: z.number().int().min(0).max(23).optional(),
+  timezone: z.string().min(1).max(64).optional(),
+});
+
+/**
+ * The workout-day reminder: on/off and the local hour it goes out at.
+ *
+ * The browser's time zone rides along with every change, because the hour only
+ * means something in a zone — someone who set 18:00 at home and has since moved
+ * should get it at 18:00 where they are now.
+ */
+export async function saveWorkoutReminder(input: {
+  enabled?: boolean;
+  hour?: number;
+  timezone?: string;
+}): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireUser();
+    const { enabled, hour, timezone } = reminderSchema.parse(input);
+
+    let zone: string | undefined;
+    if (timezone) {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: timezone });
+        zone = timezone;
+      } catch {
+        // An unknown zone is left as it was rather than saved and misread later.
+      }
+    }
+
+    const { error } = await supabase.from("user_settings").upsert(
+      {
+        user_id: user.id,
+        ...(enabled === undefined ? {} : { notify_workout_day: enabled }),
+        ...(hour === undefined ? {} : { reminder_hour: hour }),
+        ...(zone === undefined ? {} : { timezone: zone }),
+      },
+      { onConflict: "user_id" },
+    );
     if (error) throw error;
     refresh();
     return {};
