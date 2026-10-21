@@ -22,6 +22,7 @@ import { LoadCheck } from "./load-check";
 import { PastePanel } from "./paste-panel";
 import { TemplatePicker } from "./template-picker";
 import { ShareWeek } from "./share-week";
+import { QuickAdd } from "./quick-add";
 import { ActionButton } from "@/components/kit/action-button";
 
 export function ProgramBuilder({
@@ -213,6 +214,7 @@ export function ProgramBuilder({
                 days={week.days}
                 weekStart={week.week_start}
                 system={system}
+                library={library}
                 active={day.id === activeDayId}
                 onActivate={() => setActiveDayId(day.id)}
               />
@@ -294,8 +296,19 @@ export function ProgramBuilder({
                 </button>
               ))}
             <span className="text-xs text-fg-dim">
-              Pick one, then add an exercise from the library to turn it into a training day.
+              Pick one and add an exercise to turn it into a training day.
             </span>
+            {activeDay && activeDay.is_rest && activeDay.exercises.length === 0 ? (
+              <div className="w-full">
+                <QuickAdd
+                  key={activeDay.id}
+                  dayId={activeDay.id}
+                  dayName={activeDay.name}
+                  library={library}
+                  onClose={() => setActiveDayId(firstTrainingDay?.id ?? null)}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

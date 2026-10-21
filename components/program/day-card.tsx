@@ -25,6 +25,8 @@ import {
 } from "@/lib/program/policies";
 import { cn } from "@/lib/utils";
 import { ExerciseThumb } from "./exercise-thumb";
+import { QuickAdd } from "./quick-add";
+import type { LibraryExercise } from "@/lib/program/match";
 import { ActionButton } from "@/components/kit/action-button";
 import { useAction } from "@/lib/use-action";
 
@@ -75,6 +77,7 @@ export function DayCard({
   days,
   weekStart,
   system,
+  library,
   active,
   onActivate,
 }: {
@@ -84,6 +87,8 @@ export function DayCard({
   /** The week's own start date, which decides what weekday each position is. */
   weekStart: string;
   system: UnitSystem;
+  /** The whole library, for adding from inside the card. */
+  library: LibraryExercise[];
   active: boolean;
   onActivate: () => void;
 }) {
@@ -95,6 +100,7 @@ export function DayCard({
   const exerciseSave = useAction();
   const move = useAction();
   const pair = useAction();
+  const [adding, setAdding] = useState(false);
   const unit = weightUnit(system);
 
   const ordered = [...days].sort((a, b) => a.day_index - b.day_index);
@@ -501,19 +507,34 @@ export function DayCard({
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={onActivate}
-          className={cn(
-            "mx-2 mt-1.5 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[10px] border border-dashed px-2 py-[9px] text-xs font-semibold transition-colors pointer-coarse:min-h-11",
-            active
-              ? "border-accent text-accent"
-              : "border-stroke text-fg-dim hover:border-accent hover:text-accent",
-          )}
-        >
-          <Plus className="size-3.5" strokeWidth={2} />
-          {active ? "Pick from the library →" : "Add exercise"}
-        </button>
+        {/* Adding happens here, in the card: the library panel may be a long
+            scroll away (below every day on anything narrower than xl). */}
+        {adding ? (
+          <QuickAdd
+            dayId={day.id}
+            dayName={day.name}
+            library={library}
+            onClose={() => setAdding(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onActivate();
+              setAdding(true);
+            }}
+            className={cn(
+              "mx-2 mt-1.5 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[10px] border border-dashed px-2 py-[9px] text-xs font-semibold transition-colors pointer-coarse:min-h-11",
+              active
+                ? "border-accent text-accent"
+                : "border-stroke text-fg-dim hover:border-accent hover:text-accent",
+            )}
+          >
+            <Plus className="size-3.5" strokeWidth={2} />
+            Add exercise
+          </button>
+        )}
       </div>
 
       {day.focus_note ? (
