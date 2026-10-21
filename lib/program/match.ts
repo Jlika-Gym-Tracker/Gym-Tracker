@@ -52,7 +52,15 @@ export const AUTO_MATCH_THRESHOLD = 0.62;
  */
 export const PREFERRED_EDGE = 0.06;
 
-const STOP_WORDS = new Set(["the", "a", "with", "and", "of", "on", "to"]);
+/**
+ * Words that carry no identity. The intensity words come from cardio lines —
+ * "easy cycling", "brisk treadmill walk" — where they describe the effort, not
+ * the machine, and would otherwise cost a match.
+ */
+const STOP_WORDS = new Set([
+  "the", "a", "with", "and", "of", "on", "to",
+  "easy", "brisk", "light", "moderate", "steady", "slow",
+]);
 
 /** Singular/plural and spelling variants that should not cost a match. */
 const SYNONYMS: Record<string, string> = {
@@ -85,6 +93,15 @@ const SYNONYMS: Record<string, string> = {
   legs: "leg",
   hamstrings: "hamstring",
   seated: "seated",
+  // Cardio: what people write against what the library calls it.
+  cycling: "bike",
+  cycle: "bike",
+  biking: "bike",
+  bicycling: "bike",
+  bicycle: "bike",
+  walking: "walk",
+  running: "run",
+  jogging: "jog",
 };
 
 export function normalize(input: string): string[] {

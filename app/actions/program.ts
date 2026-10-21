@@ -17,6 +17,7 @@ import { progressWeek, summariseProgression } from "@/lib/program/progression";
 import { getRecentSessions } from "@/lib/training/queries";
 import type { Tracking, UnitSystem } from "@/lib/database.types";
 import { displayToKg } from "@/lib/units";
+import { ownExerciseSlug } from "@/lib/program/own-exercise";
 
 export type ActionState = { error?: string; notice?: string };
 
@@ -692,14 +693,35 @@ const pastedDaySchema = z.object({
   isRest: z.boolean(),
   exercises: z
     .array(
-      z.object({
-        exerciseId: uuid,
-        targetSets: z.number().int().min(1).max(20),
-        repMin: z.number().int().min(1).max(100).nullable(),
-        repMax: z.number().int().min(1).max(100).nullable(),
-        perSide: z.boolean(),
-        note: z.string().trim().max(200).nullable(),
-      }),
+      z
+        .object({
+          exerciseId: uuid.nullable(),
+          // A line kept as the user's own exercise rather than a library match.
+          newExercise: z
+            .object({
+              name: z.string().trim().min(2).max(80),
+              primaryMuscle: z.enum([
+                "chest", "lats", "middle_back", "lower_back", "traps", "shoulders", "biceps",
+                "triceps", "forearms", "quadriceps", "hamstrings", "glutes", "calves",
+                "abdominals", "abductors", "adductors", "neck",
+              ]),
+              equipment: z.enum([
+                "barbell", "dumbbell", "machine", "cable", "body_only", "bands", "kettlebells",
+                "ez_curl_bar", "exercise_ball", "medicine_ball", "foam_roll", "other",
+              ]),
+              tracking: z.enum(["reps", "time", "cardio"]),
+            })
+            .nullable()
+            .default(null),
+          targetSets: z.number().int().min(1).max(20),
+          repMin: z.number().int().min(1).max(100).nullable(),
+          repMax: z.number().int().min(1).max(100).nullable(),
+          // Hold time per set, or a cardio block's length.
+          targetSeconds: z.number().int().min(1).max(14400).nullable().default(null),
+          perSide: z.boolean(),
+          note: z.string().trim().max(200).nullable(),
+        })
+        .refine((e) => e.exerciseId != null || e.newExercise != null, "Each line needs an exercise."),
     )
     .max(30),
 });
@@ -714,9 +736,50 @@ export async function applyPastedWeek(
   days: unknown,
 ): Promise<ActionState> {
   try {
-    const { supabase } = await requireUser();
+    const { supabase, user } = await requireUser();
     const parsedStart = weekStartSchema.parse(weekStart);
     const parsedDays = z.array(pastedDaySchema).min(1).max(7).parse(days);
+
+    // Lines kept as the user's own exercises: reuse one of theirs with the same
+    // name, otherwise create it — once, however many days it appears on.
+    const wanted = new Map<string, NonNullable<(typeof parsedDays)[number]["exercises"][number]["newExercise"]>>();
+    for (const day of parsedDays) {
+      for (const item of day.exercises) {
+        if (!item.exerciseId && item.newExercise) wanted.set(item.newExercise.name.toLowerCase(), item.newExercise);
+      }
+    }
+    const ownIdByName = new Map<string, string>();
+    if (wanted.size) {
+      const { data: mine } = await supabase
+        .from("exercises")
+        .select("id, name")
+        .eq("owner_id", user.id)
+        .is("archived_at", null);
+      for (const e of mine ?? []) ownIdByName.set(e.name.toLowerCase(), e.id);
+      for (const [key, spec] of wanted) {
+        if (ownIdByName.has(key)) continue;
+        for (let attempt = 0; attempt < 5 && !ownIdByName.has(key); attempt++) {
+          const { data, error } = await supabase
+            .from("exercises")
+            .insert({
+              owner_id: user.id,
+              slug: ownExerciseSlug(user.id, spec.name, attempt),
+              name: spec.name,
+              primary_muscle: spec.primaryMuscle,
+              equipment: spec.equipment,
+              tracking: spec.tracking,
+            })
+            .select("id")
+            .single();
+          if (error?.code === "23505") continue;
+          if (error) throw error;
+          ownIdByName.set(key, data.id);
+        }
+        if (!ownIdByName.has(key)) throw new Error(`Could not add “${spec.name}” to your library.`);
+      }
+    }
+    const exerciseIdFor = (item: (typeof parsedDays)[number]["exercises"][number]) =>
+      item.exerciseId ?? ownIdByName.get(item.newExercise!.name.toLowerCase())!;
 
     const weekId = await ensureWeek(parsedStart, label);
 
@@ -732,17 +795,23 @@ export async function applyPastedWeek(
     }
     await supabase.from("program_days").delete().eq("week_id", weekId);
 
+    // Days the paste did not mention (Wednesday in a Mon/Tue/Thu/Fri week)
+    // become rest days, so the week stays whole and they can still be filled.
+    const pastedIndexes = new Set(parsedDays.map((d) => d.dayIndex));
     const { data: newDays, error: daysError } = await supabase
       .from("program_days")
-      .insert(
-        parsedDays.map((d) => ({
+      .insert([
+        ...parsedDays.map((d) => ({
           week_id: weekId,
           day_index: d.dayIndex,
           name: d.name,
           focus_note: d.focusNote,
           is_rest: d.isRest,
         })),
-      )
+        ...[0, 1, 2, 3, 4, 5, 6]
+          .filter((i) => !pastedIndexes.has(i))
+          .map((i) => ({ week_id: weekId, day_index: i, name: "Rest", focus_note: null, is_rest: true })),
+      ])
       .select("id, day_index");
     if (daysError) throw daysError;
 
@@ -750,11 +819,12 @@ export async function applyPastedWeek(
     const rows = parsedDays.flatMap((day) =>
       day.exercises.map((item, position) => ({
         day_id: dayIdByIndex.get(day.dayIndex)!,
-        exercise_id: item.exerciseId,
+        exercise_id: exerciseIdFor(item),
         position,
         target_sets: item.targetSets,
         rep_min: item.repMin,
         rep_max: item.repMax,
+        target_seconds: item.targetSeconds,
         per_side: item.perSide,
         note: item.note,
       })),
@@ -770,7 +840,10 @@ export async function applyPastedWeek(
       .eq("id", weekId);
 
     refresh();
-    return { notice: `Imported ${rows.length} exercises across ${parsedDays.length} days.` };
+    const created = wanted.size ? ` ${wanted.size} added to your library as your own.` : "";
+    return {
+      notice: `Imported ${rows.length} exercises across ${parsedDays.filter((d) => d.exercises.length).length} days.${created}`,
+    };
   } catch (error) {
     return fail(error);
   }
